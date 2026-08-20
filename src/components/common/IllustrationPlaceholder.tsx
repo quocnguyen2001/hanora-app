@@ -20,7 +20,7 @@ export function IllustrationPlaceholder({
     <div
       aria-hidden
       className={cn(
-        'bg-primary-pale flex items-center justify-center rounded-[--radius-card-lg]',
+        'bg-primary-pale flex items-center justify-center rounded-card-lg',
         ratio === 'square' ? 'aspect-square' : 'aspect-[16/9]',
         className,
       )}

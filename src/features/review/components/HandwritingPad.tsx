@@ -79,7 +79,7 @@ export function HandwritingPad({ onPick }: { onPick: (character: string) => void
         width={SIZE}
         height={SIZE}
         // `touch-none` để kéo trên canvas không cuộn trang.
-        className="border-border bg-surface w-full max-w-[260px] touch-none rounded-[--radius-card] border"
+        className="border-border bg-surface w-full max-w-[260px] touch-none rounded-card border"
         aria-label="Bảng vẽ chữ Hán"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
@@ -146,7 +146,7 @@ export function HandwritingPad({ onPick }: { onPick: (character: string) => void
                   setStrokes([])
                   setCandidates([])
                 }}
-                className="border-border bg-surface font-hanzi hover:bg-primary-pale size-12 rounded-[--radius-control] border text-2xl"
+                className="border-border bg-surface font-hanzi hover:bg-primary-pale size-12 rounded-control border text-2xl"
               >
                 {character}
               </button>

@@ -99,7 +99,7 @@ export function BottomSheet({
             aria-modal="true"
             aria-label={title}
             tabIndex={-1}
-            className="bg-surface relative w-full max-w-lg rounded-t-[--radius-hero] pb-[env(safe-area-inset-bottom)] outline-none"
+            className="bg-surface relative w-full max-w-lg rounded-t-hero pb-[env(safe-area-inset-bottom)] outline-none"
             initial={{ y: reduceMotion ? 0 : '100%' }}
             animate={{ y: 0 }}
             exit={{ y: reduceMotion ? 0 : '100%' }}

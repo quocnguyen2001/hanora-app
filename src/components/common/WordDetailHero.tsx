@@ -27,7 +27,7 @@ export function WordDetailHero({
   actions?: React.ReactNode
 }) {
   return (
-    <section className="border-border bg-surface flex flex-col items-center gap-3 rounded-[--radius-hero] border p-6 text-center">
+    <section className="border-border bg-surface flex flex-col items-center gap-3 rounded-hero border p-6 text-center">
       <HanziText size="hero">{word.simplified}</HanziText>
 
       {word.traditional !== word.simplified && (

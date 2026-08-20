@@ -12,7 +12,7 @@ export function Skeleton({ className }: { className?: string }) {
       // `aria-hidden`: screen reader không cần nghe mô tả một hình chữ nhật xám.
       // Trạng thái tải thông báo ở vùng bọc ngoài bằng `aria-busy`.
       aria-hidden
-      className={cn('bg-primary-pale animate-pulse rounded-[--radius-control]', className)}
+      className={cn('bg-primary-pale animate-pulse rounded-control', className)}
     />
   )
 }
@@ -20,8 +20,8 @@ export function Skeleton({ className }: { className?: string }) {
 /** Skeleton khớp đúng hình dạng một VocabularyCard, để layout không nhảy. */
 export function VocabularyCardSkeleton() {
   return (
-    <div className="border-border bg-surface flex items-center gap-4 rounded-[--radius-card] border p-4">
-      <Skeleton className="size-12 shrink-0 rounded-[--radius-control-lg]" />
+    <div className="border-border bg-surface flex items-center gap-4 rounded-card border p-4">
+      <Skeleton className="size-12 shrink-0 rounded-control-lg" />
       <div className="flex-1 space-y-2">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-3 w-40" />

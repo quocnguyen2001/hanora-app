@@ -40,8 +40,8 @@ export function VocabularyCard({
     <div
       className={cn(
         'border-border bg-surface flex items-center gap-4 border transition-colors duration-150',
-        'rounded-[--radius-card] p-4',
-        variant === 'featured' && 'rounded-[--radius-card-lg] p-5',
+        'rounded-card p-4',
+        variant === 'featured' && 'rounded-card-lg p-5',
         onSelect && 'hover:bg-primary-pale active:bg-primary-soft cursor-pointer',
       )}
     >

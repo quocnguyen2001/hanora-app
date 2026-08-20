@@ -36,6 +36,30 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+      // Tailwind v4 biên dịch `rounded-[--radius-card]` thành
+      // `border-radius: --radius-card` — thiếu `var()`, giá trị không hợp lệ,
+      // trình duyệt bỏ qua declaration. Bug này từng làm MỌI bo góc trong app
+      // biến mất mà không có lỗi build nào.
+      //
+      // Cách đúng: dùng utility sinh từ namespace theme (`rounded-card`), hoặc
+      // cú pháp ngoặc tròn (`rounded-(--radius-card)`) khi cần custom property
+      // không có trong theme.
+      //
+      // Chỉ khớp `[--`, nên arbitrary value thường (`max-w-[260px]`,
+      // `pb-[env(safe-area-inset-bottom)]`) không bị chặn.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/\\[--/]',
+          message:
+            'Arbitrary value với bare custom property không sinh var(). Dùng utility theme (rounded-card) hoặc cú pháp ngoặc tròn (rounded-(--radius-card)).',
+        },
+        {
+          selector: 'TemplateElement[value.raw=/\\[--/]',
+          message:
+            'Arbitrary value với bare custom property không sinh var(). Dùng utility theme (rounded-card) hoặc cú pháp ngoặc tròn (rounded-(--radius-card)).',
+        },
+      ],
     },
   },
   {

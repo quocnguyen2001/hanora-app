@@ -49,7 +49,7 @@ export function AuthForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       {generalError && (
-        <p role="alert" className="bg-error/10 text-body text-error rounded-[--radius-control] p-3">
+        <p role="alert" className="bg-error/10 text-body text-error rounded-control p-3">
           {generalError}
         </p>
       )}

@@ -74,7 +74,7 @@ function ReviewSession({ mode, onExit }: { mode: ReviewMode; onExit: () => void 
     return (
       <div aria-busy className="space-y-4">
         <Skeleton className="h-2 w-full" />
-        <Skeleton className="h-56 w-full rounded-[--radius-hero]" />
+        <Skeleton className="h-56 w-full rounded-hero" />
         <Skeleton className="h-14 w-full" />
       </div>
     )

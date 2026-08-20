@@ -46,7 +46,7 @@ export function Button({
       aria-busy={loading || undefined}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center rounded-[--radius-control-lg] font-medium',
+        'inline-flex items-center justify-center rounded-control-lg font-medium',
         'transition-colors duration-150',
         'disabled:cursor-not-allowed disabled:opacity-50',
         VARIANTS[variant],

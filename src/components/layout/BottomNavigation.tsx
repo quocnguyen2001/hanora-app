@@ -44,7 +44,7 @@ export function BottomNavigation() {
               className={({ isActive }) =>
                 cn(
                   'text-caption flex min-h-14 flex-col items-center justify-center gap-1 transition-colors',
-                  'lg:text-body lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:rounded-[--radius-control-lg] lg:px-3',
+                  'lg:text-body lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:rounded-control-lg lg:px-3',
                   // Active dùng primary; inactive giữ quiet — hồng là accent,
                   // không phủ nền lớn.
                   isActive

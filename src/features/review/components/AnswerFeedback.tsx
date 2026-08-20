@@ -36,7 +36,7 @@ export function AnswerFeedback({
       role="status"
       aria-live="polite"
       className={cn(
-        'space-y-3 rounded-[--radius-card-lg] border p-4',
+        'space-y-3 rounded-card-lg border p-4',
         result.correct ? 'border-success/40 bg-success/10' : 'border-error/40 bg-error/10',
       )}
     >

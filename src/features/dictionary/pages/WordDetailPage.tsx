@@ -27,7 +27,7 @@ export function WordDetailPage() {
     return (
       <div aria-busy className="space-y-4">
         <Skeleton className="h-10 w-24" />
-        <Skeleton className="h-48 w-full rounded-[--radius-hero]" />
+        <Skeleton className="h-48 w-full rounded-hero" />
         <Skeleton className="h-24 w-full" />
       </div>
     )

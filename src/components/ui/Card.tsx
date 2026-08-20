@@ -16,7 +16,7 @@ export function Card({ children, size = 'default', className, ...props }: CardPr
     <div
       className={cn(
         'border-border bg-surface shadow-card border',
-        size === 'hero' ? 'rounded-[--radius-hero] p-6' : 'rounded-[--radius-card] p-4',
+        size === 'hero' ? 'rounded-hero p-6' : 'rounded-card p-4',
         className,
       )}
       {...props}

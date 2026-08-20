@@ -1,6 +1,19 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
 @import './tokens.css';
 @import './fonts.css';
+
+/*
+ * Chỉ quét code, KHÔNG quét tài liệu.
+ *
+ * Mặc định Tailwind v4 quét mọi file không bị gitignore — kể cả `.md`. Một
+ * bảng trong `plans/` hay `README.md` có nhắc tên class là đủ để sinh CSS thật
+ * vào bundle. Điều đó vừa làm phình file, vừa khiến không thể kiểm chứng CSS
+ * xuất ra có đúng không: tài liệu MÔ TẢ một class hỏng sẽ tự tay sinh ra nó.
+ *
+ * `source(none)` tắt quét tự động, hai dòng dưới khai báo phạm vi thật.
+ */
+@source '../**/*.{ts,tsx}';
+@source '../../index.html';
 
 @layer base {
   html {

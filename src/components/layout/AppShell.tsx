@@ -32,14 +32,14 @@ export function AppShell() {
         {/* Bỏ qua điều hướng — người dùng bàn phím không phải Tab qua 4 tab mỗi lần đổi trang. */}
         <a
           href="#main"
-          className="focus:bg-primary sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-[--radius-control] focus:px-4 focus:py-2 focus:text-white"
+          className="focus:bg-primary sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-control focus:px-4 focus:py-2 focus:text-white"
         >
           Tới nội dung chính
         </a>
 
         <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 lg:max-w-[1200px]">
           {/* Route tải lười: skeleton thay vì màn trắng trong lúc tải chunk. */}
-          <Suspense fallback={<Skeleton className="h-64 w-full rounded-[--radius-card]" />}>
+          <Suspense fallback={<Skeleton className="h-64 w-full rounded-card" />}>
             <Outlet />
           </Suspense>
         </main>

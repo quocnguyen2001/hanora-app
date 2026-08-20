@@ -39,13 +39,13 @@ export function StatsPage() {
 
       {stats.isPending ? (
         <div aria-busy className="space-y-3">
-          <Skeleton className="h-40 w-full rounded-[--radius-card]" />
+          <Skeleton className="h-40 w-full rounded-card" />
           <div className="grid grid-cols-3 gap-3">
             <Skeleton className="h-20" />
             <Skeleton className="h-20" />
             <Skeleton className="h-20" />
           </div>
-          <Skeleton className="h-36 w-full rounded-[--radius-card]" />
+          <Skeleton className="h-36 w-full rounded-card" />
         </div>
       ) : stats.isError ? (
         <EmptyState
