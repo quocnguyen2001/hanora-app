@@ -1,0 +1,63 @@
+/*
+ * NGUỒN DUY NHẤT cho màu, bo góc, khoảng cách và typography.
+ *
+ * Không hard-code giá trị màu hay spacing ở bất kỳ component nào. Nếu một màu
+ * chưa có ở đây thì việc cần làm là bàn xem nó có thuộc hệ thống không, chứ
+ * không phải viết thẳng mã hex vào class.
+ *
+ * Giá trị lấy từ `.prompts/hanora-design-context/design-tokens.md`.
+ */
+
+@theme {
+  /* Màu — pastel pink, hồng là accent chứ không phủ nền lớn */
+  --color-primary: #ff6f91;
+  --color-primary-soft: #fff0f4;
+  --color-primary-pale: #fff7f9;
+  --color-background: #fffcfc;
+  --color-surface: #ffffff;
+  --color-text-primary: #29252a;
+  --color-text-secondary: #746e72;
+  --color-border: #f1e6e9;
+  --color-success: #63c596;
+  --color-warning: #f5b95b;
+  --color-error: #f47c8a;
+
+  /* Chữ Hán luôn giữ hierarchy mạnh nhất trên mọi màn từ vựng */
+  --text-hanzi-hero: 3rem; /* 48px */
+  --text-hanzi-hero--line-height: 3.5rem; /* 56px */
+  --text-hanzi-hero--font-weight: 500;
+
+  --text-pinyin: 1.125rem; /* 18px */
+  --text-pinyin--line-height: 1.625rem; /* 26px */
+
+  --text-meaning: 1rem; /* 16px */
+  --text-meaning--line-height: 1.5rem; /* 24px */
+
+  --text-section: 0.9375rem; /* 15px */
+  --text-section--line-height: 1.375rem; /* 22px */
+  --text-section--font-weight: 600;
+
+  --text-body: 0.875rem; /* 14px */
+  --text-body--line-height: 1.375rem; /* 22px */
+
+  --text-caption: 0.75rem; /* 12px */
+  --text-caption--line-height: 1.125rem; /* 18px */
+
+  /* Bo góc — bề mặt bo tròn nhất quán */
+  --radius-control: 0.625rem; /* 10px */
+  --radius-control-lg: 0.75rem; /* 12px */
+  --radius-card: 1rem; /* 16px */
+  --radius-card-lg: 1.25rem; /* 20px */
+  --radius-hero: 1.5rem; /* 24px */
+
+  /*
+   * Bóng đổ nhẹ, viền gánh phần lớn việc phân tách. Tránh card nổi đổ bóng
+   * nặng — nó phá cảm giác "calm" mà `ux-rules.md` đặt làm nguyên tắc gốc.
+   */
+  --shadow-card: 0 1px 2px rgb(41 37 42 / 0.04);
+  --shadow-raised: 0 4px 12px rgb(41 37 42 / 0.06);
+
+  /* Font — self-host để PWA offline vẫn đúng chữ */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-hanzi: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
