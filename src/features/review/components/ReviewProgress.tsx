@@ -25,7 +25,7 @@ export function ReviewProgress({ current, total }: { current: number; total: num
         className="bg-primary-pale h-2 overflow-hidden rounded-full"
       >
         <div
-          className="bg-primary h-full rounded-full transition-[width] duration-300"
+          className="bg-primary h-full rounded-full transition-[width] duration-progress ease-soft"
           style={{ width: `${percent}%` }}
         />
       </div>

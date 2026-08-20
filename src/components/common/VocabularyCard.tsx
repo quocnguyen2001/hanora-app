@@ -39,10 +39,13 @@ export function VocabularyCard({
   return (
     <div
       className={cn(
-        'border-border bg-surface flex items-center gap-4 border transition-colors duration-150',
+        'bg-surface shadow-card flex items-center gap-4',
+        'transition duration-press ease-soft',
         'rounded-card p-4',
         variant === 'featured' && 'rounded-card-lg p-5',
-        onSelect && 'hover:bg-primary-pale active:bg-primary-soft cursor-pointer',
+        // `:active` khớp cả với tổ tiên của phần tử đang bị nhấn, nên chạm vào
+        // nút bên trong vẫn làm cả thẻ lún — đúng ý: cả thẻ là một vùng chạm.
+        onSelect && 'hover:bg-primary-pale active:bg-primary-soft cursor-pointer active:scale-[0.99]',
       )}
     >
       <button
@@ -75,7 +78,19 @@ export function VocabularyCard({
         <IconButton
           // Nhãn nói HÀNH ĐỘNG sẽ xảy ra, không phải trạng thái hiện tại.
           label={saved ? `Bỏ lưu ${word.simplified}` : `Lưu ${word.simplified}`}
-          icon={<BookmarkIcon size={22} filled={saved} />}
+          // Đánh dấu là hành động có sức nặng cảm xúc nhất trong app — nó là
+          // lúc người dùng quyết định "từ này tôi muốn nhớ". Nhích to một chút
+          // khi đã lưu, đủ để thấy chứ không nảy.
+          icon={
+            <BookmarkIcon
+              size={22}
+              filled={saved}
+              className={cn(
+                'transition-transform duration-ui ease-soft',
+                saved ? 'scale-110' : 'scale-100',
+              )}
+            />
+          }
           variant={saved ? 'soft' : 'ghost'}
           onClick={onToggleSave}
           disabled={loading}

@@ -20,21 +20,28 @@ export function IllustrationPlaceholder({
     <div
       aria-hidden
       className={cn(
-        'bg-primary-pale flex items-center justify-center rounded-card-lg',
+        'from-primary-soft to-primary-pale flex items-center justify-center rounded-card-lg bg-linear-to-br',
         ratio === 'square' ? 'aspect-square' : 'aspect-[16/9]',
         className,
       )}
     >
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" className="text-primary/30">
-        <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.5" />
-        <circle cx="9" cy="10" r="1.5" fill="currentColor" />
-        <path
-          d="m5 17 4.5-4.5L13 16l3-2.5L19 17"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+      {/*
+        Hoa anh đào thay cho icon "khung ảnh" chung chung. Chỗ trống vẫn là chỗ
+        trống, nhưng mang đúng giọng thương hiệu thay vì trông như ảnh lỗi.
+      */}
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" className="text-primary/35">
+        {[0, 72, 144, 216, 288].map((angle) => (
+          <ellipse
+            key={angle}
+            cx="12"
+            cy="7.4"
+            rx="2.9"
+            ry="4.1"
+            fill="currentColor"
+            transform={`rotate(${angle} 12 12)`}
+          />
+        ))}
+        <circle cx="12" cy="12" r="1.7" fill="currentColor" />
       </svg>
     </div>
   )

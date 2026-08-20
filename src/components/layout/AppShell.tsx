@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Outlet } from 'react-router'
+import { Outlet, useLocation } from 'react-router'
 import { OfflineBanner } from '@/components/common/OfflineBanner'
 import { UpdatePrompt } from '@/components/common/UpdatePrompt'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -21,8 +21,13 @@ import { BottomNavigation } from './BottomNavigation'
  * thấy thanh nav ở đúng chỗ tay với tới.
  */
 export function AppShell() {
+  const location = useLocation()
+
   return (
-    <div className="bg-background text-text-primary flex min-h-dvh flex-col-reverse lg:flex-row">
+    // Nền chuyển sắc rất nhạt: ấm ở trên rồi tan về nền nền, để thẻ trắng nổi
+    // lên thay vì chìm vào một mặt phẳng trắng. `via-background` đặt điểm tan
+    // sớm — hồng là accent, không được phủ nền lớn (`ux-rules.md`).
+    <div className="from-primary-pale via-background to-background text-text-primary flex min-h-dvh flex-col-reverse bg-linear-to-b lg:flex-row">
       <BottomNavigation />
 
       <div className="flex flex-1 flex-col">
@@ -38,10 +43,28 @@ export function AppShell() {
         </a>
 
         <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 lg:max-w-[1200px]">
-          {/* Route tải lười: skeleton thay vì màn trắng trong lúc tải chunk. */}
-          <Suspense fallback={<Skeleton className="h-64 w-full rounded-card" />}>
-            <Outlet />
-          </Suspense>
+          {/*
+            Chuyển trang mờ dần bằng CSS, KHÔNG dùng `AnimatePresence`.
+            Đổi `key` khiến React mount lại nhánh này, nên animation `rise` chạy
+            lại từ đầu mỗi lần đổi route.
+
+            Đánh đổi có chủ đích: cách này không có exit animation. Đổi lại, nó
+            không kéo `motion` vào bundle chính (+40.9 kB gzip) — và exit vốn là
+            phần rủi ro nhất: `mode="wait"` hoãn mount route mới cho tới khi
+            route cũ thoát xong, cộng thẳng vào độ trễ điều hướng cảm nhận được.
+
+            `key` bọc cả `Suspense` nên skeleton fallback là một phần của cùng
+            lượt animate, không tự nháy riêng khi tải chunk.
+
+            Reduced-motion: block trong `app.css` đã ép mọi animation CSS về
+            0.01ms, không cần xử lý thêm ở đây.
+          */}
+          <div key={location.pathname} className="animate-rise">
+            {/* Route tải lười: skeleton thay vì màn trắng trong lúc tải chunk. */}
+            <Suspense fallback={<Skeleton className="h-64 w-full rounded-card" />}>
+              <Outlet />
+            </Suspense>
+          </div>
         </main>
       </div>
     </div>

@@ -36,7 +36,9 @@ export function AnswerFeedback({
       role="status"
       aria-live="polite"
       className={cn(
-        'space-y-3 rounded-card-lg border p-4',
+        // Animate bằng CSS chứ không trì hoãn mount: khối này là `aria-live`,
+        // nội dung phải có mặt trong DOM ngay để screen reader đọc đúng lúc.
+        'animate-rise space-y-3 rounded-card-lg border p-4',
         result.correct ? 'border-success/40 bg-success/10' : 'border-error/40 bg-error/10',
       )}
     >

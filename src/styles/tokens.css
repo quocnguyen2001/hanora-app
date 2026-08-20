@@ -5,12 +5,15 @@
  * chưa có ở đây thì việc cần làm là bàn xem nó có thuộc hệ thống không, chứ
  * không phải viết thẳng mã hex vào class.
  *
- * Giá trị lấy từ `.prompts/hanora-design-context/design-tokens.md`.
+ * Giá trị gốc lấy từ `.prompts/hanora-design-context/design-tokens.md`. Thang bo góc
+ * đã được nới một bậc so với file đó — xem lý do ở khối `--radius-*` bên dưới.
  */
 
 @theme {
   /* Màu — pastel pink, hồng là accent chứ không phủ nền lớn */
   --color-primary: #ff6f91;
+  /* Chỉ dùng làm điểm dừng đậm của gradient nút primary — không dùng làm màu nền phẳng. */
+  --color-primary-deep: #f4527a;
   --color-primary-soft: #fff0f4;
   --color-primary-pale: #fff7f9;
   --color-background: #fffcfc;
@@ -43,12 +46,22 @@
   --text-caption: 0.75rem; /* 12px */
   --text-caption--line-height: 1.125rem; /* 18px */
 
-  /* Bo góc — bề mặt bo tròn nhất quán */
-  --radius-control: 0.625rem; /* 10px */
-  --radius-control-lg: 0.75rem; /* 12px */
-  --radius-card: 1rem; /* 16px */
-  --radius-card-lg: 1.25rem; /* 20px */
-  --radius-hero: 1.5rem; /* 24px */
+  /*
+   * Bo góc — bề mặt bo tròn nhất quán.
+   *
+   * Thang này ĐÃ NỚI so với `design-tokens.md` (10/12/16/20/24). Lý do: bo góc
+   * vốn không hoạt động suốt thời gian dài do bug thiếu `var()`, nên thang gốc
+   * chưa bao giờ được nhìn thấy để đánh giá. Sau khi sửa bug, nới thêm một bậc
+   * để đạt cảm giác mềm mà bản thiết kế nhắm tới.
+   *
+   * Dùng qua utility namespace: `rounded-card`, `rounded-hero`… KHÔNG dùng
+   * `rounded-[--radius-card]` — cú pháp đó không sinh `var()` và bị lint chặn.
+   */
+  --radius-control: 0.75rem; /* 12px */
+  --radius-control-lg: 1rem; /* 16px */
+  --radius-card: 1.25rem; /* 20px */
+  --radius-card-lg: 1.5rem; /* 24px */
+  --radius-hero: 2rem; /* 32px */
 
   /*
    * Bóng đổ nhẹ, viền gánh phần lớn việc phân tách. Tránh card nổi đổ bóng
@@ -56,6 +69,42 @@
    */
   --shadow-card: 0 1px 2px rgb(41 37 42 / 0.04);
   --shadow-raised: 0 4px 12px rgb(41 37 42 / 0.06);
+
+  /*
+   * Bóng dưới nút primary phải nhuốm hồng, không phải xám: bóng xám dưới một
+   * nút hồng trông bẩn vì hai sắc độ đánh nhau.
+   */
+  --shadow-primary: 0 4px 14px rgb(255 111 145 / 0.28);
+
+  /*
+   * Thời lượng chuyển động.
+   *
+   * Namespace BẮT BUỘC là `--transition-duration-*`. Đặt tên `--duration-*` sẽ
+   * KHÔNG sinh ra utility `duration-…` nào — đã kiểm chứng bằng probe biên dịch,
+   * đúng loại lỗi âm thầm mà bug bo góc từng gây ra.
+   */
+  --transition-duration-press: 120ms; /* phản hồi chạm — phải gần như tức thì */
+  --transition-duration-ui: 200ms; /* hover, đổi màu, chuyển trang */
+  --transition-duration-progress: 400ms; /* thanh tiến độ, cảm giác trôi mượt */
+
+  /* Giảm tốc mềm ở cuối — chuyển động "đậu xuống" thay vì phanh gấp. */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /*
+   * Nội dung phản hồi hiện lên: mờ dần vào kèm nhích lên 6px. Dịch chuyển nhỏ
+   * là có chủ đích — `ux-rules.md` cấm "large transitions".
+   *
+   * Không cần xử lý reduced-motion ở đây: block trong `app.css` đã ép
+   * `animation-duration` về 0.01ms cho mọi animation CSS.
+   */
+  --animate-rise: rise 220ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
 
   /* Font — self-host để PWA offline vẫn đúng chữ */
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;

@@ -5,7 +5,11 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-white hover:bg-primary/90 active:bg-primary/95',
+  // CHỈ variant primary có chiều sâu. Secondary/ghost/destructive giữ phẳng để
+  // nguyên tắc "một hành động chính mỗi màn" (`ux-rules.md`) còn đọc được bằng mắt.
+  // `brightness` thay vì đổi opacity nền: gradient không hoạt động với `bg-primary/90`.
+  primary:
+    'from-primary to-primary-deep shadow-primary bg-linear-to-b text-white hover:brightness-105 active:brightness-95',
   secondary:
     'bg-primary-soft text-primary hover:bg-primary-pale active:bg-primary-soft border border-border',
   ghost: 'bg-transparent text-text-secondary hover:bg-primary-pale active:bg-primary-soft',
@@ -47,7 +51,7 @@ export function Button({
       disabled={disabled || loading}
       className={cn(
         'inline-flex items-center justify-center rounded-control-lg font-medium',
-        'transition-colors duration-150',
+        'transition duration-press ease-soft active:scale-[0.98]',
         'disabled:cursor-not-allowed disabled:opacity-50',
         VARIANTS[variant],
         SIZES[size],

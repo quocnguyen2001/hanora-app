@@ -48,6 +48,7 @@ export function McqCard({
             onClick={() => onSelect(option.word_id)}
             className={cn(
               'flex min-h-14 w-full items-center gap-3 rounded-card border px-4 text-left',
+              'transition duration-ui ease-soft active:scale-[0.99]',
               'text-meaning transition-colors duration-150',
               'disabled:cursor-not-allowed',
               selectedWordId === option.word_id
