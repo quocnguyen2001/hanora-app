@@ -46,6 +46,19 @@ export function AccountPage() {
           cùng, và bạn cần biết tiếng Anh cơ bản để dùng app.
         </p>
 
+        {/*
+          Điểm dễ hụt kỳ vọng nhất của tính năng tìm theo nghĩa tiếng Việt.
+
+          Gõ `con mèo` ra 猫 khiến người dùng tưởng app CÓ nghĩa tiếng Việt. Thực
+          tế nghĩa Việt chỉ tồn tại ở tầng khớp truy vấn và không bao giờ hiển
+          thị. Nói trước, đừng để họ tự phát hiện sau vài chục từ đã lưu.
+        */}
+        <p className="text-body text-text-secondary mt-2">
+          Bạn <strong>tìm được</strong> bằng nghĩa tiếng Việt — gõ “con mèo” ra 猫 — nhưng kết quả
+          vẫn chú giải bằng âm Hán-Việt và tiếng Anh. Nghĩa tiếng Việt chỉ dùng để tìm, không hiển
+          thị.
+        </p>
+
         <h3 className="text-body mt-4 font-medium">Nguồn dữ liệu</h3>
         <ul className="text-caption text-text-secondary mt-1 space-y-1">
           <li>
@@ -76,6 +89,25 @@ export function AccountPage() {
               Tatoeba
             </a>{' '}
             — CC BY 2.0 FR, ghi công từng câu theo tác giả
+          </li>
+          {/*
+            VNEDICT không hiển thị ở BẤT KỲ đâu trong app — nó chỉ dịch truy vấn
+            tiếng Việt sang từ khóa tiếng Anh để khớp. Vẫn phải ghi công: CC BY
+            đòi ghi công khi SỬ DỤNG, không phải khi hiển thị.
+
+            Link trỏ trang readme chứ không phải file dữ liệu, và dùng https qua
+            web.archive.org vì host gốc chỉ phục vụ http (đo được:
+            TLSV1_ALERT_INTERNAL_ERROR). Không đặt link http chết trong UI.
+          */}
+          <li>
+            Tìm theo nghĩa Việt:{' '}
+            <a
+              href="https://web.archive.org/web/2024/http://www.denisowski.org/Vietnamese/vnedict_readme.htm"
+              className="underline"
+            >
+              VNEDICT
+            </a>{' '}
+            — CC BY 3.0, chỉ dùng để tìm kiếm
           </li>
         </ul>
       </Card>

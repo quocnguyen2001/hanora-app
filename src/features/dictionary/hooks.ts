@@ -1,9 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import type { SearchModeChoice } from '@/stores/search-mode'
 import { fetchWord, searchWords } from './api'
 
 /** Query key — nơi duy nhất khai báo, theo quy ước P2. */
 export const dictionaryKeys = {
-  search: (query: string) => ['dictionary', 'search', query] as const,
+  /*
+   * `mode` PHẢI nằm trong key.
+   *
+   * Thiếu nó thì bấm toggle xong TanStack Query trả lại kết quả cũ từ cache và
+   * toggle trông như hỏng — cùng một `query`, hai kết quả hoàn toàn khác nhau.
+   */
+  search: (query: string, mode: SearchModeChoice) => ['dictionary', 'search', mode, query] as const,
   word: (id: number) => ['dictionary', 'word', id] as const,
 }
 
@@ -16,10 +23,10 @@ export const dictionaryKeys = {
  * `staleTime` dài kế thừa từ query client: dữ liệu từ điển gần như bất biến, và
  * đó là thứ khiến gõ lại một từ đã tra cảm giác tức thì.
  */
-export function useSearchWords(query: string) {
+export function useSearchWords(query: string, mode: SearchModeChoice) {
   return useQuery({
-    queryKey: dictionaryKeys.search(query),
-    queryFn: () => searchWords(query),
+    queryKey: dictionaryKeys.search(query, mode),
+    queryFn: () => searchWords(query, mode),
     enabled: query.trim().length > 0,
     placeholderData: (previous) => previous,
   })

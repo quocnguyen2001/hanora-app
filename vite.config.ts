@@ -90,7 +90,12 @@ export default defineConfig({
             options: {
               cacheName: `${DICTIONARY_CACHE}-search`,
               networkTimeoutSeconds: 3,
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 },
+              /*
+               * 200 chứ không phải 100: key là URL đầy đủ, mà `mode` nằm trong
+               * query string nên một truy vấn tra ở cả hai mode chiếm hai slot.
+               * Giữ nguyên 100 là âm thầm giảm một nửa độ phủ đọc ngoại tuyến.
+               */
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
               cacheableResponse: { statuses: [200] },
             },
           },

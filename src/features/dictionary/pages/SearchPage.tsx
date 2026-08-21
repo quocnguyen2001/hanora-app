@@ -4,33 +4,54 @@ import { VocabularyCard } from '@/components/common/VocabularyCard'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SearchBar } from '@/components/ui/SearchBar'
+import { Tabs } from '@/components/ui/Tabs'
 import { VocabularyCardSkeleton } from '@/components/ui/Skeleton'
 import { useSavedWordIds, useToggleSaveWord } from '@/features/vocabulary/hooks'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { ApiError } from '@/lib/api'
+import { cn } from '@/lib/cn'
 import { useRecentSearches } from '@/stores/recent-searches'
+import { useSearchMode, type SearchMode, type SearchModeChoice } from '@/stores/search-mode'
 import { usePrefetchWord, useSearchWords } from '../hooks'
 
 /*
- * KHÔNG có hàng tab ở màn này.
+ * KHÔNG có hàng tab `Tất cả | Từ vựng | Ví dụ | Hán tự` của showcase.
  *
- * Showcase vẽ `Tất cả | Từ vựng | Ví dụ | Hán tự`. Hai tab cuối đã bị loại khỏi
- * MVP từ contract. Hai tab đầu thì ở MVP trả về ĐÚNG CÙNG MỘT tập kết quả — mọi
- * mục trong `dictionary_words` đều là từ vựng, và câu ví dụ chỉ tới ở P13.
+ * Hai tab cuối đã bị loại khỏi MVP từ contract. Hai tab đầu thì trả về ĐÚNG
+ * CÙNG MỘT tập kết quả — mọi mục trong `dictionary_words` đều là từ vựng, và
+ * câu ví dụ chỉ tới ở P13. Ship hai tab cho ra kết quả giống hệt nhau là một
+ * nút chết, cùng loại với nút camera và tab Thống kê mà plan đã cắt.
  *
- * Ship hai tab cho ra kết quả giống hệt nhau là một nút chết, cùng loại với nút
- * camera và tab Thống kê mà plan đã cắt vì đúng lý do đó. Thêm lại khi P13 làm
- * cho "Ví dụ" có nội dung thật.
+ * Toggle VI/CN bên dưới KHÔNG mâu thuẫn với quyết định đó — nó thỏa đúng tiêu
+ * chí mà quyết định đó đặt ra. Cùng chuỗi `xin chào`: `vi` ra 你好, `cn` ra 新潮.
+ * Nó đổi thật sự nhánh nào chạy phía API, chứ không phải hai nhãn trên cùng một
+ * tập kết quả.
  */
+const MODES = [
+  { value: 'vi', label: 'Tiếng Việt' },
+  { value: 'cn', label: '中文' },
+] as const
+
+/**
+ * Mode còn lại, để gợi ý khi không tìm thấy gì.
+ *
+ * Khi CHƯA chọn mode (`null`, đường auto) thì gợi ý `Tiếng Việt` — đó là mode
+ * hữu ích nhất cho một truy vấn mà bộ đoán vừa bó tay.
+ */
+const OTHER_MODE: Record<'vi' | 'cn' | 'auto', SearchMode> = { vi: 'cn', cn: 'vi', auto: 'vi' }
+
+const MODE_LABEL: Record<SearchMode, string> = { vi: 'Tiếng Việt', cn: '中文' }
+
 export function SearchPage() {
   const [input, setInput] = useState('')
   const navigate = useNavigate()
   const prefetchWord = usePrefetchWord()
   const recent = useRecentSearches()
+  const { mode, setMode } = useSearchMode()
 
   // Hoãn 250ms: gõ `học tập` mà gọi mỗi phím là 7 request, 6 cái vô ích.
   const query = useDebouncedValue(input.trim())
-  const search = useSearchWords(query)
+  const search = useSearchWords(query, mode)
   const savedIds = useSavedWordIds()
   const toggleSave = useToggleSaveWord()
 
@@ -49,10 +70,22 @@ export function SearchPage() {
           onClear={() => setInput('')}
           autoFocus
         />
+        {/*
+          `value={mode ?? ''}` — chưa chọn thì KHÔNG pill nào sáng, và request
+          không gửi `mode` nên API chạy đường auto. Toggle là lựa chọn đè lên
+          phỏng đoán, không phải mặc định áp đặt.
+        */}
+        <Tabs
+          items={MODES}
+          value={mode ?? ''}
+          onChange={(value) => setMode(value as SearchMode)}
+          label="Ngôn ngữ tìm kiếm"
+        />
       </header>
 
       <SearchResults
         query={query}
+        mode={mode}
         state={search}
         savedIds={savedIds.data}
         onOpen={openWord}
@@ -66,6 +99,7 @@ export function SearchPage() {
 
 function SearchResults({
   query,
+  mode,
   state,
   savedIds,
   onOpen,
@@ -74,6 +108,7 @@ function SearchResults({
   onRetry,
 }: {
   query: string
+  mode: SearchModeChoice
   state: ReturnType<typeof useSearchWords>
   savedIds: Set<number> | undefined
   onOpen: (id: number) => void
@@ -114,31 +149,54 @@ function SearchResults({
     )
   }
 
+  /*
+   * `placeholderData` giữ danh sách CŨ trong lúc tải danh sách mới, và nó áp
+   * dụng cả khi query key đổi — tức là lúc bấm toggle, màn hình vẫn hiện kết quả
+   * của mode TRƯỚC. `isPending` lúc đó là `false` nên khung xương ở trên không
+   * chạy, và toggle trông như hỏng đúng cái kiểu mà việc đưa `mode` vào query
+   * key sinh ra để tránh.
+   *
+   * Làm mờ danh sách cũ là đủ: giữ được ngữ cảnh, mà vẫn nói rõ "đang tải".
+   */
+  const stale = state.isPlaceholderData
+
   const words = state.data?.words ?? []
 
   if (words.length === 0) {
     /*
-     * `hv_not_found`: người dùng gõ tiếng Việt nhưng không khớp âm Hán-Việt nào.
+     * `hv_not_found`: gõ tiếng Việt mà KHÔNG nhánh nào khớp được — không âm
+     * Hán-Việt, không nghĩa tiếng Việt, không gì cả.
      *
-     * Độ phủ Hán-Việt chưa 100%, nên "không thấy" có thể do DỮ LIỆU chứ không
-     * phải do họ gõ sai. Nói đúng chuyện đó thay vì để họ nghĩ mình nhớ nhầm từ.
+     * Hint này KHÔNG phân biệt được hai lý do, và không thể sửa cho nó phân biệt
+     * mà không thêm một truy vấn đếm thứ hai. Nó cũng IM LẶNG khi cầu nối nghĩa
+     * Việt trả về kết quả kém: có kết quả nghĩa là `total > 0` nghĩa là không có
+     * hint, kể cả khi kết quả đó chẳng liên quan gì.
+     *
+     * Vì thế câu chữ ở đây KHÔNG được hứa phân biệt lý do. Nói đúng thứ app
+     * biết: không tìm thấy, thử cách viết khác.
      */
     const hint = state.data?.meta.hint
+
+    /*
+     * Rủi ro thật của toggle là chọn sai mode rồi không ra gì. Gợi ý mode còn
+     * lại ngay tại chỗ người dùng đang bế tắc, thay vì để họ tự đoán.
+     */
+    const trySwitching = `Hoặc thử tìm bằng ${MODE_LABEL[OTHER_MODE[mode ?? 'auto']]}.`
 
     return (
       <EmptyState
         title="Không tìm thấy từ nào."
         description={
           hint === 'hv_not_found'
-            ? 'Có thể từ này chưa có âm Hán-Việt trong dữ liệu. Thử tìm bằng chữ Hán hoặc pinyin xem sao.'
-            : 'Thử một cách viết khác, hoặc tìm bằng pinyin.'
+            ? `Từ này có thể chưa có trong dữ liệu. Thử một cách viết khác. ${trySwitching}`
+            : `Thử một cách viết khác. ${trySwitching}`
         }
       />
     )
   }
 
   return (
-    <ul className="space-y-3">
+    <ul className={cn('space-y-3 transition-opacity', stale && 'opacity-50')} aria-busy={stale}>
       {words.map((word) => (
         <li key={word.id} onMouseEnter={() => onPrefetch(word.id)}>
           <VocabularyCard
@@ -161,7 +219,7 @@ function RecentSearches({ items, onClear }: { items: string[]; onClear: () => vo
     return (
       <EmptyState
         title="Bắt đầu tra từ"
-        description="Gõ chữ Hán, pinyin hoặc âm Hán-Việt — ví dụ 学习, xuexi, hoặc học tập. 🌸"
+        description="Gõ chữ Hán, pinyin, âm Hán-Việt, hoặc nghĩa tiếng Việt — ví dụ 学习, xuexi, học tập, hoặc con mèo. 🌸"
       />
     )
   }

@@ -49,6 +49,13 @@ export interface SearchMeta {
   page: number
   per_page: number
   total: number
-  /** `hv_not_found`: gõ tiếng Việt nhưng không khớp âm Hán-Việt nào. */
+  /**
+   * `hv_not_found`: gõ tiếng Việt mà KHÔNG nhánh nào khớp — không âm Hán-Việt,
+   * không nghĩa tiếng Việt.
+   *
+   * Tên trường giữ nguyên từ P6 nhưng nghĩa đã rộng ra khi thêm nhánh tìm theo
+   * nghĩa tiếng Việt. Nó KHÔNG phân biệt được hai lý do, và IM LẶNG khi cầu nối
+   * trả về kết quả kém — có kết quả là không có hint, kể cả khi kết quả sai.
+   */
   hint: 'hv_not_found' | null
 }

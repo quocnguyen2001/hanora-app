@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiRequest, setTokenReader, setUnauthenticatedHandler, type ApiError } from './api'
 import { clearSession } from './session'
 import { useAuthStore } from '@/stores/auth'
+import { useRecentSearches } from '@/stores/recent-searches'
 
 const fetchMock = vi.fn<typeof fetch>()
 
@@ -18,8 +19,8 @@ afterEach(() => {
   setUnauthenticatedHandler(null)
 })
 
-describe('clearSession — xóa cả ba tầng', () => {
-  it('xóa token, query cache và Cache Storage', async () => {
+describe('clearSession — xóa cả bốn tầng', () => {
+  it('xóa token, query cache, Cache Storage và lịch sử tìm kiếm', async () => {
     const deleted: string[] = []
 
     vi.stubGlobal('caches', {
@@ -32,6 +33,7 @@ describe('clearSession — xóa cả ba tầng', () => {
 
     const queryClient = new QueryClient()
     queryClient.setQueryData(['vocabulary', 'list'], ['dữ liệu của tài khoản A'])
+    useRecentSearches.getState().add('con mèo')
 
     await clearSession(queryClient)
 
@@ -40,6 +42,9 @@ describe('clearSession — xóa cả ba tầng', () => {
     // Bỏ tầng này thì trên máy dùng chung, tài khoản B bật chế độ máy bay sẽ
     // thấy kho từ của tài khoản A (red team C2).
     expect(deleted).toEqual(['api-cache', 'shell-cache'])
+    // Từ khi tìm được bằng nghĩa tiếng Việt, lịch sử tìm kiếm không còn là một
+    // danh sách chữ Hán mà là cụm từ tiếng Việt tự do của tài khoản trước.
+    expect(useRecentSearches.getState().items).toEqual([])
   })
 
   it('không nổ khi trình duyệt không có Cache Storage', async () => {
