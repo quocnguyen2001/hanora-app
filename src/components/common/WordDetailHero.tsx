@@ -10,7 +10,7 @@ import { Pinyin } from './Pinyin'
  * Khối đầu màn chi tiết từ.
  *
  * THỨ TỰ CỨNG, không phải gợi ý:
- *   chữ Hán → pinyin → âm Hán-Việt → tags → illustration → định nghĩa
+ *   chữ Hán → pinyin → âm Hán-Việt → tags → illustration → nghĩa Việt → nghĩa Anh
  *
  * Đây là hierarchy mà cả design system lẫn Success Criteria của P6/P8 đều đòi.
  * Đổi thứ tự là đổi thứ người học nhìn thấy trước, tức đổi thứ họ nhớ.
@@ -48,11 +48,32 @@ export function WordDetailHero({
       <IllustrationPlaceholder className="mt-2 w-32" />
 
       {/*
-        Định nghĩa tiếng Anh LUÔN có mặt, ngay dưới âm Hán-Việt và không bao giờ
-        bị nó thay thế (R1). `东西` đọc `đông tây` nhưng nghĩa là "thứ, đồ vật" —
-        bỏ dòng tiếng Anh đi là dạy sai.
+        Nghĩa tiếng Việt đứng TRƯỚC — thứ người học Việt đọc trước — và hiện ĐỦ
+        ở đây, khác thẻ từ vốn chỉ lấy nghĩa đầu.
+
+        Ẩn HẲN khi `null` (~7% từ không có trong CVDICT). Không khung trống,
+        không dòng "chưa có nghĩa": từ đó vẫn dùng được bình thường bằng tiếng
+        Anh, đúng như trước phase này.
       */}
-      <ul className="text-meaning text-text-primary mt-1 space-y-1">
+      {word.definitions_vi && word.definitions_vi.length > 0 && (
+        <ul className="text-meaning text-text-primary mt-1 space-y-1">
+          {word.definitions_vi.map((meaning) => (
+            <li key={meaning}>{meaning}</li>
+          ))}
+        </ul>
+      )}
+
+      {/*
+        Định nghĩa tiếng Anh LUÔN có mặt và không bao giờ bị thay thế (R1) — kể
+        cả khi đã có nghĩa tiếng Việt.
+
+        Trước phase này lý do là `东西` đọc `đông tây` nhưng nghĩa là "thứ, đồ
+        vật". Giờ có thêm một lý do mạnh hơn: nghĩa tiếng Việt dịch bằng AI có
+        người rà và tác giả thừa nhận còn sót lỗi, nên đây là cơ chế đối chiếu
+        duy nhất người học có khi nghi ngờ. Nó nhạt hơn nghĩa Việt về mặt thị
+        giác, nhưng có mặt.
+      */}
+      <ul className="text-body text-text-secondary space-y-1">
         {word.definitions_en.map((definition) => (
           <li key={definition}>{definition}</li>
         ))}

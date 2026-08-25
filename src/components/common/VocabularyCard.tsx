@@ -14,10 +14,16 @@ export type VocabularyCardVariant = 'compact' | 'default' | 'featured'
  * trong kho từ đều là nó.
  *
  * Thứ tự hiển thị là ràng buộc thiết kế, không phải lựa chọn:
- * chữ Hán → pinyin → âm Hán-Việt → định nghĩa tiếng Anh.
+ * chữ Hán → pinyin → âm Hán-Việt → nghĩa tiếng Việt → định nghĩa tiếng Anh.
  *
- * Định nghĩa tiếng Anh LUÔN hiện cạnh âm Hán-Việt, không bao giờ bị thay thế
- * (R1): với từ khẩu ngữ như `东西` thì `đông tây` là âm đọc chứ không phải nghĩa.
+ * Nghĩa tiếng Việt đứng TRƯỚC vì đó là thứ người học Việt đọc trước. Nó KHÔNG
+ * thay thế định nghĩa tiếng Anh: nghĩa Việt dịch bằng AI có người rà và còn sót
+ * lỗi, nên dòng tiếng Anh là cơ chế đối chiếu duy nhất người dùng có. Với từ
+ * khẩu ngữ như `东西` thì `đông tây` cũng chỉ là âm đọc chứ không phải nghĩa —
+ * cùng một lý do, hai tầng khác nhau.
+ *
+ * `definitions_vi === null` (~7% từ) thì phần nghĩa Việt ẩn HẲN, không hiện
+ * khung trống — cùng quy ước mà `han_viet` dùng.
  */
 export function VocabularyCard({
   word,
@@ -35,6 +41,17 @@ export function VocabularyCard({
   onToggleSave?: () => void
 }) {
   const definition = word.definitions_en.slice(0, 2).join('; ')
+
+  /*
+   * Thẻ chỉ lấy nghĩa Việt ĐẦU TIÊN, không phải hai như bên tiếng Anh.
+   *
+   * Thẻ đã có ba dòng trước khi tới đây, và CVDICT thừa hưởng ghi chú lượng từ
+   * của CC-CEDICT làm nghĩa riêng — 狗 là `["chó", "LT:隻|只[zhi1],條|条[tiao2]"]`.
+   * Lấy hai nghĩa thì dòng đầu tiên người học Việt đọc được là
+   * "chó; LT:隻|只[zhi1]". Nghĩa chính luôn đứng đầu, nên một nghĩa là đủ ở đây;
+   * trang chi tiết hiện đủ.
+   */
+  const meaningVi = word.definitions_vi?.[0]
 
   return (
     <div
@@ -62,6 +79,8 @@ export function VocabularyCard({
         </span>
 
         <HanViet className="text-body">{word.han_viet}</HanViet>
+
+        {meaningVi && <span className="text-body text-text-primary line-clamp-2">{meaningVi}</span>}
 
         {variant !== 'compact' && definition && (
           <span className="text-body text-text-secondary line-clamp-2">{definition}</span>

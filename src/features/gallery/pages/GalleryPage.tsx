@@ -30,6 +30,7 @@ const SAMPLE: WordSummary = {
   pinyin: 'xuéxí',
   han_viet: 'học tập',
   definitions_en: ['to learn', 'to study'],
+  definitions_vi: ['học', 'tìm hiểu'],
   hsk_level: 1,
 }
 
@@ -41,6 +42,9 @@ const NO_HAN_VIET: WordSummary = {
   pinyin: 'shāfā',
   han_viet: null,
   definitions_en: ['sofa (loanword)'],
+  // `null` là ca thật của ~7% từ không có trong CVDICT — thẻ phải không vỡ và
+  // không để lại khung trống. Cùng lý do mẫu này để `han_viet: null`.
+  definitions_vi: null,
   hsk_level: null,
 }
 

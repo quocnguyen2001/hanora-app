@@ -30,33 +30,34 @@ export function AccountPage() {
       <Card>
         <h2 className="text-section">Về hanora</h2>
         {/*
-          Nói THẲNG giới hạn của dữ liệu, không giấu.
+          Nói THẲNG nguồn gốc dữ liệu, không giấu — và đây là bắt buộc chứ không
+          phải lịch sự.
 
-          App chú giải bằng âm Hán-Việt và định nghĩa tiếng Anh, KHÔNG phải nghĩa
-          tiếng Việt biên soạn. Với từ Hán-Việt thì âm trùng nghĩa (`học tập`),
-          nhưng với từ khẩu ngữ thì không (`东西` đọc `đông tây`, nghĩa là "thứ,
-          đồ vật"). Người dùng phải biết điều này TRƯỚC khi lưu vài chục từ, chứ
-          không phải tự phát hiện sau.
+          App giờ CÓ nghĩa tiếng Việt, nhưng nghĩa đó dịch bằng AI có người rà,
+          không phải từ điển do người biên soạn. Người học cần biết mức tin cậy
+          của thứ họ đang học TRƯỚC khi lưu vài chục từ, chứ không phải tự phát
+          hiện sau. Đó cũng là điều kiện kèm theo khi chấp nhận nguồn này.
         */}
         <p className="text-body text-text-secondary mt-2">
-          hanora chú giải từ bằng <strong>âm Hán-Việt</strong> và{' '}
-          <strong>định nghĩa tiếng Anh</strong>, không phải nghĩa tiếng Việt biên soạn. Với phần lớn
-          từ Hán-Việt thì âm đọc cũng chính là nghĩa, nhưng với từ khẩu ngữ thì không — ví dụ 东西
-          đọc là “đông tây” nhưng nghĩa là “thứ, đồ vật”. Vì vậy định nghĩa tiếng Anh luôn hiển thị
-          cùng, và bạn cần biết tiếng Anh cơ bản để dùng app.
+          hanora chú giải từ bằng <strong>nghĩa tiếng Việt</strong>, <strong>âm Hán-Việt</strong> và{' '}
+          <strong>định nghĩa tiếng Anh</strong>. Nghĩa tiếng Việt phủ khoảng <strong>93%</strong> từ
+          điển — khoảng 7% từ hiếm chưa có, và những từ đó vẫn xem được bằng tiếng Anh như thường.
         </p>
 
         {/*
-          Điểm dễ hụt kỳ vọng nhất của tính năng tìm theo nghĩa tiếng Việt.
+          Câu quan trọng nhất của cả trang. Nó là một nửa của cơ chế giảm nhẹ
+          rủi ro "người học tin nghĩa dịch máy là chuẩn"; nửa còn lại là dòng
+          tiếng Anh luôn hiển thị cạnh nghĩa Việt trên thẻ từ.
 
-          Gõ `con mèo` ra 猫 khiến người dùng tưởng app CÓ nghĩa tiếng Việt. Thực
-          tế nghĩa Việt chỉ tồn tại ở tầng khớp truy vấn và không bao giờ hiển
-          thị. Nói trước, đừng để họ tự phát hiện sau vài chục từ đã lưu.
+          Không làm nhẹ đi câu này. Nói "dịch bằng AI" mà không nói "có thể sai"
+          là nói một nửa.
         */}
         <p className="text-body text-text-secondary mt-2">
-          Bạn <strong>tìm được</strong> bằng nghĩa tiếng Việt — gõ “con mèo” ra 猫 — nhưng kết quả
-          vẫn chú giải bằng âm Hán-Việt và tiếng Anh. Nghĩa tiếng Việt chỉ dùng để tìm, không hiển
-          thị.
+          Nghĩa tiếng Việt được <strong>dịch bằng AI và có người rà lại</strong>, không phải từ điển
+          do người biên soạn — nên vẫn có thể còn chỗ sai. Vì vậy{' '}
+          <strong>định nghĩa tiếng Anh luôn hiển thị cạnh bên</strong> để bạn đối chiếu khi thấy
+          nghi ngờ. Âm Hán-Việt thì là <em>âm đọc</em>, không phải nghĩa: 东西 đọc là “đông tây”
+          nhưng nghĩa là “thứ, đồ vật”.
         </p>
 
         <h3 className="text-body mt-4 font-medium">Nguồn dữ liệu</h3>
@@ -91,23 +92,20 @@ export function AccountPage() {
             — CC BY 2.0 FR, ghi công từng câu theo tác giả
           </li>
           {/*
-            VNEDICT không hiển thị ở BẤT KỲ đâu trong app — nó chỉ dịch truy vấn
-            tiếng Việt sang từ khóa tiếng Anh để khớp. Vẫn phải ghi công: CC BY
-            đòi ghi công khi SỬ DỤNG, không phải khi hiển thị.
+            CVDICT thay chỗ VNEDICT. Khác biệt không chỉ là tên nguồn: VNEDICT
+            chỉ dùng để khớp truy vấn và không hiển thị ở đâu, còn nội dung
+            CVDICT thì người học ĐỌC.
 
-            Link trỏ trang readme chứ không phải file dữ liệu, và dùng https qua
-            web.archive.org vì host gốc chỉ phục vụ http (đo được:
-            TLSV1_ALERT_INTERNAL_ERROR). Không đặt link http chết trong UI.
+            Vì thế dòng này nói cả nguồn gốc dịch máy, không chỉ tên và giấy
+            phép — ghi công là nghĩa vụ CC BY-SA, còn nói rõ nguồn gốc là nghĩa
+            vụ với người học.
           */}
           <li>
-            Tìm theo nghĩa Việt:{' '}
-            <a
-              href="https://web.archive.org/web/2024/http://www.denisowski.org/Vietnamese/vnedict_readme.htm"
-              className="underline"
-            >
-              VNEDICT
+            Nghĩa tiếng Việt:{' '}
+            <a href="https://github.com/ph0ngp/CVDICT" className="underline">
+              CVDICT
             </a>{' '}
-            — CC BY 3.0, chỉ dùng để tìm kiếm
+            — CC BY-SA 4.0, dịch từ CC-CEDICT bằng AI và có người rà lại
           </li>
         </ul>
       </Card>

@@ -13,6 +13,18 @@ export interface WordSummary {
   pinyin: string
   han_viet: string | null
   definitions_en: string[]
+  /**
+   * Nghĩa tiếng Việt từ CVDICT — `null` cho ~7% từ không có trong nguồn.
+   *
+   * `null` là trạng thái HỢP LỆ, không phải dữ liệu thiếu: FE ẩn HẲN phần nghĩa
+   * Việt cho những từ đó, không hiện khung trống — cùng quy ước mà `han_viet`
+   * và `examples` đang dùng.
+   *
+   * KHÔNG thay thế `definitions_en`. Nghĩa tiếng Việt dịch bằng AI có người rà
+   * và tác giả thừa nhận còn sót lỗi, nên dòng tiếng Anh hiển thị cạnh bên là
+   * cơ chế đối chiếu duy nhất người học có. Bỏ nó đi là gỡ mất chốt đó.
+   */
+  definitions_vi: string[] | null
   hsk_level: number | null
 }
 

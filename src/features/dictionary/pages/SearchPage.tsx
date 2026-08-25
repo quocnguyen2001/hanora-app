@@ -219,7 +219,7 @@ function RecentSearches({ items, onClear }: { items: string[]; onClear: () => vo
     return (
       <EmptyState
         title="Bắt đầu tra từ"
-        description="Gõ chữ Hán, pinyin, âm Hán-Việt, hoặc nghĩa tiếng Việt — ví dụ 学习, xuexi, học tập, hoặc con mèo. 🌸"
+        description="Gõ tiếng Việt, chữ Hán, pinyin, hay âm Hán-Việt — ví dụ con mèo, 学习, xuexi, học tập. 🌸"
       />
     )
   }

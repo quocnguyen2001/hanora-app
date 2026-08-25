@@ -18,6 +18,7 @@ const word: WordSummary = {
   pinyin: 'xuéxí',
   han_viet: 'học tập',
   definitions_en: ['to learn', 'to study'],
+  definitions_vi: ['học', 'tìm hiểu'],
   hsk_level: 1,
 }
 
@@ -138,6 +139,40 @@ describe('VocabularyCard', () => {
 
     expect(screen.queryByText('học tập')).not.toBeInTheDocument()
     expect(screen.getByText('to learn; to study')).toBeInTheDocument()
+  })
+
+  it('hiện nghĩa tiếng Việt TRƯỚC định nghĩa tiếng Anh', () => {
+    /*
+     * Thứ tự là ràng buộc, không phải sở thích: người học Việt đọc nghĩa Việt
+     * trước. Chốt bằng vị trí trong DOM chứ không chỉ bằng sự có mặt — cả hai
+     * cùng có mặt thì `getByText` xanh dù đảo thứ tự.
+     */
+    render(<VocabularyCard word={word} />)
+
+    const vi = screen.getByText('học')
+    const en = screen.getByText('to learn; to study')
+
+    expect(vi.compareDocumentPosition(en) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('ẩn HẲN nghĩa tiếng Việt khi null, không để khung trống', () => {
+    // ~7% từ không có trong CVDICT. Chúng phải hiển thị bình thường bằng tiếng
+    // Anh, đúng như trước khi có nghĩa tiếng Việt.
+    const { container } = render(<VocabularyCard word={{ ...word, definitions_vi: null }} />)
+
+    expect(screen.queryByText('học')).not.toBeInTheDocument()
+    expect(screen.getByText('to learn; to study')).toBeInTheDocument()
+    expect(container.querySelectorAll('span:empty')).toHaveLength(0)
+  })
+
+  it('thẻ chỉ lấy nghĩa Việt ĐẦU TIÊN', () => {
+    // CVDICT thừa hưởng ghi chú lượng từ của CC-CEDICT làm nghĩa riêng — 狗 là
+    // `["chó", "LT:隻|只[zhi1],條|条[tiao2]"]`. Lấy hai nghĩa thì dòng đầu người
+    // học đọc được là "chó; LT:隻|只[zhi1]".
+    render(<VocabularyCard word={{ ...word, definitions_vi: ['chó', 'LT:隻|只[zhi1]'] }} />)
+
+    expect(screen.getByText('chó')).toBeInTheDocument()
+    expect(screen.queryByText(/LT:/)).not.toBeInTheDocument()
   })
 
   it('nhãn nút lưu nói HÀNH ĐỘNG sẽ xảy ra, không phải trạng thái', async () => {
