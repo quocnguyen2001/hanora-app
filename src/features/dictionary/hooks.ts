@@ -20,6 +20,21 @@ export const dictionaryKeys = {
   sentence: (zh: string) => ['dictionary', 'sentence', zh] as const,
 }
 
+/*
+ * Một chữ Hán đơn đã là truy vấn đầy đủ; một chữ cái latin thì chưa bao giờ.
+ *
+ * `h` khớp hàng nghìn mục và vẫn kéo theo một lượt dịch bằng AI ở phía API —
+ * tốn tiền cho một truy vấn chắc chắn chưa gõ xong. Chặn ở đây thay vì ở màn
+ * hình để mọi chỗ gọi `useSearchWords` đều được bảo vệ như nhau.
+ */
+const HAS_HAN = /[\u3400-\u9fff]/
+
+export function isSearchableQuery(query: string): boolean {
+  const trimmed = query.trim()
+
+  return HAS_HAN.test(trimmed) ? trimmed.length > 0 : trimmed.length >= 2
+}
+
 /**
  * Kết quả tìm kiếm.
  *
@@ -28,12 +43,15 @@ export const dictionaryKeys = {
  *
  * `staleTime` dài kế thừa từ query client: dữ liệu từ điển gần như bất biến, và
  * đó là thứ khiến gõ lại một từ đã tra cảm giác tức thì.
+ *
+ * `signal` đi thẳng vào `fetch`: gõ tiếp là request cũ bị hủy, không để lại một
+ * chuỗi request treo mỗi khi người dùng gõ nhanh hơn mạng trả lời.
  */
 export function useSearchWords(query: string, mode: SearchModeChoice) {
   return useQuery({
     queryKey: dictionaryKeys.search(query, mode),
-    queryFn: () => searchWords(query, mode),
-    enabled: query.trim().length > 0,
+    queryFn: ({ signal }) => searchWords(query, mode, 1, signal),
+    enabled: isSearchableQuery(query),
     placeholderData: (previous) => previous,
   })
 }

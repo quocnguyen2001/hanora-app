@@ -46,11 +46,17 @@ function parseTranslation(raw: unknown): SearchTranslation | null {
  *
  * `translation` là trường cấp cao thứ ba, ngang hàng `data` và `meta` — xem
  * `SearchTranslation` để biết vì sao nó không nằm trong `data`.
+ *
+ * `signal` là của TanStack Query: gõ tiếp làm query key đổi và request cũ bị
+ * hủy ngay tại tầng `fetch`. Thiếu nó thì mỗi nhịp gõ để lại một request treo
+ * chạy tới cùng — server vẫn phải dịch bằng AI cho một truy vấn không ai còn
+ * nhìn nữa, và trần throttle vẫn bị trừ.
  */
 export async function searchWords(
   query: string,
   mode: SearchModeChoice,
   page = 1,
+  signal?: AbortSignal,
 ): Promise<{
   words: WordSummary[]
   meta: SearchMeta
@@ -58,6 +64,7 @@ export async function searchWords(
 }> {
   const envelope = await apiRequestWithMeta<WordSummary[]>('/dictionary/search', {
     query: { q: query, page, ...(mode === null ? {} : { mode }) },
+    signal,
   })
 
   return {

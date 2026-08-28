@@ -13,7 +13,7 @@ import { cn } from '@/lib/cn'
 import { useRecentSearches } from '@/stores/recent-searches'
 import { useSearchMode, type SearchMode, type SearchModeChoice } from '@/stores/search-mode'
 import { TranslationCard } from '../components/TranslationCard'
-import { usePrefetchWord, useSearchWords } from '../hooks'
+import { isSearchableQuery, usePrefetchWord, useSearchWords } from '../hooks'
 
 /*
  * KHÔNG có hàng tab `Tất cả | Từ vựng | Ví dụ | Hán tự` của showcase.
@@ -62,8 +62,15 @@ export function SearchPage() {
   const recent = useRecentSearches()
   const { mode, setMode } = useSearchMode()
 
-  // Hoãn 250ms: gõ `học tập` mà gọi mỗi phím là 7 request, 6 cái vô ích.
-  const query = useDebouncedValue(input.trim())
+  /*
+   * Hoãn 400ms, dài hơn mặc định 250ms của hook.
+   *
+   * Gõ tiếng Việt có dấu là nhiều phím cho một chữ (`hoc5` → `học`), nên 250ms
+   * vẫn kịp bắn request cho những trạng thái nửa chừng không ai muốn tra. Mỗi
+   * lượt tìm còn kéo theo một lượt dịch bằng AI ở phía API, nên một request thừa
+   * đắt hơn hẳn 150ms chờ thêm.
+   */
+  const query = useDebouncedValue(input.trim(), 400)
   const search = useSearchWords(query, mode)
   const savedIds = useSavedWordIds()
   const toggleSave = useToggleSaveWord()
@@ -149,6 +156,20 @@ function SearchResults({
     return <RecentSearches items={recent.items} onClear={recent.clear} />
   }
 
+  /*
+   * Query bị `enabled: false` chặn thì TanStack Query đứng mãi ở `isPending`.
+   * Không nói rõ ở đây thì màn hình hiện khung xương vĩnh viễn — trông y hệt
+   * hỏng mạng.
+   */
+  if (!isSearchableQuery(query)) {
+    return (
+      <EmptyState
+        title="Gõ thêm một chữ nữa nhé"
+        description="Một chữ cái thì chưa đủ để tìm. Chữ Hán thì một chữ là tra được ngay."
+      />
+    )
+  }
+
   if (state.isPending) {
     return (
       <div aria-busy className="space-y-3">
@@ -199,7 +220,10 @@ function SearchResults({
     if (translation) {
       return (
         <div className="space-y-3">
-          <TranslationCard translation={translation} onSelect={() => onOpenSentence(translation.zh)} />
+          <TranslationCard
+            translation={translation}
+            onSelect={() => onOpenSentence(translation.zh)}
+          />
           <p className="text-caption text-text-secondary px-1">
             Không có mục từ điển nào khớp riêng lẻ với câu này.
           </p>
@@ -250,7 +274,10 @@ function SearchResults({
         làm trình đọc màn hình đếm sai số kết quả.
       */}
       {translation && (
-        <TranslationCard translation={translation} onSelect={() => onOpenSentence(translation.zh)} />
+        <TranslationCard
+          translation={translation}
+          onSelect={() => onOpenSentence(translation.zh)}
+        />
       )}
 
       <ul className="space-y-3">

@@ -80,6 +80,15 @@ export function HandwritingPad({ onPick }: { onPick: (character: string) => void
     return () => clearTimeout(timer)
   }, [strokes, drawing])
 
+  /*
+   * PHẢI gọi ngay trong handler, KHÔNG được gọi bên trong updater của
+   * `setStrokes`.
+   *
+   * React chạy updater một cách trễ — trong lúc render, sau khi handler đã trả
+   * về — và lúc đó nó đã đặt `event.currentTarget` về `null`. Đọc `rect` ở đó
+   * ném `Cannot read properties of null` và làm sập cả trang ôn tập ngay nét vẽ
+   * đầu tiên. Ngoài ra updater phải thuần túy: StrictMode gọi nó hai lần.
+   */
   function pointFrom(event: ReactPointerEvent<HTMLCanvasElement>): [number, number] {
     const rect = event.currentTarget.getBoundingClientRect()
 
@@ -100,18 +109,23 @@ export function HandwritingPad({ onPick }: { onPick: (character: string) => void
         aria-label="Bảng vẽ chữ Hán"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
+
+          const point = pointFrom(event)
+
           setDrawing(true)
-          setStrokes((previous) => [...previous, [pointFrom(event)]])
+          setStrokes((previous) => [...previous, [point]])
         }}
         onPointerMove={(event) => {
           if (!drawing) return
+
+          const point = pointFrom(event)
 
           setStrokes((previous) => {
             const last = previous[previous.length - 1]
 
             if (!last) return previous
 
-            return [...previous.slice(0, -1), [...last, pointFrom(event)]]
+            return [...previous.slice(0, -1), [...last, point]]
           })
         }}
         onPointerUp={() => setDrawing(false)}
