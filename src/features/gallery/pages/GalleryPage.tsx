@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/Input'
 import { SearchBar } from '@/components/ui/SearchBar'
+import { ReviewSkeleton, StatsSkeleton, WordDetailSkeleton } from '@/components/ui/PageSkeleton'
 import { Skeleton, VocabularyCardSkeleton } from '@/components/ui/Skeleton'
 import { Tabs } from '@/components/ui/Tabs'
 import type { WordSummary } from '@/types/dictionary'
@@ -158,6 +159,23 @@ export function GalleryPage() {
       <Section title="Skeleton">
         <VocabularyCardSkeleton />
         <Skeleton className="h-4 w-40" />
+      </Section>
+
+      {/*
+        Khung xương cấp TRANG. Nằm ở đây để soi được hai thứ mà test không bắt
+        nổi: tương phản của `--color-skeleton` ở cả hai chủ đề, và chiều cao có
+        khớp component thật không.
+      */}
+      <Section title="PageSkeleton — Thống kê">
+        <StatsSkeleton />
+      </Section>
+
+      <Section title="PageSkeleton — Chi tiết từ">
+        <WordDetailSkeleton />
+      </Section>
+
+      <Section title="PageSkeleton — Ôn tập">
+        <ReviewSkeleton />
       </Section>
 
       <Section title="EmptyState">

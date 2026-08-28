@@ -5,7 +5,7 @@ import { CalendarIcon, ChartIcon, HeartIcon } from '@/components/icons'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { Skeleton } from '@/components/ui/Skeleton'
+import { StatsSkeleton } from '@/components/ui/PageSkeleton'
 import { Tabs } from '@/components/ui/Tabs'
 import { ApiError } from '@/lib/api'
 import type { StatsRange } from '../api'
@@ -38,14 +38,8 @@ export function StatsPage() {
       </header>
 
       {stats.isPending ? (
-        <div aria-busy className="space-y-3">
-          <Skeleton className="h-40 w-full rounded-card" />
-          <div className="grid grid-cols-3 gap-3">
-            <Skeleton className="h-20" />
-            <Skeleton className="h-20" />
-            <Skeleton className="h-20" />
-          </div>
-          <Skeleton className="h-36 w-full rounded-card" />
+        <div aria-busy>
+          <StatsSkeleton />
         </div>
       ) : stats.isError ? (
         <EmptyState
@@ -64,14 +58,17 @@ export function StatsPage() {
           action={<Button onClick={() => void navigate('/review')}>Bắt đầu ôn tập</Button>}
         />
       ) : (
-        <>
+        /*
+          `animate-rise` ở nhánh nội dung, KHÔNG ở gốc trang: tiêu đề và hàng
+          tab không đợi mạng nên chúng không được nhấp nháy mỗi lần đổi khoảng
+          thời gian. `<>` cũ không mang class được nên đổi thành `<div>`.
+        */
+        <div className="animate-rise space-y-4">
           <Card>
             <div className="flex items-baseline justify-between">
               <div>
                 <p className="text-caption text-text-secondary">Từ đã học</p>
-                <p className="text-text-primary text-stat">
-                  {stats.data.words_learned}
-                </p>
+                <p className="text-text-primary text-stat">{stats.data.words_learned}</p>
               </div>
               {stats.data.words_learned_delta_pct !== 0 && (
                 <p
@@ -117,7 +114,7 @@ export function StatsPage() {
               <DonutChart distribution={stats.data.distribution} />
             </div>
           </Card>
-        </>
+        </div>
       )}
     </div>
   )

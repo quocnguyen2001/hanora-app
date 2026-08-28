@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { Skeleton } from '@/components/ui/Skeleton'
+import { ReviewSkeleton } from '@/components/ui/PageSkeleton'
 import { ApiError } from '@/lib/api'
 import { useReviewStore } from '@/stores/review'
 import { isMcqItem, type AnswerResult, type ReviewItem, type ReviewMode } from '../api'
@@ -72,10 +72,8 @@ function ReviewSession({ mode, onExit }: { mode: ReviewMode; onExit: () => void 
 
   if (session.isPending) {
     return (
-      <div aria-busy className="space-y-4">
-        <Skeleton className="h-2 w-full" />
-        <Skeleton className="h-56 w-full rounded-hero" />
-        <Skeleton className="h-14 w-full" />
+      <div aria-busy>
+        <ReviewSkeleton />
       </div>
     )
   }
@@ -121,7 +119,7 @@ function ReviewSession({ mode, onExit }: { mode: ReviewMode; onExit: () => void 
   const current = queue[0]
 
   if (!current) {
-    return <Skeleton className="h-56 w-full" />
+    return <ReviewSkeleton />
   }
 
   function handleSubmit(answer: { answerWordId?: number; text?: string }) {
@@ -188,7 +186,9 @@ function ReviewSession({ mode, onExit }: { mode: ReviewMode; onExit: () => void 
   }
 
   return (
-    <div className="space-y-4">
+    // `animate-rise`: nhánh này mount mới khi `isPending` lật, nên nội dung tan
+    // vào đúng chỗ khung xương vừa đứng thay vì bị cắt cứng.
+    <div className="animate-rise space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
           <ReviewProgress current={done.total} total={items.length} />

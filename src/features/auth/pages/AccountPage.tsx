@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router'
 import { ChevronRightIcon, SettingsIcon } from '@/components/icons'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { Skeleton } from '@/components/ui/Skeleton'
+import { AccountCardSkeleton } from '@/components/ui/PageSkeleton'
 import { cn } from '@/lib/cn'
 import { useLogout, useMe } from '../hooks'
 
@@ -17,12 +17,12 @@ export function AccountPage() {
 
       <Card>
         {isPending ? (
-          <div className="space-y-2">
-            <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-4 w-48" />
+          <div aria-busy>
+            <AccountCardSkeleton />
           </div>
         ) : (
-          <div>
+          // `animate-rise`: tên và email tan vào đúng chỗ khung xương vừa đứng.
+          <div className="animate-rise">
             <p className="text-section text-text-primary">{data?.user.name}</p>
             <p className="text-body text-text-secondary">{data?.user.email}</p>
           </div>

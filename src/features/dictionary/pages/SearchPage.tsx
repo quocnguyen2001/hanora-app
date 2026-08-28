@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SearchBar } from '@/components/ui/SearchBar'
 import { Tabs } from '@/components/ui/Tabs'
-import { VocabularyCardSkeleton } from '@/components/ui/Skeleton'
+import { VocabularyListSkeleton } from '@/components/ui/PageSkeleton'
 import { useSavedWordIds, useToggleSaveWord } from '@/features/vocabulary/hooks'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { ApiError } from '@/lib/api'
@@ -172,10 +172,8 @@ function SearchResults({
 
   if (state.isPending) {
     return (
-      <div aria-busy className="space-y-3">
-        {Array.from({ length: 5 }, (_, index) => (
-          <VocabularyCardSkeleton key={index} />
-        ))}
+      <div aria-busy>
+        <VocabularyListSkeleton />
       </div>
     )
   }
@@ -264,7 +262,16 @@ function SearchResults({
   }
 
   return (
-    <div className={cn('space-y-3 transition-opacity', stale && 'opacity-50')} aria-busy={stale}>
+    <div
+      // `animate-rise`: nội dung tan vào đúng chỗ khung xương vừa đứng, thay vì
+      // bị cắt cứng. `duration-ui ease-soft` thay cho `transition-opacity` trần
+      // — mặc định của Tailwind là 150ms với đường cong riêng, không qua token.
+      className={cn(
+        'animate-rise duration-ui ease-soft space-y-3 transition-opacity',
+        stale && 'opacity-50',
+      )}
+      aria-busy={stale}
+    >
       {/*
         Câu dịch đứng TRƯỚC danh sách từ. Người gõ cả một câu muốn câu trả lời
         trước, rồi mới tra từng chữ — không phải ngược lại.

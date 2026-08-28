@@ -4,10 +4,11 @@ import { VocabularyCard } from '@/components/common/VocabularyCard'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SearchBar } from '@/components/ui/SearchBar'
-import { VocabularyCardSkeleton } from '@/components/ui/Skeleton'
+import { VocabularyListSkeleton } from '@/components/ui/PageSkeleton'
 import { Tabs } from '@/components/ui/Tabs'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { ApiError } from '@/lib/api'
+import { cn } from '@/lib/cn'
 import { useToggleSaveWord, useVocabulary } from '../hooks'
 
 /**
@@ -52,10 +53,8 @@ export function VocabularyPage() {
       </header>
 
       {vocabulary.isPending ? (
-        <div aria-busy className="space-y-3">
-          {Array.from({ length: 5 }, (_, index) => (
-            <VocabularyCardSkeleton key={index} />
-          ))}
+        <div aria-busy>
+          <VocabularyListSkeleton />
         </div>
       ) : vocabulary.isError ? (
         <EmptyState
@@ -74,7 +73,24 @@ export function VocabularyPage() {
           onGoSearch={() => void navigate('/search')}
         />
       ) : (
-        <>
+        /*
+          `animate-rise` ở ĐÂY chứ không ở gốc trang: nhánh này mount mới khi
+          `isPending` lật, nên animation chạy đúng lúc dữ liệu thay vào chỗ
+          khung xương. Gắn lên gốc trang thì tiêu đề, ô tìm và hàng tab cũng
+          nhấp nháy theo mỗi lần tải — chúng không hề đổi.
+
+          `stale`: danh sách đang hiện là của tab TRƯỚC (`placeholderData`).
+          Mờ đi và `aria-busy` để không ai đọc nhầm nó là kết quả của tab vừa
+          bấm. `duration-ui ease-soft` vì `transition-opacity` trần chạy 150ms
+          với đường cong mặc định của Tailwind, không đi qua token nào.
+        */
+        <div
+          className={cn(
+            'animate-rise duration-ui ease-soft space-y-4 transition-opacity',
+            vocabulary.isPlaceholderData && 'opacity-50',
+          )}
+          aria-busy={vocabulary.isPlaceholderData}
+        >
           <ul className="space-y-3">
             {items.map((item) => (
               <li key={item.id}>
@@ -102,7 +118,7 @@ export function VocabularyPage() {
               Tải thêm
             </Button>
           )}
-        </>
+        </div>
       )}
     </div>
   )

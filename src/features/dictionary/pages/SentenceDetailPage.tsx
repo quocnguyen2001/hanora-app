@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { IconButton } from '@/components/ui/IconButton'
-import { Skeleton } from '@/components/ui/Skeleton'
+import { SentenceDetailSkeleton } from '@/components/ui/PageSkeleton'
 import { useSpeech } from '@/hooks/use-speech'
 import { ApiError } from '@/lib/api'
 import { cn } from '@/lib/cn'
@@ -50,16 +50,16 @@ export function SentenceDetailPage() {
 
   if (isPending) {
     return (
-      <div aria-busy className="space-y-4">
-        {back}
+      <div aria-busy>
         {/*
           Khung xương chứ không phải spinner: phân tích câu mất 3-5 giây lần đầu
           (lần sau đọc cache, ~40ms). Người dùng cần thấy TRANG đang dựng, không
           phải một vòng xoay không nói gì về thứ sắp hiện ra.
+
+          `{back}` truyền vào là nút THẬT, không phải xương: đây là màn chờ lâu
+          nhất của app và người dùng phải thoát ra được trong lúc chờ.
         */}
-        <Skeleton className="h-32 w-full rounded-hero" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-20 w-full" />
+        <SentenceDetailSkeleton back={back} />
       </div>
     )
   }
@@ -84,7 +84,9 @@ export function SentenceDetailPage() {
   }
 
   return (
-    <div className="space-y-4">
+    // `animate-rise`: nhánh này mount mới khi `isPending` lật, nên nội dung tan
+    // vào đúng chỗ khung xương vừa đứng thay vì bị cắt cứng.
+    <div className="animate-rise space-y-4">
       <div className="flex items-center justify-between">
         {back}
         <Badge tone="primary">AI phân tích</Badge>
@@ -177,7 +179,7 @@ function TokenRow({ token, onOpen }: { token: SentenceToken; onOpen: () => void 
       onClick={onOpen}
       className={cn(
         'flex w-full items-center justify-between gap-3 px-1 py-2 text-left',
-        'rounded-card transition duration-press ease-soft',
+        'rounded-card duration-press ease-soft transition',
         'hover:bg-primary-pale active:bg-primary-soft active:scale-[0.99]',
       )}
     >

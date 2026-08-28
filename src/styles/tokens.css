@@ -35,6 +35,23 @@
   --color-text-primary: #29252a;
   --color-text-secondary: #746e72;
   --color-border: #f1e6e9;
+
+  /*
+   * Nền khung xương chờ dữ liệu.
+   *
+   * Token RIÊNG chứ không tái dùng `--color-primary-pale`, và đó là cả lý do nó
+   * tồn tại. `primary-pale` là một lớp phủ hồng cực nhạt để tô nền vùng lớn:
+   * #fff7f9 trên `--color-surface` #ffffff chỉ đạt 1.05:1. Skeleton tô bằng nó
+   * thực tế VÔ HÌNH — người dùng thấy một tấm thẻ trắng rỗng rồi nội dung bụp
+   * hiện ra, đúng thứ mà skeleton sinh ra để tránh.
+   *
+   * 1.24:1 là dải cố ý: đủ để đọc ra "có gì đó sắp hiện ở đây", chưa tới mức
+   * thành một khối xám đặc chiếm lấy sự chú ý. Trùng giá trị `--color-border`
+   * là ngẫu nhiên hợp lý — cùng vai trò "hiện diện nhẹ, không đòi nhìn" — nhưng
+   * KHÔNG dùng chung biến: đổi màu viền không được kéo theo đổi màu skeleton.
+   */
+  --color-skeleton: #f1e6e9;
+
   --color-success: #63c596;
   --color-warning: #f5b95b;
   --color-error: #f47c8a;
@@ -177,6 +194,41 @@
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
   /*
+   * Nhịp thở cho chuyển động LẶP VÔ HẠN. Cố ý KHÔNG dùng `--ease-soft`.
+   *
+   * `--ease-soft` là đường ease-OUT: nhanh lúc đầu, chậm dần rồi dừng hẳn. Đúng
+   * cho thứ chạy một lần và đậu xuống (`rise`, `splash-out`), nhưng sai hẳn cho
+   * vòng lặp — hết chu kỳ, giá trị đang đứng yên phải bật ngược lại tốc độ tối
+   * đa ngay lập tức, và mắt đọc mỗi lần quay đầu đó là một cú giật.
+   *
+   * Đường dưới đây đối xứng (ease-in-out): chậm ở CẢ hai đầu, nên hai chu kỳ
+   * nối vào nhau liền mạch, không thấy điểm nối.
+   */
+  --ease-breathe: cubic-bezier(0.4, 0, 0.6, 1);
+
+  /*
+   * Khung xương thở nhẹ.
+   *
+   * Biên độ dừng ở 0.55 chứ không xuống thấp hơn: đáy chu kỳ vẫn phải còn nhìn
+   * thấy được (1.11:1 so với `--color-surface`). Skeleton nháy về gần như vô
+   * hình rồi hiện lại đọc ra là lỗi render, không phải trạng thái đang tải.
+   *
+   * Không cần xử lý reduced-motion ở đây, và cách viết keyframe này là lý do:
+   * block trong `app.css` ép `animation-iteration-count: 1` và
+   * `animation-duration: 0.01ms`. Vì keyframe KHÔNG có `forwards` và không khai
+   * mốc `to`, phần tử trả về trạng thái gốc — tức opacity 1, màu đầy đủ. Người
+   * đã tắt hiệu ứng thấy khung xương ĐỨNG YÊN mà vẫn rõ, chứ không phải đông
+   * cứng ở một mức mờ nào đó.
+   */
+  --animate-skeleton: skeleton-breathe 1600ms var(--ease-breathe) infinite;
+
+  @keyframes skeleton-breathe {
+    50% {
+      opacity: 0.55;
+    }
+  }
+
+  /*
    * Nội dung phản hồi hiện lên: mờ dần vào kèm nhích lên 6px. Dịch chuyển nhỏ
    * là có chủ đích — `ux-rules.md` cấm "large transitions".
    *
@@ -305,6 +357,13 @@
   /* Bề mặt SÁNG hơn nền: card phải nổi lên, không chìm vào nền. */
   --color-surface: #211c24;
   --color-border: #352e39;
+
+  /*
+   * Cùng dải tương phản với bảng sáng (1.30:1 so với `--color-surface`), chứ
+   * KHÔNG cùng công thức. Ở nền tối, skeleton phải SÁNG hơn bề mặt — cùng lý do
+   * `--color-surface` sáng hơn `--color-background` ngay bên trên.
+   */
+  --color-skeleton: #352e39;
 
   /*
    * Chữ mặc định của chế độ tối, TRÙNG với tông `ink` bên dưới.

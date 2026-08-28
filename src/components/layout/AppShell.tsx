@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { OfflineBanner } from '@/components/common/OfflineBanner'
 import { UpdatePrompt } from '@/components/common/UpdatePrompt'
-import { Skeleton } from '@/components/ui/Skeleton'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { AppHeader } from './AppHeader'
 import { BottomNavigation } from './BottomNavigation'
 
@@ -62,8 +62,20 @@ export function AppShell() {
             0.01ms, không cần xử lý thêm ở đây.
           */}
           <div key={location.pathname} className="animate-rise">
-            {/* Route tải lười: skeleton thay vì màn trắng trong lúc tải chunk. */}
-            <Suspense fallback={<Skeleton className="rounded-card h-64 w-full" />}>
+            {/*
+              Route tải lười: khung xương ĐÚNG HÌNH DẠNG trang sắp hiện, không
+              phải một khối chung.
+
+              Trước đây chỗ này là đúng một `h-64` cho MỌI route, và nó tạo ra
+              một bậc thừa trong chuỗi chờ: người dùng thấy khối xám lạ → chunk
+              về, trang thay bằng khung xương của chính nó (hình khác hẳn) → dữ
+              liệu về, nội dung thay vào. Ba bố cục khác nhau trước khi thấy chữ.
+
+              Dùng chung định nghĩa với nhánh `isPending` trong từng trang, nên
+              bước giữa biến mất: khung xương đứng NGUYÊN tại chỗ từ lúc chunk
+              chưa về cho tới lúc dữ liệu thật thay vào.
+            */}
+            <Suspense fallback={<PageSkeleton pathname={location.pathname} />}>
               <Outlet />
             </Suspense>
           </div>

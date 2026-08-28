@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { IconButton } from '@/components/ui/IconButton'
-import { Skeleton } from '@/components/ui/Skeleton'
+import { WordDetailSkeleton } from '@/components/ui/PageSkeleton'
 import { useSavedWordIds, useToggleSaveWord } from '@/features/vocabulary/hooks'
 import { useSpeech } from '@/hooks/use-speech'
 import { ApiError } from '@/lib/api'
@@ -25,10 +25,10 @@ export function WordDetailPage() {
 
   if (isPending) {
     return (
-      <div aria-busy className="space-y-4">
-        <Skeleton className="h-10 w-24" />
-        <Skeleton className="h-48 w-full rounded-hero" />
-        <Skeleton className="h-24 w-full" />
+      <div aria-busy>
+        {/* Cùng định nghĩa mà `AppShell` dùng làm fallback lúc tải chunk, nên
+            khung xương không đổi hình ở ranh giới giữa hai giai đoạn. */}
+        <WordDetailSkeleton />
       </div>
     )
   }
@@ -48,7 +48,9 @@ export function WordDetailPage() {
   const saved = savedIds.data?.has(word.id) ?? false
 
   return (
-    <div className="space-y-4">
+    // `animate-rise`: nhánh này mount mới khi `isPending` lật, nên nội dung tan
+    // vào đúng chỗ khung xương vừa đứng thay vì bị cắt cứng.
+    <div className="animate-rise space-y-4">
       <div className="flex items-center justify-between">
         <IconButton
           label="Quay lại"

@@ -21,12 +21,28 @@ export function useSavedWordIds() {
   })
 }
 
+/**
+ * Danh sách kho từ, lọc theo tab và ô tìm.
+ *
+ * `placeholderData` giữ nguyên danh sách CŨ trong lúc tải danh sách mới — cùng
+ * cơ chế mà `useSearch` bên từ điển đã dùng, không phải phát minh mới.
+ *
+ * Thiếu nó, mỗi lần bấm tab là một `queryKey` mới → `isPending` bật lên → cả
+ * danh sách bị thay bằng năm khung xương rồi mới có kết quả. Người dùng đảo qua
+ * lại giữa "Tất cả" và "Đang học" thấy màn hình nháy trắng mỗi lượt, dù dữ liệu
+ * hai bên phần lớn trùng nhau.
+ *
+ * Đổi lại, trang phải tự xử lý `isPlaceholderData` để nói rõ danh sách đang
+ * hiện là của tab TRƯỚC — nếu không, người dùng đọc nhầm nó là kết quả của tab
+ * vừa bấm.
+ */
 export function useVocabulary(filters: { status?: string; q?: string }) {
   return useInfiniteQuery({
     queryKey: vocabularyKeys.list(filters),
     queryFn: ({ pageParam }) => vocabularyApi.fetchVocabulary({ ...filters, cursor: pageParam }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
+    placeholderData: (previous) => previous,
   })
 }
 
