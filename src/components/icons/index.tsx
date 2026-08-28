@@ -129,16 +129,59 @@ export const MoreIcon = (props: IconProps) => (
   </Icon>
 )
 
-export const LibraryIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5Z" />
-    <path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14Z" />
-  </Icon>
-)
+/*
+ * KHÔNG có `LibraryIcon`.
+ *
+ * Nó là hai gáy sách dựng cạnh nhau, và ở 22px trong thanh điều hướng thì hai
+ * hình chữ nhật bo góc có khe ở giữa đọc thành glyph PAUSE, không đọc thành
+ * sách. Tab Kho từ dùng `BookmarkIcon` — vừa khớp showcase, vừa nối được với
+ * hành động lưu từ ở `VocabularyCard`, nên "kho từ = chỗ chứa những gì đã đánh
+ * dấu" hiện ra ngay mà không cần đọc nhãn.
+ */
 
 export const ReviewIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M20 12a8 8 0 1 1-2.34-5.66" />
     <path d="M20 4v4h-4" />
+  </Icon>
+)
+
+export const SettingsIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+  </Icon>
+)
+
+export const SunIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+  </Icon>
+)
+
+export const MoonIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z" />
+  </Icon>
+)
+
+/** Nửa sáng nửa tối — lựa chọn "Theo hệ thống". */
+export const ContrastIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none" />
+  </Icon>
+)
+
+export const ChevronRightIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m9 5 7 7-7 7" />
+  </Icon>
+)
+
+export const TextSizeIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 7V5h8v2M7 5v14M13 12v-1.5h7V12M16.5 10.5V19" />
   </Icon>
 )

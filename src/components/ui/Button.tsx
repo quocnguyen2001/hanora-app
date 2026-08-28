@@ -9,7 +9,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   // nguyên tắc "một hành động chính mỗi màn" (`ux-rules.md`) còn đọc được bằng mắt.
   // `brightness` thay vì đổi opacity nền: gradient không hoạt động với `bg-primary/90`.
   primary:
-    'from-primary to-primary-deep shadow-primary bg-linear-to-b text-white hover:brightness-105 active:brightness-95',
+    'from-primary to-primary-deep shadow-button bg-linear-to-b text-on-primary hover:brightness-105 active:brightness-95',
   secondary:
     'bg-primary-soft text-primary hover:bg-primary-pale active:bg-primary-soft border border-border',
   ghost: 'bg-transparent text-text-secondary hover:bg-primary-pale active:bg-primary-soft',

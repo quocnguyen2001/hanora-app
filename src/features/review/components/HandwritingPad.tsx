@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { Button } from '@/components/ui/Button'
 import { recognise, type Stroke } from '@/lib/handwriting'
+import { useDisplay } from '@/stores/display'
 
 const SIZE = 260
 
@@ -23,17 +24,31 @@ export function HandwritingPad({ onPick }: { onPick: (character: string) => void
   const [candidates, setCandidates] = useState<string[]>([])
   const [status, setStatus] = useState<'idle' | 'working' | 'error'>('idle')
 
+  /*
+   * Canvas không tự đổi màu theo token — pixel đã vẽ là pixel chết. Nên nét bút
+   * phải đọc màu chữ hiện hành và vẽ LẠI mỗi khi chủ đề đổi.
+   *
+   * Trước đây chỗ này là `strokeStyle = '#29252A'` viết cứng. Ở chế độ tối màu
+   * đó gần như trùng nền, và người dùng viết ra một nét vô hình — hỏng im lặng,
+   * không báo lỗi, không có đường tự phát hiện.
+   */
+  const theme = useDisplay((state) => state.theme)
+  const textTone = useDisplay((state) => state.textTone)
+
   // Vẽ lại toàn bộ nét mỗi khi danh sách nét đổi — đơn giản và luôn đúng.
   useEffect(() => {
-    const context = canvasRef.current?.getContext('2d')
+    const canvas = canvasRef.current
+    const context = canvas?.getContext('2d')
 
-    if (!context) return
+    if (!canvas || !context) return
 
     context.clearRect(0, 0, SIZE, SIZE)
     context.lineWidth = 6
     context.lineCap = 'round'
     context.lineJoin = 'round'
-    context.strokeStyle = '#29252A'
+    // `color` của chính canvas — nó thừa kế `text-text-primary` từ class bên dưới,
+    // nên nét bút luôn cùng màu với chữ, ở mọi chủ đề và mọi tông.
+    context.strokeStyle = getComputedStyle(canvas).color
 
     for (const stroke of strokes) {
       context.beginPath()
@@ -43,7 +58,9 @@ export function HandwritingPad({ onPick }: { onPick: (character: string) => void
       })
       context.stroke()
     }
-  }, [strokes])
+    // `theme` và `textTone` nằm trong deps để nét bút được vẽ lại bằng màu mới
+    // khi người dùng đổi chủ đề giữa lúc đang viết dở.
+  }, [strokes, theme, textTone])
 
   // Nhận dạng khi người dùng ngừng vẽ.
   useEffect(() => {
@@ -79,7 +96,7 @@ export function HandwritingPad({ onPick }: { onPick: (character: string) => void
         width={SIZE}
         height={SIZE}
         // `touch-none` để kéo trên canvas không cuộn trang.
-        className="border-border bg-surface w-full max-w-[260px] touch-none rounded-card border"
+        className="border-border bg-surface text-text-primary rounded-card w-full max-w-[260px] touch-none border"
         aria-label="Bảng vẽ chữ Hán"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
@@ -146,7 +163,7 @@ export function HandwritingPad({ onPick }: { onPick: (character: string) => void
                   setStrokes([])
                   setCandidates([])
                 }}
-                className="border-border bg-surface font-hanzi hover:bg-primary-pale size-12 rounded-control border text-2xl"
+                className="border-border bg-surface font-hanzi hover:bg-primary-pale text-hanzi-title rounded-control size-12 border"
               >
                 {character}
               </button>

@@ -7,8 +7,8 @@
 export function PlaceholderPage({ title, phase }: { title: string; phase: string }) {
   return (
     <section>
-      <h1 className="text-2xl font-semibold">{title}</h1>
-      <p className="mt-2 text-sm text-neutral-500">Màn này được dựng ở {phase}.</p>
+      <h1 className="text-title">{title}</h1>
+      <p className="text-body text-text-secondary mt-2">Màn này được dựng ở {phase}.</p>
     </section>
   )
 }

@@ -20,7 +20,7 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
 const VARIANTS = {
   ghost: 'text-text-secondary hover:bg-primary-pale active:bg-primary-soft',
   soft: 'bg-primary-soft text-primary hover:bg-primary-pale',
-  primary: 'bg-primary text-white hover:bg-primary/90',
+  primary: 'bg-primary text-on-primary hover:bg-primary/90',
 } as const
 
 const SIZES = {

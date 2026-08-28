@@ -28,7 +28,7 @@ export function StatsPage() {
   return (
     <div className="space-y-4">
       <header className="space-y-3">
-        <h1 className="text-2xl font-semibold">Thống kê</h1>
+        <h1 className="text-title">Thống kê</h1>
         <Tabs
           items={RANGES}
           value={range}
@@ -69,7 +69,7 @@ export function StatsPage() {
             <div className="flex items-baseline justify-between">
               <div>
                 <p className="text-caption text-text-secondary">Từ đã học</p>
-                <p className="text-text-primary text-2xl font-semibold">
+                <p className="text-text-primary text-stat">
                   {stats.data.words_learned}
                 </p>
               </div>

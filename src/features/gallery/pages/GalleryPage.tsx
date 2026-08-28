@@ -65,7 +65,7 @@ export function GalleryPage() {
   return (
     <div className="space-y-8 pb-8">
       <header>
-        <h1 className="text-2xl font-semibold">Gallery</h1>
+        <h1 className="text-title">Gallery</h1>
         <p className="text-body text-text-secondary">
           Trang nội bộ để kiểm tra thị giác. Không có trong điều hướng.
         </p>
@@ -139,7 +139,6 @@ export function GalleryPage() {
       </Section>
 
       <Section title="VocabularyCard">
-        <VocabularyCard word={SAMPLE} variant="compact" onSelect={() => {}} />
         <VocabularyCard word={SAMPLE} onSelect={() => {}} onToggleSave={() => {}} />
         <VocabularyCard
           word={SAMPLE}

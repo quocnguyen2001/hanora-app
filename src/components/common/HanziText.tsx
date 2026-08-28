@@ -16,9 +16,17 @@ export function HanziText({
   size?: 'hero' | 'title' | 'inline'
   className?: string
 }) {
+  /*
+   * Cả ba cỡ đều đi qua thang token, không cỡ nào là giá trị thô.
+   *
+   * `title` từng là `text-[1.75rem] leading-[2.25rem] font-medium`. Giá trị viết
+   * thẳng như thế nằm ngoài thang nên KHÔNG nhân với `--font-scale`: người dùng
+   * chọn cỡ chữ lớn thì mọi thứ to lên trừ chữ Hán — đúng thứ họ cần nhìn rõ
+   * nhất, và cũng là thứ `components.md` bắt phải giữ hierarchy mạnh nhất.
+   */
   const sizes = {
     hero: 'text-hanzi-hero',
-    title: 'text-[1.75rem] leading-[2.25rem] font-medium',
+    title: 'text-hanzi-title',
     inline: 'text-meaning',
   } as const
 

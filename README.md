@@ -29,6 +29,9 @@ npm run format:check  # Prettier, chỉ kiểm tra
 npm run test          # Vitest
 npm run test:watch    # Vitest watch
 npm run test:coverage # Vitest + báo cáo độ phủ
+
+node scripts/check-contrast.mjs  # đo tương phản WCAG mọi tông chữ × chủ đề
+node scripts/export-icons.mjs    # xuất icon PWA từ src/assets/icon-source.svg
 ```
 
 Node ≥ 26 (xem `.nvmrc`).
@@ -44,12 +47,15 @@ src/
 │   ├── ui/         component dùng chung, KHÔNG biết gì về API
 │   ├── layout/     AppShell, BottomNavigation
 │   └── common/     component ghép, dùng ở nhiều feature
-├── features/       dictionary/ vocabulary/ review/ stats/ auth/
+├── features/       dictionary/ vocabulary/ review/ stats/ auth/ settings/
 ├── hooks/          hook dùng chung, không thuộc feature nào
 ├── lib/            api.ts, query-client.ts, …
 ├── stores/         Zustand
 ├── types/
 └── styles/         app.css — entry Tailwind
+
+public/fonts/       woff2 self-host (Inter, Lora) — xem src/styles/fonts.css
+scripts/            tiện ích chạy tay, không nằm trong build
 ```
 
 ## Quy tắc phân tầng
@@ -113,10 +119,36 @@ URL tuyệt đối.
 
 ## Điều hướng
 
-MVP ship **4 tab**: Tìm kiếm · Kho từ · Ôn tập · Tài khoản.
+**5 tab**: Tìm kiếm · Kho từ · Ôn tập · Thống kê · Tài khoản.
 
-Route `/stats` đã tồn tại từ P2 để deep link không gãy, nhưng tab Thống kê chỉ
-xuất hiện cùng P17 — không ship tab dẫn tới màn trống.
+Route `/stats` tồn tại từ P2 để deep link không gãy, nhưng tab Thống kê chỉ xuất
+hiện cùng P17 — không ship tab dẫn tới màn trống.
+
+`/account/settings` là trang con, cố ý KHÔNG có tab riêng: thêm tab thứ sáu làm
+chật thanh điều hướng trên mobile, đổi lại rất ít giá trị cho một màn người dùng
+mở vài lần rồi thôi.
+
+## Tùy chỉnh hiển thị
+
+Màn `/account/settings` đổi được ba trục — chủ đề sáng/tối, tông chữ, cỡ chữ —
+cộng font giao diện và độ mượt hiệu ứng. Lưu `localStorage` dưới khóa
+`hanora.display`, không đồng bộ server: đây là tùy chọn của THIẾT BỊ.
+
+Cả ba trục đổi **giá trị token**, không đổi tên class. Hệ quả cần biết trước khi
+sửa giao diện:
+
+- **KHÔNG có class `dark:` nào trong codebase, và đừng thêm.** `bg-surface` viết
+  từ trước dark mode vẫn tự đúng ở chế độ tối.
+- Bảng màu tối và bốn tông chữ nằm cuối `src/styles/tokens.css`, cố ý đặt NGOÀI
+  `@layer` để đè được `@theme`.
+- Thêm hay sửa một mã màu chữ thì phải chạy `node scripts/check-contrast.mjs`.
+  Script parse thẳng `tokens.css` và thoát khác 0 khi có tông trượt WCAG AA.
+- Mọi token chữ nhân với `--font-scale`. Viết cỡ chữ bằng giá trị thô
+  (`text-2xl`, `text-[1.75rem]`) là tạo ra chỗ không co giãn theo lựa chọn của
+  người dùng — dùng token.
+- `index.html` có một script inline áp chủ đề trước khung hình đầu tiên. Nó LẶP
+  LẠI logic của `applyDisplay()` trong `src/lib/display-theme.ts` vì phải chạy
+  trước module đầu tiên; sửa một bên thì sửa cả bên kia.
 
 ## Kế hoạch
 

@@ -5,6 +5,7 @@ import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { SearchPage } from '@/features/dictionary/pages/SearchPage'
 import {
   AccountPage,
+  DisplaySettingsPage,
   ForgotPasswordPage,
   GalleryPage,
   RegisterPage,
@@ -45,6 +46,7 @@ export const routes = [
           { path: 'review', Component: ReviewPage },
           { path: 'stats', Component: StatsPage },
           { path: 'account', Component: AccountPage },
+          { path: 'account/settings', Component: DisplaySettingsPage },
           // Trang nội bộ kiểm tra thị giác — cố tình không có trong điều hướng.
           { path: '__gallery', Component: GalleryPage },
         ],

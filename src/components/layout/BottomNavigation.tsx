@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { NavLink, useLocation } from 'react-router'
-import { ChartIcon, LibraryIcon, ReviewIcon, SearchIcon, UserIcon } from '@/components/icons'
+import { BookmarkIcon, ChartIcon, ReviewIcon, SearchIcon, UserIcon } from '@/components/icons'
 import { cn } from '@/lib/cn'
 
 /**
@@ -11,7 +11,7 @@ import { cn } from '@/lib/cn'
  */
 const TABS = [
   { to: '/search', label: 'Tìm kiếm', Icon: SearchIcon },
-  { to: '/vocabulary', label: 'Kho từ', Icon: LibraryIcon },
+  { to: '/vocabulary', label: 'Kho từ', Icon: BookmarkIcon },
   { to: '/review', label: 'Ôn tập', Icon: ReviewIcon },
   { to: '/stats', label: 'Thống kê', Icon: ChartIcon },
   { to: '/account', label: 'Tài khoản', Icon: UserIcon },

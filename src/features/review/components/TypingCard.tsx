@@ -56,7 +56,7 @@ export function TypingCard({
     <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2 md:items-center">
       <Card size="hero" className="text-center">
         <p className="text-caption text-text-secondary">Âm Hán-Việt</p>
-        <p lang="vi" className="text-text-primary mt-1 text-2xl font-medium">
+        <p lang="vi" className="text-text-primary text-title mt-1 font-medium">
           {item.prompt_han_viet}
         </p>
         {/* Gợi ý số ký tự — `_ _` cho từ hai chữ. */}

@@ -25,7 +25,7 @@ export function SessionSummary({
     <div className="space-y-4">
       <Card size="hero" className="text-center">
         <p className="text-section text-text-secondary">Xong phiên ôn</p>
-        <p className="text-primary mt-2 text-4xl font-semibold">
+        <p className="text-primary text-score mt-2">
           {result.correct} / {result.total}
         </p>
         <p className="text-body text-text-secondary mt-1">Đúng {percent}%</p>

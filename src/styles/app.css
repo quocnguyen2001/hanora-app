@@ -15,20 +15,83 @@
 @source '../**/*.{ts,tsx}';
 @source '../../index.html';
 
+/*
+ * Utility bóng đổ — khai tay để ĐỌC biến lúc chạy.
+ *
+ * KHÔNG khai `--shadow-*` trong `@theme` của `tokens.css`. Tailwind v4 tách màu
+ * ra khỏi giá trị shadow để hỗ trợ cú pháp `shadow-<color>`, rồi nướng cứng màu
+ * vào utility lúc build:
+ *
+ *     .shadow-card { --tw-shadow: 0 1px 2px var(--tw-shadow-color, rgb(41 37 42 / 0.04)); }
+ *
+ * Với utility như thế, ghi đè `--shadow-card` ở `[data-theme='dark']` không có
+ * tác dụng gì — và bảng bóng chế độ tối đã nằm chết trong `tokens.css` đúng như
+ * vậy suốt từ lúc được viết.
+ *
+ * `@utility` dưới đây sinh ra `box-shadow: var(--shadow-card)` nguyên văn, nên
+ * biến được giải lúc chạy và khối tối đè được. Đã kiểm chứng bằng probe biên
+ * dịch VÀ đo `getComputedStyle` ở cả hai chủ đề trước khi viết — repo này đã ba
+ * lần dính token khai đúng mà không có hiệu lực, nên không đoán.
+ */
+@utility shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+@utility shadow-raised {
+  box-shadow: var(--shadow-raised);
+}
+
+@utility shadow-button {
+  box-shadow: var(--shadow-button);
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+  }
+
+  /*
+   * Tắt nút xóa native của WebKit trong ô tìm kiếm.
+   *
+   * `SearchBar` đặt `type="search"` và tự vẽ nút xóa bằng `IconButton`. WebKit
+   * vẽ THÊM `::-webkit-search-cancel-button` của riêng nó — một dấu ✕ xanh dương
+   * lấy màu hệ thống, không theo token nào, nằm ngay cạnh nút tự vẽ. Người dùng
+   * thấy hai nút xóa cạnh nhau.
+   *
+   * Ẩn nút native chứ KHÔNG đổi sang `type="text"`: `type="search"` giữ ngữ
+   * nghĩa cho screen reader và giữ phím Search trên bàn phím ảo iOS.
+   */
+  input[type='search']::-webkit-search-cancel-button,
+  input[type='search']::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   body {
     margin: 0;
     background-color: var(--color-background);
     color: var(--color-text-primary);
-    font-family: var(--font-sans);
+    /*
+     * `--font-active`, KHÔNG phải `--font-sans`. Người dùng đổi font ở màn Hiển
+     * thị & chữ bằng cách trỏ lại biến này; đọc thẳng `--font-sans` ở đây sẽ
+     * khiến lựa chọn đó không có tác dụng ở đâu cả.
+     */
+    font-family: var(--font-active);
     font-size: var(--text-body);
     line-height: var(--text-body--line-height);
     /* Bàn phím ảo và thanh địa chỉ trên mobile không được làm giật layout. */
     -webkit-font-smoothing: antialiased;
+
+    /*
+     * Đổi chủ đề phải mượt chứ không giật một nhát sang tông ngược lại.
+     *
+     * CHỈ `background-color` và `color` ở gốc cây. Không đặt `transition: all`:
+     * nó sẽ tô mượt cả những thứ phải đổi tức thì, và cộng chi phí lên mọi
+     * thuộc tính của mọi lần repaint.
+     */
+    transition:
+      background-color var(--transition-duration-ui) var(--ease-soft),
+      color var(--transition-duration-ui) var(--ease-soft);
   }
 
   /*
@@ -45,6 +108,22 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+
+  /*
+   * Cùng nội dung, nhưng theo lựa chọn TRONG app thay vì cài đặt hệ điều hành.
+   *
+   * Hai đường độc lập và cố ý không gộp. Người dùng đã tắt hiệu ứng ở cấp hệ
+   * điều hành thì khối trên vẫn thắng dù trong app chọn "Đầy đủ" — cài đặt của
+   * app không được quyền bật lại thứ người ta đã tắt ở cấp cao hơn.
+   */
+  :root[data-motion='reduced'] *,
+  :root[data-motion='reduced'] *::before,
+  :root[data-motion='reduced'] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 
   /* Focus ring thấy rõ — điều hướng bằng bàn phím phải dùng được. */

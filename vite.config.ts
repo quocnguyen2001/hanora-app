@@ -47,26 +47,44 @@ export default defineConfig({
       },
       workbox: {
         /*
-         * Precache shell + JS/CSS + font LATIN.
+         * Precache shell + JS/CSS + font Inter.
          *
-         * KHÔNG precache font CJK: từ điển 120k mục bung ra gần như mọi codepoint
-         * CJK nên không có subset nào thật sự dùng được, và file đủ dùng nặng vài
-         * MB. Đưa nó vào precache nghĩa là lần cài đầu phải tải hết trước khi app
-         * dùng được — không thể đi cùng mục tiêu Lighthouse ≥ 90 của P20 (M7).
+         * `woff2` PHẢI có trong danh sách này. Thiếu nó thì không font nào lọt
+         * vào precache, và lần mở offline đầu tiên rơi về font hệ thống — đúng
+         * lỗi mà bản trước mắc suốt: comment nói "font LATIN" nhưng `globPatterns`
+         * không hề khớp `woff2` nào.
+         *
+         * KHÔNG có font CJK để precache nữa. Google cắt Noto Sans SC thành 202
+         * lát (~2,26 MB) nên không tồn tại một file subset dùng được — từ điển
+         * 120k mục bung ra gần như mọi codepoint CJK. Chữ Hán giờ dùng font hệ
+         * thống qua `--font-hanzi`; xem `src/styles/fonts.css`.
          */
-        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
-        globIgnores: ['**/noto-sans-sc*'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        /*
+         * Lora là lựa chọn serif ở màn Hiển thị & chữ, phần lớn người dùng không
+         * bật. Precache nó là bắt mọi người tải 45,6 KB cho một tùy chọn — nó
+         * được lấy lười đúng lúc người dùng chọn, rồi nằm lại trong cache asset
+         * thường của Workbox.
+         */
+        globIgnores: ['**/lora-*'],
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            // Font CJK: tải lười, giữ lâu. `unicode-range` trong fonts.css lo
-            // phần chỉ tải lát chữ cần dùng.
-            urlPattern: /\/fonts\/noto-sans-sc.*\.woff2$/,
+            /*
+             * Lora: tải lười khi người dùng chọn serif, rồi giữ lâu. File có
+             * `unicode-range` riêng cho latin và vietnamese nên chỉ lát thật sự
+             * cần mới được lấy.
+             *
+             * Rule này thay chỗ rule font CJK cũ. Rule đó trỏ tới
+             * `noto-sans-sc*` — thứ chưa bao giờ tồn tại trên đĩa và giờ đã bỏ
+             * hẳn khỏi `fonts.css`.
+             */
+            urlPattern: /\/fonts\/lora-.*\.woff2$/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'hanora-fonts-cjk',
-              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheName: 'hanora-fonts-optional',
+              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

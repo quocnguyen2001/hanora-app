@@ -7,7 +7,18 @@ import { HanViet } from './HanViet'
 import { HanziText } from './HanziText'
 import { Pinyin } from './Pinyin'
 
-export type VocabularyCardVariant = 'compact' | 'default' | 'featured'
+/*
+ * KHÔNG có variant `compact`.
+ *
+ * Nó từng tồn tại và màn Tìm kiếm dùng nó, khiến chữ Hán render ở `text-meaning`
+ * (16px) — nhỏ hơn cả pinyin bên cạnh. `components.md` bắt chữ Hán giữ hierarchy
+ * mạnh nhất trên mọi màn từ vựng, nên biến thể đó vi phạm ràng buộc thiết kế ở
+ * đúng màn xuất hiện nhiều nhất.
+ *
+ * Xóa hẳn thay vì để lại làm tùy chọn: một variant vi phạm ràng buộc mà vẫn nằm
+ * trong API của component là lời mời áp dụng lại nó.
+ */
+export type VocabularyCardVariant = 'default' | 'featured'
 
 /**
  * Component xuất hiện nhiều nhất trong app — mọi kết quả tìm kiếm và mọi mục
@@ -74,19 +85,19 @@ export function VocabularyCard({
         className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left disabled:cursor-default"
       >
         <span className="flex items-baseline gap-2">
-          <HanziText size={variant === 'compact' ? 'inline' : 'title'}>{word.simplified}</HanziText>
-          <Pinyin className={variant === 'compact' ? 'text-body' : undefined}>{word.pinyin}</Pinyin>
+          <HanziText size="title">{word.simplified}</HanziText>
+          <Pinyin>{word.pinyin}</Pinyin>
         </span>
 
         <HanViet className="text-body">{word.han_viet}</HanViet>
 
         {meaningVi && <span className="text-body text-text-primary line-clamp-2">{meaningVi}</span>}
 
-        {variant !== 'compact' && definition && (
+        {definition && (
           <span className="text-body text-text-secondary line-clamp-2">{definition}</span>
         )}
 
-        {word.hsk_level !== null && variant !== 'compact' && (
+        {word.hsk_level !== null && (
           <Badge tone="primary" className="mt-1">
             HSK {word.hsk_level}
           </Badge>

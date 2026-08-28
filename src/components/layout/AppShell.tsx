@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router'
 import { OfflineBanner } from '@/components/common/OfflineBanner'
 import { UpdatePrompt } from '@/components/common/UpdatePrompt'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { AppHeader } from './AppHeader'
 import { BottomNavigation } from './BottomNavigation'
 
 /**
@@ -31,13 +32,14 @@ export function AppShell() {
       <BottomNavigation />
 
       <div className="flex flex-1 flex-col">
+        <AppHeader />
         <UpdatePrompt />
         <OfflineBanner />
 
         {/* Bỏ qua điều hướng — người dùng bàn phím không phải Tab qua 4 tab mỗi lần đổi trang. */}
         <a
           href="#main"
-          className="focus:bg-primary sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-control focus:px-4 focus:py-2 focus:text-white"
+          className="focus:bg-primary focus:rounded-control focus:text-on-primary sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2"
         >
           Tới nội dung chính
         </a>
@@ -61,7 +63,7 @@ export function AppShell() {
           */}
           <div key={location.pathname} className="animate-rise">
             {/* Route tải lười: skeleton thay vì màn trắng trong lúc tải chunk. */}
-            <Suspense fallback={<Skeleton className="h-64 w-full rounded-card" />}>
+            <Suspense fallback={<Skeleton className="rounded-card h-64 w-full" />}>
               <Outlet />
             </Suspense>
           </div>

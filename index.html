@@ -13,6 +13,48 @@
     />
   </head>
   <body>
+    <!--
+      Áp tùy chỉnh hiển thị TRƯỚC khung hình đầu tiên.
+
+      Không có khối này, chủ đề chỉ được áp trong một effect của React — tức là
+      SAU lần paint đầu. Người dùng chọn chế độ tối sẽ thấy một nhịp nền trắng
+      lóe lên mỗi lần mở app, và trên máy chậm nhịp đó dài tới vài trăm ms.
+
+      ⚠ Đây là BẢN SAO logic của `applyDisplay()` trong `src/lib/display-theme.ts`.
+      Không import được: script này phải chạy trước khi module đầu tiên tải. Sửa
+      tên thuộc tính `data-*`, khóa lưu trữ, hay màu thanh trạng thái ở một bên
+      thì PHẢI sửa cả bên kia.
+
+      `zustand/persist` bọc state trong `{ state: {...}, version: n }` — phải đọc
+      `parsed.state`, không phải object gốc. Toàn bộ nằm trong try/catch: một
+      localStorage hỏng hay JSON sai không bao giờ được làm trắng app.
+    -->
+    <script>
+      ;(function () {
+        try {
+          var raw = window.localStorage.getItem('hanora.display')
+          var s = (raw && JSON.parse(raw).state) || {}
+          var root = document.documentElement
+          var theme = s.theme || 'system'
+
+          if (theme === 'system') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+          }
+
+          root.dataset.theme = theme
+          root.dataset.font = s.font || 'inter'
+          root.dataset.textTone = s.textTone || 'ink'
+          root.dataset.motion = s.motion || 'full'
+          root.style.setProperty('--font-scale', String(s.fontScale || 1))
+
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta) meta.setAttribute('content', theme === 'dark' ? '#16131A' : '#FF6F91')
+        } catch (error) {
+          /* Không có lựa chọn nào lưu, hoặc lưu hỏng → dùng mặc định của CSS. */
+        }
+      })()
+    </script>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

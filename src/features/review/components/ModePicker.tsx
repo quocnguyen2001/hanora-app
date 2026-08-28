@@ -17,7 +17,7 @@ const MODES = [
 export function ModePicker({ onPick }: { onPick: (mode: ReviewMode) => void }) {
   return (
     <div className="space-y-3">
-      <h1 className="text-2xl font-semibold">Ôn tập</h1>
+      <h1 className="text-title">Ôn tập</h1>
       <p className="text-body text-text-secondary">Chọn cách ôn cho phiên này.</p>
 
       {MODES.map((mode) => (

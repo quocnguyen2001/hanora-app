@@ -7,6 +7,20 @@
  *
  * Giá trị gốc lấy từ `.prompts/hanora-design-context/design-tokens.md`. Thang bo góc
  * đã được nới một bậc so với file đó — xem lý do ở khối `--radius-*` bên dưới.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * BA TRỤC TÙY CHỈNH
+ *
+ * Màn Hiển thị & chữ đổi được ba thứ cùng lúc: chủ đề sáng/tối, tông chữ, và cỡ
+ * chữ. Cả ba đều đổi GIÁ TRỊ của token, không đổi tên class.
+ *
+ * Hệ quả quan trọng: component không cần biết trục nào đang bật. `bg-surface`
+ * viết từ trước dark mode vẫn đúng ở chế độ tối, và không có một class `dark:`
+ * nào trong toàn bộ codebase. Đừng thêm.
+ *
+ * `@theme` dưới đây giữ bảng SÁNG. Các khối ghi đè nằm cuối file, cố tình đặt
+ * NGOÀI `@layer` — CSS cho phép quy tắc không thuộc layer nào thắng quy tắc
+ * trong layer, nên chúng đè được `@theme` mà không cần `!important`.
  */
 
 @theme {
@@ -25,26 +39,89 @@
   --color-warning: #f5b95b;
   --color-error: #f47c8a;
 
+  /*
+   * Chữ trên nền primary. Là token vì ở chế độ tối nút primary sáng hơn, và chữ
+   * trắng trên hồng sáng thì tương phản tụt — chỗ đó cần chữ tối.
+   */
+  --color-on-primary: #ffffff;
+
+  /*
+   * ── Trục cỡ chữ ───────────────────────────────────────────────────────────
+   *
+   * MỌI token chữ nhân với hệ số này. Màn Hiển thị & chữ đặt nó trên `<html>`
+   * bằng inline style, nên chỉ một biến đổi là cả thang chữ đổi theo.
+   *
+   * CHỈ chữ nhân hệ số. Spacing, bo góc và `min-h-11` (vùng chạm 44px) giữ
+   * nguyên — đây là "cỡ chữ", không phải zoom cả trang. Phóng to mọi thứ trên
+   * màn 360px thì vỡ layout, mà người dùng chỉ muốn chữ dễ đọc hơn.
+   *
+   * `calc()` lồng trong `@theme` ĐÃ được kiểm chứng bằng probe biên dịch trước
+   * khi viết: Tailwind sinh ra `--text-body: calc(.875rem * var(--font-scale))`
+   * trên `:root` và utility `.text-body` đọc lại qua `var()`. Repo này đã hai
+   * lần dính token khai đúng mà không có hiệu lực (bug thiếu `var()` ở
+   * `--radius-*`, namespace `--duration-*`), nên không đoán nữa.
+   *
+   * Line-height PHẢI nhân cùng hệ số. Bỏ sót thì chữ to lên mà dòng không giãn,
+   * và các dấu tiếng Việt chồng lên nhau.
+   */
+  --font-scale: 1;
+
   /* Chữ Hán luôn giữ hierarchy mạnh nhất trên mọi màn từ vựng */
-  --text-hanzi-hero: 3rem; /* 48px */
-  --text-hanzi-hero--line-height: 3.5rem; /* 56px */
+  --text-hanzi-hero: calc(3rem * var(--font-scale)); /* 48px */
+  --text-hanzi-hero--line-height: calc(3.5rem * var(--font-scale)); /* 56px */
   --text-hanzi-hero--font-weight: 500;
 
-  --text-pinyin: 1.125rem; /* 18px */
-  --text-pinyin--line-height: 1.625rem; /* 26px */
+  /*
+   * Chữ Hán cỡ vừa — dùng ở thẻ từ và nút chọn chữ trong bảng viết tay.
+   *
+   * Trước đây `HanziText` viết thẳng `text-[1.75rem] leading-[2.25rem]`. Giá trị
+   * thô như thế nằm ngoài thang nên KHÔNG co giãn theo `--font-scale`: chọn cỡ
+   * chữ lớn thì mọi thứ to lên trừ chữ Hán, đúng thứ người học cần nhìn rõ nhất.
+   */
+  --text-hanzi-title: calc(1.75rem * var(--font-scale)); /* 28px */
+  --text-hanzi-title--line-height: calc(2.25rem * var(--font-scale)); /* 36px */
+  --text-hanzi-title--font-weight: 500;
 
-  --text-meaning: 1rem; /* 16px */
-  --text-meaning--line-height: 1.5rem; /* 24px */
+  /* Tiêu đề màn. Thay cho `text-2xl font-semibold` từng rải rác ở 8 chỗ. */
+  --text-title: calc(1.5rem * var(--font-scale)); /* 24px */
+  --text-title--line-height: calc(2rem * var(--font-scale)); /* 32px */
+  --text-title--font-weight: 600;
 
-  --text-section: 0.9375rem; /* 15px */
-  --text-section--line-height: 1.375rem; /* 22px */
+  /*
+   * Con số nổi bật trong thẻ số liệu. Tách khỏi `--text-title` vì đây là số,
+   * không phải tiêu đề — nó được phép to hơn mà không phá hierarchy heading.
+   */
+  --text-stat: calc(1.75rem * var(--font-scale)); /* 28px */
+  --text-stat--line-height: calc(2.25rem * var(--font-scale)); /* 36px */
+  --text-stat--font-weight: 600;
+
+  /*
+   * Điểm tổng kết phiên ôn — "8 / 10" giữa thẻ hero.
+   *
+   * Tách khỏi `--text-stat` vì hai vai khác nhau: `--text-stat` là con số trong
+   * lưới thẻ nhỏ ở màn Thống kê, còn đây là con số DUY NHẤT của cả màn, đứng
+   * giữa một thẻ hero. Gộp làm một thì hoặc thẻ thống kê phình ra, hoặc khoảnh
+   * khắc kết thúc phiên ôn xẹp xuống.
+   */
+  --text-score: calc(2.25rem * var(--font-scale)); /* 36px */
+  --text-score--line-height: calc(2.75rem * var(--font-scale)); /* 44px */
+  --text-score--font-weight: 600;
+
+  --text-pinyin: calc(1.125rem * var(--font-scale)); /* 18px */
+  --text-pinyin--line-height: calc(1.625rem * var(--font-scale)); /* 26px */
+
+  --text-meaning: calc(1rem * var(--font-scale)); /* 16px */
+  --text-meaning--line-height: calc(1.5rem * var(--font-scale)); /* 24px */
+
+  --text-section: calc(0.9375rem * var(--font-scale)); /* 15px */
+  --text-section--line-height: calc(1.375rem * var(--font-scale)); /* 22px */
   --text-section--font-weight: 600;
 
-  --text-body: 0.875rem; /* 14px */
-  --text-body--line-height: 1.375rem; /* 22px */
+  --text-body: calc(0.875rem * var(--font-scale)); /* 14px */
+  --text-body--line-height: calc(1.375rem * var(--font-scale)); /* 22px */
 
-  --text-caption: 0.75rem; /* 12px */
-  --text-caption--line-height: 1.125rem; /* 18px */
+  --text-caption: calc(0.75rem * var(--font-scale)); /* 12px */
+  --text-caption--line-height: calc(1.125rem * var(--font-scale)); /* 18px */
 
   /*
    * Bo góc — bề mặt bo tròn nhất quán.
@@ -64,17 +141,26 @@
   --radius-hero: 2rem; /* 32px */
 
   /*
-   * Bóng đổ nhẹ, viền gánh phần lớn việc phân tách. Tránh card nổi đổ bóng
-   * nặng — nó phá cảm giác "calm" mà `ux-rules.md` đặt làm nguyên tắc gốc.
+   * ── BÓNG ĐỔ KHÔNG NẰM Ở ĐÂY ────────────────────────────────────────────────
+   *
+   * Ba token `--shadow-*` cố ý đặt NGOÀI `@theme`, ở khối `:root` bên dưới, và
+   * utility tương ứng khai bằng `@utility` trong `app.css`.
+   *
+   * Lý do: Tailwind v4 KHÔNG sinh `box-shadow: var(--shadow-card)` cho token
+   * trong `@theme`. Nó tách màu ra để hỗ trợ cú pháp `shadow-<color>`, rồi nướng
+   * cứng màu vào utility lúc build:
+   *
+   *     .shadow-card { --tw-shadow: 0 1px 2px var(--tw-shadow-color, rgb(41 37 42 / 0.04)); }
+   *
+   * Hệ quả: mọi lần ghi đè `--shadow-*` ở khối `[data-theme='dark']` là chữ
+   * chết. Bảng bóng của chế độ tối viết ra từ vòng trước CHƯA BAO GIỜ chạy —
+   * thẻ ở chế độ tối vẫn đổ bóng alpha 0.04, tức gần như vô hình trên nền tối,
+   * đúng thứ mà chính comment của bảng tối nói phải tránh.
+   *
+   * Đây là lần thứ TƯ repo dính đúng loại lỗi này (thiếu `var()` ở `--radius-*`,
+   * namespace `--duration-*`, `public/fonts/` không tồn tại). Đã kiểm chứng
+   * bằng probe biên dịch trước khi sửa, không đoán.
    */
-  --shadow-card: 0 1px 2px rgb(41 37 42 / 0.04);
-  --shadow-raised: 0 4px 12px rgb(41 37 42 / 0.06);
-
-  /*
-   * Bóng dưới nút primary phải nhuốm hồng, không phải xám: bóng xám dưới một
-   * nút hồng trông bẩn vì hai sắc độ đánh nhau.
-   */
-  --shadow-primary: 0 4px 14px rgb(255 111 145 / 0.28);
 
   /*
    * Thời lượng chuyển động.
@@ -108,5 +194,205 @@
 
   /* Font — self-host để PWA offline vẫn đúng chữ */
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-hanzi: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+
+  /* Lựa chọn serif ở màn Hiển thị & chữ. Chỉ được tải khi người dùng chọn. */
+  --font-lora: 'Lora', Georgia, 'Times New Roman', serif;
+
+  /*
+   * Ngăn xếp hệ thống — lựa chọn "Hệ thống" ở màn Hiển thị & chữ, và cũng là
+   * lưới an toàn cuối cùng.
+   */
+  --font-system: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+
+  /*
+   * Font giao diện ĐANG dùng. `body` đọc biến này, không đọc `--font-sans`.
+   * Khối `[data-font]` ở cuối file trỏ nó sang họ khác.
+   */
+  --font-active: var(--font-sans);
+
+  /*
+   * Chữ Hán KHÔNG dùng font self-host.
+   *
+   * `'Noto Sans SC'` từng đứng đầu chuỗi này và trỏ tới một file chưa bao giờ
+   * tồn tại, nên thực tế chuỗi luôn chạy tới font hệ thống. Giờ nói thẳng điều
+   * đó thay vì giả vờ có font riêng: Google cắt Noto Sans SC thành 202 lát
+   * (~2,26 MB) và từ điển 120k mục bung ra gần như mọi codepoint CJK, nên không
+   * subset nào phủ đủ. Ba font dưới đây có sẵn trên macOS/iOS, Android và
+   * Windows, chất lượng cao, và tốn 0 byte.
+   *
+   * Ngăn xếp này KHÔNG đổi theo lựa chọn font của người dùng — đổi font giao
+   * diện không bao giờ được làm chữ Hán hiện ô vuông.
+   */
+  --font-hanzi: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * BÓNG ĐỔ — BẢNG SÁNG
+ *
+ * Ngoài `@theme` là CỐ Ý; xem lý do đầy đủ ở khối ghi chú trong `@theme`. Tóm
+ * tắt: token bóng trong `@theme` bị Tailwind nướng cứng màu vào utility lúc
+ * build, nên khối tối không đè được. Ở đây thì `@utility shadow-*` trong
+ * `app.css` đọc `var()` lúc chạy, và khối `[data-theme='dark']` bên dưới đè
+ * được như mọi biến khác.
+ *
+ * Bóng nhẹ, viền gánh phần lớn việc phân tách. Tránh card nổi đổ bóng nặng —
+ * nó phá cảm giác "calm" mà `ux-rules.md` đặt làm nguyên tắc gốc.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+:root {
+  --shadow-card: 0 1px 2px rgb(41 37 42 / 0.04);
+  --shadow-raised: 0 4px 12px rgb(41 37 42 / 0.06);
+
+  /*
+   * Bóng dưới nút primary phải nhuốm hồng, không phải xám: bóng xám dưới một
+   * nút hồng trông bẩn vì hai sắc độ đánh nhau.
+   *
+   * Cường độ đã HẠ từ `0 4px 14px / 0.28`. Ở mức cũ, bán kính 14px cộng alpha
+   * 0.28 tạo một quầng đọc thành "nút phát sáng" — ngược với `brand.md`
+   * ("avoid aggressive gradients") và với nguyên tắc calm của `ux-rules.md`.
+   * Sắc hồng giữ nguyên vì lý do gốc ở trên vẫn đúng; chỉ cường độ đổi.
+   */
+  --shadow-button: 0 2px 8px rgb(255 111 145 / 0.18);
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TRỤC 1 — CHỦ ĐỀ TỐI
+ *
+ * `data-theme` được đặt trên `<html>`, và LUÔN là giá trị đã giải quyết
+ * (`light` hoặc `dark`) — không bao giờ là `system`. Việc quy đổi `system` sang
+ * giá trị thật do `applyDisplay()` làm, để CSS ở đây không phải biết
+ * `prefers-color-scheme` là gì.
+ *
+ * Bảng tối KHÔNG phải bảng sáng đảo ngược. Ba chỗ phải thiết kế lại chứ không
+ * lật:
+ *
+ *   1. `--color-primary` phải SÁNG hơn. Hồng #ff6f91 trên nền tối chỉ đạt ~3,4:1,
+ *      trượt AA cho chữ thường.
+ *   2. `--color-primary-soft/pale` là nền tint. Giữ hồng nhạt trên nền tối thì
+ *      badge và pill điều hướng biến thành hai mảng sáng chói giữa màn tối.
+ *      Chúng phải thành tint TỐI ám hồng.
+ *   3. `--shadow-*` phải đậm hơn. Bóng alpha 0.04 vô hình trên nền tối, và khi
+ *      bóng biến mất thì card mất luôn cảm giác nổi lên.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+:root[data-theme='dark'] {
+  /* Nền ám hồng ấm, không phải đen thuần — đen thuần phá tông thương hiệu. */
+  --color-background: #16131a;
+  /* Bề mặt SÁNG hơn nền: card phải nổi lên, không chìm vào nền. */
+  --color-surface: #211c24;
+  --color-border: #352e39;
+
+  /*
+   * Chữ mặc định của chế độ tối, TRÙNG với tông `ink` bên dưới.
+   *
+   * Lặp lại là có chủ đích: nếu `data-theme="dark"` có mặt mà `data-text-tone`
+   * vì lý do nào đó không có (script chống nháy đọc phải JSON hỏng, hoặc ai đó
+   * bật chế độ tối bằng DevTools), thì chữ vẫn phải đọc được. Thiếu hai dòng
+   * này thì chữ giữ nguyên #29252a của bảng sáng — gần như vô hình trên nền tối.
+   */
+  --color-text-primary: #f0eaee;
+  --color-text-secondary: #aaa2a8;
+
+  --color-primary: #ff92ac;
+  --color-primary-deep: #ff6f91;
+  --color-primary-soft: #3a2732;
+  --color-primary-pale: #2a2029;
+
+  /* Nút primary sáng hơn ở chế độ tối → chữ trắng tụt tương phản, dùng chữ tối. */
+  --color-on-primary: #2a1119;
+
+  --color-success: #74d3a6;
+  --color-warning: #f7c877;
+  --color-error: #ff929e;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-raised: 0 4px 14px rgb(0 0 0 / 0.5);
+  --shadow-button: 0 2px 8px rgb(255 146 172 / 0.16);
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TRỤC 2 — TÔNG CHỮ
+ *
+ * Bốn preset, mỗi preset đổi `--color-text-primary` và `--color-text-secondary`.
+ *
+ * Vì tông phải đúng ở CẢ HAI chủ đề nên đây là ma trận 4 × 2 = 8 khối, viết
+ * tường minh. Gọn hơn thì phải sinh màu bằng `color-mix()` từ một màu gốc, và
+ * cách đó KHÔNG kiểm soát được tương phản — mà tương phản chính là lý do tính
+ * năng này không cho chọn màu tự do.
+ *
+ * Specificity: `[data-theme][data-text-tone]` là (0,2,1), thắng
+ * `[data-text-tone]` (0,1,1). Khối tối luôn đè khối sáng, không cần thứ tự khéo.
+ *
+ * MỌI giá trị dưới đây đã ĐO tương phản WCAG trên cả `background` lẫn `surface`
+ * của chủ đề tương ứng. Đổi một mã hex ở đây là phải đo lại — xem
+ * `plans/reports/` để biết bảng đo.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/* ── Mực đậm — mặc định, trùng giá trị gốc của hệ thống ── */
+:root[data-text-tone='ink'] {
+  --color-text-primary: #29252a;
+  --color-text-secondary: #746e72;
+}
+:root[data-theme='dark'][data-text-tone='ink'] {
+  --color-text-primary: #f0eaee;
+  --color-text-secondary: #aaa2a8;
+}
+
+/*
+ * ── Xám dịu ──
+ *
+ * Tông này tồn tại để nhẹ mắt, và "nhẹ" đi quá tay chính là trượt AA. Đã quyết
+ * trước khi đo: giữ ngưỡng 4.5:1, bỏ độ dịu. Nên nó dịu hơn Mực đậm một bậc
+ * thấy được, chứ không dịu tới mức mờ.
+ */
+:root[data-text-tone='soft'] {
+  --color-text-primary: #4a444b;
+  /*
+   * #7b747a từng ở đây và đo được 4,45:1 trên nền — trượt 4.5 trong gang tấc.
+   * Đúng ca đã lường trước, và đã xử đúng như đã hứa: đậm thêm một bậc cho đạt
+   * ngưỡng, chứ không hạ ngưỡng cho vừa màu.
+   */
+  --color-text-secondary: #6f686e;
+}
+:root[data-theme='dark'][data-text-tone='soft'] {
+  --color-text-primary: #d5cdd3;
+  --color-text-secondary: #a09aa0;
+}
+
+/* ── Nâu ấm ── */
+:root[data-text-tone='warm'] {
+  --color-text-primary: #3a2a24;
+  --color-text-secondary: #7a6659;
+}
+:root[data-theme='dark'][data-text-tone='warm'] {
+  --color-text-primary: #f2e7dd;
+  --color-text-secondary: #b5a294;
+}
+
+/* ── Tương phản cao ── */
+:root[data-text-tone='high'] {
+  --color-text-primary: #000000;
+  --color-text-secondary: #3c383c;
+}
+:root[data-theme='dark'][data-text-tone='high'] {
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #ddd7dc;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TRỤC 3 — FONT GIAO DIỆN
+ *
+ * Chỉ đổi `--font-active`. `--font-hanzi` cố tình KHÔNG đụng tới.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+:root[data-font='lora'] {
+  --font-active: var(--font-lora);
+}
+:root[data-font='system'] {
+  --font-active: var(--font-system);
 }

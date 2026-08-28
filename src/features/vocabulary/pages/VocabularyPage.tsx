@@ -41,7 +41,7 @@ export function VocabularyPage() {
   return (
     <div className="space-y-4">
       <header className="space-y-3">
-        <h1 className="text-2xl font-semibold">Kho từ</h1>
+        <h1 className="text-title">Kho từ</h1>
         <SearchBar
           value={input}
           onChange={(event) => setInput(event.target.value)}

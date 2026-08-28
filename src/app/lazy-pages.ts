@@ -46,6 +46,12 @@ export const StatsPage = lazy(() =>
   import('@/features/stats/pages/StatsPage').then((m) => ({ default: m.StatsPage })),
 )
 
+export const DisplaySettingsPage = lazy(() =>
+  import('@/features/settings/pages/DisplaySettingsPage').then((m) => ({
+    default: m.DisplaySettingsPage,
+  })),
+)
+
 export const GalleryPage = lazy(() =>
   import('@/features/gallery/pages/GalleryPage').then((m) => ({ default: m.GalleryPage })),
 )

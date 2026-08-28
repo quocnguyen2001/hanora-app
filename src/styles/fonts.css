@@ -1,34 +1,79 @@
 /*
  * Font self-host.
  *
+ * XUẤT XỨ — tải từ Google Fonts API ngày 2026-08-25 bằng UA trình duyệt (UA của
+ * curl trả về `ttf`, không phải `woff2`). Muốn tạo lại thì lấy CSS ở
+ * `https://fonts.googleapis.com/css2?family=<Family>:wght@400..700&display=swap`
+ * rồi tải hai lát `latin` và `vietnamese`.
+ *
+ *   Inter v20  — inter-latin.woff2 47,3 KB · inter-vietnamese.woff2 10,0 KB
+ *   Lora  v37  — lora-latin.woff2  36,9 KB · lora-vietnamese.woff2   8,7 KB
+ *
+ * Lát `vietnamese` là một file RIÊNG của Google, không phải phần đuôi của lát
+ * latin. Tách hai `@font-face` cho mỗi họ là cách duy nhất dùng đúng
+ * `unicode-range` mà Google đã cắt — gộp tay thành một dải như phiên bản trước
+ * thì `src` chỉ trỏ được tới một file, và file kia không bao giờ được tải.
+ *
  * `font-display: swap` để chữ hiện ngay bằng font hệ thống rồi mới đổi — với
  * app từ vựng thì thấy chữ chậm còn tệ hơn thấy chữ đổi font.
  *
- * Font CJK KHÔNG được precache (P18): file đầy đủ nặng hàng MB và sẽ phá mục
- * tiêu hiệu năng. Dùng runtime cache lười + `unicode-range` slicing, và luôn có
- * fallback hệ thống trong `--font-hanzi` để chữ Hán không bao giờ hiện ô vuông.
- *
- * P20 đặt file woff2 thật vào `public/fonts/`. Cho tới lúc đó fallback hệ thống
- * đã đủ dùng, và đây là lý do mọi khai báo dưới đây đều có fallback.
+ * KHÔNG CÓ FONT CJK Ở ĐÂY, và đó là quyết định chứ không phải thiếu sót. Google
+ * cắt Noto Sans SC thành 202 lát, tổng ~2,26 MB; không tồn tại "một file subset"
+ * dùng được. Lý do gốc đã ghi ở `vite.config.ts`: từ điển 120k mục bung ra gần
+ * như mọi codepoint CJK nên không subset nào phủ đủ. Chữ Hán dùng ngăn xếp font
+ * hệ thống trong `--font-hanzi` — PingFang SC, Hiragino Sans GB, Microsoft YaHei
+ * đều là font chất lượng cao có sẵn, tốn 0 byte và luôn dùng được khi offline.
  */
+
+/* Inter — font giao diện mặc định. Precache: luôn cần ngay từ khung đầu tiên. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 @font-face {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url('/fonts/inter-latin-vietnamese.woff2') format('woff2');
+  src: url('/fonts/inter-vietnamese.woff2') format('woff2');
   unicode-range:
-    U+0000-00FF, U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0,
-    U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+    U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301,
+    U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+/*
+ * Lora — lựa chọn serif ở màn Hiển thị & chữ.
+ *
+ * KHÔNG precache (xem `globIgnores` trong `vite.config.ts`). Chỉ khai báo
+ * `@font-face` thì trình duyệt chưa tải gì: file chỉ được lấy khi có chữ thật
+ * render bằng họ này, tức là khi người dùng thực sự chọn Lora. Không cần loader
+ * bằng JS cho việc đó.
+ */
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/lora-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
-  font-family: 'Noto Sans SC';
+  font-family: 'Lora';
   font-style: normal;
-  font-weight: 400 500;
+  font-weight: 400 700;
   font-display: swap;
-  src: url('/fonts/noto-sans-sc-subset.woff2') format('woff2');
-  /* Chỉ khối CJK thường dùng — không tải toàn bộ bảng mã. */
-  unicode-range: U+4E00-9FFF, U+3400-4DBF, U+F900-FAFF, U+3000-303F, U+FF00-FFEF;
+  src: url('/fonts/lora-vietnamese.woff2') format('woff2');
+  unicode-range:
+    U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301,
+    U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
 }
