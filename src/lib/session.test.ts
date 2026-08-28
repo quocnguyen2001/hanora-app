@@ -58,6 +58,8 @@ describe('clearSession — xóa cả bốn tầng', () => {
 describe('phân biệt 401 với lỗi mạng — red team C5', () => {
   it('xóa phiên khi nhận HTTP 401 thật', async () => {
     const onUnauthenticated = vi.fn()
+    // Token PHẢI có: 401 chỉ chứng minh token hỏng khi ta thật sự đã gửi token.
+    setTokenReader(() => 'token-het-han')
     setUnauthenticatedHandler(onUnauthenticated)
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({ message: 'Unauthenticated.' }), { status: 401 }),
@@ -66,6 +68,26 @@ describe('phân biệt 401 với lỗi mạng — red team C5', () => {
     await apiRequest('/vocabulary').catch(() => undefined)
 
     expect(onUnauthenticated).toHaveBeenCalledOnce()
+  })
+
+  it('KHÔNG xóa phiên khi 401 đến từ request chưa gắn token', async () => {
+    /*
+     * Chính là bug F5: `useSavedWordIds` bắn `/vocabulary/ids` trong lượt commit
+     * đầu, trước khi token kịp gắn vào tầng HTTP. Cái 401 nhận về nói rằng
+     * REQUEST ĐÓ không hợp lệ, không nói gì về token đang lưu — coi nó là bằng
+     * chứng token hỏng là xóa một phiên hoàn toàn tốt.
+     */
+    const onUnauthenticated = vi.fn()
+    setTokenReader(() => null)
+    setUnauthenticatedHandler(onUnauthenticated)
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ message: 'Unauthenticated.' }), { status: 401 }),
+    )
+
+    await apiRequest('/vocabulary/ids').catch(() => undefined)
+
+    expect(onUnauthenticated).not.toHaveBeenCalled()
+    expect(useAuthStore.getState().token).toBe('token-cu')
   })
 
   it('KHÔNG xóa phiên khi mất mạng', async () => {

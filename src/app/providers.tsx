@@ -8,6 +8,27 @@ import { getToken } from '@/stores/auth'
 import { useShallow } from 'zustand/react/shallow'
 import { selectDisplaySettings, useDisplay } from '@/stores/display'
 
+/*
+ * Nối token vào tầng HTTP NGAY KHI MODULE NẠP, không đợi effect.
+ *
+ * React chạy effect từ dưới lên: effect của `SearchPage` chạy TRƯỚC effect của
+ * `Providers`. `useSavedWordIds` bắn `GET /vocabulary/ids` ngay trong lượt
+ * commit đầu, nên nếu việc gắn token nằm trong effect của `Providers` thì
+ * request đó bay đi KHÔNG có `Authorization` → 401. Tệ hơn: lúc response về thì
+ * effect của `Providers` đã chạy xong, `onUnauthenticated` đã có, nên cái 401
+ * giả đó xóa luôn phiên và đá người dùng về `/login` — chỉ cần F5 ở màn tìm
+ * kiếm là dính.
+ *
+ * `getToken` đọc thẳng store ở mỗi lần gọi và không giữ trạng thái React nào,
+ * nên nó KHÔNG thuộc về vòng đời component. Để nó ở đây cũng loại luôn khoảng
+ * trống trong `StrictMode`: pass dọn dẹp đặt lại `null` rồi children re-mount
+ * và bắn request trước khi `Providers` kịp gắn lại.
+ *
+ * `onUnauthenticated` thì khác — nó cần `queryClient` của lần mount này nên vẫn
+ * phải nằm trong effect bên dưới.
+ */
+setTokenReader(getToken)
+
 export function Providers({ children }: { children: ReactNode }) {
   // useState để client sống đúng một lần cho mỗi lần mount, không bị tạo lại
   // ở mỗi render — tạo lại là mất sạch cache.
@@ -22,13 +43,11 @@ export function Providers({ children }: { children: ReactNode }) {
      * React, nên nó test được bằng `vi.stubGlobal('fetch')` mà không cần dựng
      * cả cây provider.
      */
-    setTokenReader(getToken)
     setUnauthenticatedHandler(() => {
       void clearSession(queryClient)
     })
 
     return () => {
-      setTokenReader(null)
       setUnauthenticatedHandler(null)
     }
   }, [queryClient])

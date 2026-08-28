@@ -246,8 +246,17 @@ export async function apiRequestWithMeta<T>(
      * không đụng tới phiên. Trộn hai thứ này là cách chắc chắn để người dùng
      * bật chế độ máy bay và bị đá ra khỏi tài khoản — đúng thứ phá tiêu chí
      * offline của MVP (red team C5).
+     *
+     * `token !== null` là điều kiện BẮT BUỘC, không phải phòng xa thừa: 401 cho
+     * một request ta chưa từng ký tên không nói gì về token đang lưu. Thiếu nó,
+     * bất kỳ request nào lỡ bay đi trước khi token kịp gắn vào tầng HTTP đều
+     * xóa một phiên hoàn toàn hợp lệ.
      */
-    if (response.status === 401 && !PUBLIC_AUTH_PATHS.some((p) => path.startsWith(p))) {
+    if (
+      response.status === 401 &&
+      token !== null &&
+      !PUBLIC_AUTH_PATHS.some((p) => path.startsWith(p))
+    ) {
       onUnauthenticated?.()
     }
 
