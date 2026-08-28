@@ -1,12 +1,28 @@
 <!--
-  Icon nguồn cho PWA. Vuông, không chữ Latin, đọc được ở cỡ favicon.
-  P18 xuất từ file này ra các cỡ 192/512 và maskable.
-  Concept lấy từ showcase: chữ 字 trên nền hồng pastel, kèm cánh hoa anh đào.
+  Favicon trình duyệt. `index.html` trỏ thẳng tới file này.
+
+  KHÔNG có `<text>`. Xem `src/assets/icon-source.svg` để biết lý do đầy đủ; tóm
+  tắt: bản trước vẽ chữ 字 bằng một font CJK không được self-host, nên mỗi máy
+  render một kiểu và máy không cài font CJK thì ra ô vuông tofu.
+
+  Đây là biến thể RIÊNG đã đơn giản hóa, KHÔNG phải `icon-source.svg` thu nhỏ:
+
+  - Cánh hoa là ellipse trơn, bỏ khuyết chữ V ở đầu cánh. Ở 16px khuyết đó chỉ
+    còn dưới 1px nên nó không đọc ra là khuyết, chỉ làm nhoè viền cánh.
+  - Nhụy to hơn một bậc để tâm hoa không biến mất khi thu nhỏ.
+
+  Cùng hình học ellipse xoay 72° mà `IllustrationPlaceholder.tsx` dùng.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="hanora">
-  <rect width="512" height="512" rx="112" fill="#FF6F91"/>
-  <circle cx="404" cy="112" r="30" fill="#FFF0F4" opacity="0.45"/>
-  <circle cx="452" cy="152" r="18" fill="#FFF0F4" opacity="0.35"/>
-  <text x="256" y="340" font-family="Noto Sans SC, sans-serif" font-size="272" font-weight="500"
-        text-anchor="middle" fill="#FFFFFF">字</text>
+  <rect width="512" height="512" rx="112" fill="#FF6F91" />
+
+  <g transform="translate(256 256) scale(24) translate(-12 -12)" fill="#FFFFFF">
+    <ellipse cx="12" cy="7.4" rx="2.9" ry="4.1" />
+    <ellipse cx="12" cy="7.4" rx="2.9" ry="4.1" transform="rotate(72 12 12)" />
+    <ellipse cx="12" cy="7.4" rx="2.9" ry="4.1" transform="rotate(144 12 12)" />
+    <ellipse cx="12" cy="7.4" rx="2.9" ry="4.1" transform="rotate(216 12 12)" />
+    <ellipse cx="12" cy="7.4" rx="2.9" ry="4.1" transform="rotate(288 12 12)" />
+  </g>
+
+  <circle cx="256" cy="256" r="46" fill="#FFD3DF" />
 </svg>

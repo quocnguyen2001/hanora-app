@@ -1,6 +1,54 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 32" role="img" aria-label="hanora">
-  <rect x="0" y="2" width="28" height="28" rx="9" fill="#FF6F91"/>
-  <text x="14" y="23" font-family="Noto Sans SC, sans-serif" font-size="17" font-weight="500"
-        text-anchor="middle" fill="#FFFFFF">字</text>
-  <text x="38" y="23" font-family="Inter, sans-serif" font-size="19" font-weight="600" fill="#29252A">hanora</text>
+<!--
+  Lockup ngang: mark + wordmark. Dùng NGOÀI app — README, tài liệu, ảnh chia sẻ.
+
+  Trong app KHÔNG dùng file này. `AppHeader` và `AuthLayout` ghép
+  `<BrandMark />` (SVG inline, ăn `currentColor`, đổi màu theo chủ đề) với chữ
+  `hanora` là text HTML thật, nên wordmark dùng đúng font giao diện người dùng
+  đã chọn ở màn Hiển thị & chữ. Một file SVG tĩnh không làm được điều đó.
+
+  `<text>` ở đây là CHẤP NHẬN ĐƯỢC, khác hẳn ca chữ 字 đã bị gỡ:
+
+    - 字 cần font CJK. Máy không cài thì ra ô vuông tofu — hỏng hẳn.
+    - `hanora` là chữ Latin. Mọi hệ điều hành đều có font Latin, nên tệ nhất là
+      wordmark hiện bằng một sans khác — vẫn đọc được, vẫn đúng tên.
+
+  Hai tình huống khác nhau về mức độ hỏng, nên đối xử khác nhau. `favicon.svg`
+  và `icon-source.svg` thì tuyệt đối không có `<text>`, vì chúng là icon vuông
+  không mang chữ Latin nào.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 40" role="img" aria-label="hanora">
+  <g transform="translate(20 20) scale(1.55) translate(-12 -12)" fill="#FF6F91">
+    <path
+      d="M12 12.5C10.2 11.3 9.2 9.4 9.6 7.5c.25-1.3.8-2 1.4-2.4L12 6.5l1-1.4c.6.4 1.15 1.1 1.4 2.4.4 1.9-.6 3.8-2.4 5Z"
+    />
+    <path
+      d="M12 12.5C10.2 11.3 9.2 9.4 9.6 7.5c.25-1.3.8-2 1.4-2.4L12 6.5l1-1.4c.6.4 1.15 1.1 1.4 2.4.4 1.9-.6 3.8-2.4 5Z"
+      transform="rotate(72 12 12)"
+    />
+    <path
+      d="M12 12.5C10.2 11.3 9.2 9.4 9.6 7.5c.25-1.3.8-2 1.4-2.4L12 6.5l1-1.4c.6.4 1.15 1.1 1.4 2.4.4 1.9-.6 3.8-2.4 5Z"
+      transform="rotate(144 12 12)"
+    />
+    <path
+      d="M12 12.5C10.2 11.3 9.2 9.4 9.6 7.5c.25-1.3.8-2 1.4-2.4L12 6.5l1-1.4c.6.4 1.15 1.1 1.4 2.4.4 1.9-.6 3.8-2.4 5Z"
+      transform="rotate(216 12 12)"
+    />
+    <path
+      d="M12 12.5C10.2 11.3 9.2 9.4 9.6 7.5c.25-1.3.8-2 1.4-2.4L12 6.5l1-1.4c.6.4 1.15 1.1 1.4 2.4.4 1.9-.6 3.8-2.4 5Z"
+      transform="rotate(288 12 12)"
+    />
+    <circle cx="12" cy="12" r="1.6" fill="#FFB3C6" />
+  </g>
+
+  <text
+    x="42"
+    y="27"
+    font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif"
+    font-size="21"
+    font-weight="600"
+    letter-spacing="-0.4"
+    fill="#FF6F91"
+  >
+    hanora
+  </text>
 </svg>
