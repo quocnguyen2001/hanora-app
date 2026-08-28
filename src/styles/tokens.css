@@ -192,6 +192,28 @@
     }
   }
 
+  /*
+   * Màn khởi động tan đi. CHỈ mờ dần, không trượt và không phóng to.
+   *
+   * Đây là lớp phủ toàn màn hình: một chuyển động 6px như `rise` ở cỡ đó đọc ra
+   * là giật chứ không phải chuyển tiếp, và `ux-rules.md` cấm "large transitions".
+   *
+   * `forwards` là BẮT BUỘC. Component tháo mình ra ở `animationend`, nên nếu
+   * không giữ khung cuối thì lớp phủ nháy về đục hoàn toàn trong đúng một khung
+   * hình trước khi biến mất.
+   *
+   * Không cần xử lý reduced-motion ở đây: block trong `app.css` ép
+   * `animation-duration` về 0.01ms, nên `animationend` bắn gần như tức thì và
+   * màn khởi động biến mất thay vì mờ dần.
+   */
+  --animate-splash-out: splash-out 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+
+  @keyframes splash-out {
+    to {
+      opacity: 0;
+    }
+  }
+
   /* Font — self-host để PWA offline vẫn đúng chữ */
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
