@@ -114,6 +114,15 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'body' | 'headers'>
 interface ApiEnvelope<T> {
   data: T
   meta?: unknown
+  /*
+   * Response có thể mang trường cấp cao NGOÀI `data` và `meta` —
+   * `/dictionary/search` trả thêm `translation` cho truy vấn dạng câu.
+   *
+   * Index signature giữ chúng lại ở kiểu thay vì để chúng tồn tại ở runtime mà
+   * TypeScript không thấy. Đổi lại nó không bắt được lỗi gõ sai tên trường, nên
+   * mỗi chỗ đọc trường phụ phải TỰ kiểm hình dạng — xem `searchWords`.
+   */
+  [extra: string]: unknown
 }
 
 function buildUrl(path: string, query: ApiRequestOptions['query']): string {

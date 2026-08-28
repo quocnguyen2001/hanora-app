@@ -57,6 +57,28 @@ export interface WordDetail extends WordSummary {
   examples: ExampleSentence[]
 }
 
+/**
+ * Bản dịch tiếng Trung của TOÀN BỘ truy vấn, cho truy vấn dạng CÂU.
+ *
+ * Nằm NGOÀI `data` và đó là bản chất chứ không phải cách đóng gói: một câu dịch
+ * không có `id`, không mở được trang chi tiết, không lưu được vào kho từ. Nhét
+ * nó vào `data` là buộc mọi chỗ dùng phải đoán phần tử nào bấm được, và làm nút
+ * lưu hỏng ở đúng phần tử đầu tiên người dùng nhìn thấy.
+ *
+ * `null` là trạng thái THƯỜNG GẶP NHẤT — chỉ truy vấn là câu hoặc mệnh đề hoàn
+ * chỉnh mới có. `bác sĩ` và `xin chào` không có.
+ *
+ * Nội dung do máy dịch, không có người rà. Mọi chỗ hiển thị PHẢI gắn nhãn nguồn.
+ */
+export interface SearchTranslation {
+  /** Câu tiếng Trung giản thể. */
+  zh: string
+  pinyin: string
+  /** Truy vấn gốc do model diễn đạt lại; có thể rỗng. */
+  vi: string
+  source: 'ai'
+}
+
 export interface SearchMeta {
   page: number
   per_page: number
@@ -70,4 +92,52 @@ export interface SearchMeta {
    * trả về kết quả kém — có kết quả là không có hint, kể cả khi kết quả sai.
    */
   hint: 'hv_not_found' | null
+  /**
+   * `ai` khi lớp diễn giải AI đã tham gia, `sql` khi kết quả thuần truy vấn SQL.
+   *
+   * API dập `hint` khi `source === 'ai'`, nên hai trường này không mâu thuẫn
+   * nhau: không bao giờ vừa có kết quả AI vừa khuyên người dùng đổi cách gõ.
+   */
+  source: 'sql' | 'ai'
+}
+
+/**
+ * Một từ đã tách ra từ câu.
+ *
+ * `word_id` là lối đi từ câu vào từ điển: bấm vào từ là mở trang chi tiết từ đó.
+ *
+ * `null` là trạng thái HỢP LỆ và thường gặp — dấu câu, tên riêng, và những cụm
+ * không có trong CC-CEDICT đều rơi vào đó. FE hiện chúng như chữ thường, KHÔNG
+ * cho bấm; một chip trông bấm được mà bấm không ra gì tệ hơn một chip tĩnh.
+ */
+export interface SentenceToken {
+  zh: string
+  pinyin: string
+  /** Nghĩa ngắn TRONG NGỮ CẢNH câu này; rỗng với dấu câu. */
+  vi: string
+  word_id: number | null
+}
+
+/**
+ * Chi tiết một câu tiếng Trung.
+ *
+ * Toàn bộ nội dung do AI sinh — không có nguồn, không có người rà. Trang hiển
+ * thị PHẢI gắn nhãn, cùng lý do với `SearchTranslation`.
+ */
+export interface SentenceDetail {
+  zh: string
+  pinyin: string
+  /** Bản dịch tự nhiên. */
+  vi: string
+  /**
+   * Nghĩa ĐEN, dịch sát từng từ theo thứ tự gốc.
+   *
+   * Nghe ngang là đúng: nó tồn tại để người học thấy tiếng Trung sắp xếp ý khác
+   * tiếng Việt ở chỗ nào. `null` khi model không trả về.
+   */
+  literal_vi: string | null
+  /** Rỗng khi chốt chặn phía API loại bỏ bản tách từ sai — FE ẩn hẳn khối đó. */
+  tokens: SentenceToken[]
+  grammar_notes: string[]
+  source: 'ai'
 }

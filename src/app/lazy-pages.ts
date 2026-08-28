@@ -34,6 +34,12 @@ export const WordDetailPage = lazy(() =>
   import('@/features/dictionary/pages/WordDetailPage').then((m) => ({ default: m.WordDetailPage })),
 )
 
+export const SentenceDetailPage = lazy(() =>
+  import('@/features/dictionary/pages/SentenceDetailPage').then((m) => ({
+    default: m.SentenceDetailPage,
+  })),
+)
+
 export const VocabularyPage = lazy(() =>
   import('@/features/vocabulary/pages/VocabularyPage').then((m) => ({ default: m.VocabularyPage })),
 )

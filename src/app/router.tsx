@@ -11,6 +11,7 @@ import {
   RegisterPage,
   ResetPasswordPage,
   ReviewPage,
+  SentenceDetailPage,
   StatsPage,
   VocabularyPage,
   WordDetailPage,
@@ -42,6 +43,12 @@ export const routes = [
           { index: true, element: <Navigate to="/search" replace /> },
           { path: 'search', Component: SearchPage },
           { path: 'words/:id', Component: WordDetailPage },
+          /*
+           * Câu nằm ở query string chứ không phải path param: nó không có id, và
+           * một câu có thể chứa ký tự làm vỡ path. Khoá trùng đúng khoá cache
+           * phía API, nên deep link vào đây vẫn chạy sau khi tải lại trang.
+           */
+          { path: 'sentence', Component: SentenceDetailPage },
           { path: 'vocabulary', Component: VocabularyPage },
           { path: 'review', Component: ReviewPage },
           { path: 'stats', Component: StatsPage },

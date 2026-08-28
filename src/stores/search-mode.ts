@@ -27,7 +27,15 @@ export type SearchModeChoice = SearchMode | null
  */
 interface SearchModeState {
   mode: SearchModeChoice
-  setMode: (mode: SearchMode) => void
+  /*
+   * Nhận cả `null` — quay lại đường auto phải làm được.
+   *
+   * Chữ ký cũ là `(mode: SearchMode)`, nên khi người dùng đã chọn `vi` hoặc `cn`
+   * thì KHÔNG còn đường nào về `null` ngoài việc xóa localStorage. Trạng thái
+   * mặc định trở thành trạng thái chỉ đi một chiều, và pill `Tự động` ở màn Tìm
+   * kiếm không thể tồn tại.
+   */
+  setMode: (mode: SearchModeChoice) => void
 }
 
 export const useSearchMode = create<SearchModeState>()(

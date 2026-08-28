@@ -12,6 +12,7 @@ import { ApiError } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { useRecentSearches } from '@/stores/recent-searches'
 import { useSearchMode, type SearchMode, type SearchModeChoice } from '@/stores/search-mode'
+import { TranslationCard } from '../components/TranslationCard'
 import { usePrefetchWord, useSearchWords } from '../hooks'
 
 /*
@@ -27,7 +28,19 @@ import { usePrefetchWord, useSearchWords } from '../hooks'
  * Nó đổi thật sự nhánh nào chạy phía API, chứ không phải hai nhãn trên cùng một
  * tập kết quả.
  */
+/*
+ * `Tự động` là một pill THẬT, không phải trạng thái ngầm.
+ *
+ * Trước đây chỉ có hai pill và `value={mode ?? ''}`, nên lúc chưa chọn thì KHÔNG
+ * pill nào sáng. Chủ đích đúng — toggle là lựa chọn đè lên phỏng đoán, không
+ * phải mặc định áp đặt — nhưng kết quả thị giác là người dùng không phân biệt
+ * được "đang chạy đường auto" với "hàng nút này hỏng".
+ *
+ * Ba pill thì luôn có đúng một cái sáng. Ngữ nghĩa không đổi: `''` vẫn quy về
+ * `null`, request vẫn không mang `mode`, API vẫn chạy đường auto.
+ */
 const MODES = [
+  { value: '', label: 'Tự động' },
   { value: 'vi', label: 'Tiếng Việt' },
   { value: 'cn', label: '中文' },
 ] as const
@@ -60,10 +73,20 @@ export function SearchPage() {
     void navigate(`/words/${id}`)
   }
 
+  /*
+   * Câu đi vào query string, KHÔNG phải path param: nó không có id, và một câu
+   * có thể chứa ký tự làm vỡ path. `URLSearchParams` mã hoá giúp, nên không cần
+   * `encodeURIComponent` thủ công — làm cả hai sẽ mã hoá hai lần.
+   */
+  function openSentence(zh: string) {
+    recent.add(query)
+    void navigate(`/sentence?${new URLSearchParams({ zh }).toString()}`)
+  }
+
   return (
     <div className="space-y-4">
       <header className="space-y-3">
-        <h1 className="text-2xl font-semibold">Tìm kiếm</h1>
+        <h1 className="text-title">Tìm kiếm</h1>
         <SearchBar
           value={input}
           onChange={(event) => setInput(event.target.value)}
@@ -71,14 +94,14 @@ export function SearchPage() {
           autoFocus
         />
         {/*
-          `value={mode ?? ''}` — chưa chọn thì KHÔNG pill nào sáng, và request
-          không gửi `mode` nên API chạy đường auto. Toggle là lựa chọn đè lên
-          phỏng đoán, không phải mặc định áp đặt.
+          `''` ↔ `null`: pill `Tự động` không gửi `mode` nên API chạy đường auto.
+          Quy đổi ở đây chứ không ở store — `''` là chuyện của `Tabs`, thứ cần
+          một chuỗi để so sánh; `null` là chuyện của hợp đồng API.
         */}
         <Tabs
           items={MODES}
           value={mode ?? ''}
-          onChange={(value) => setMode(value as SearchMode)}
+          onChange={(value) => setMode(value === '' ? null : (value as SearchMode))}
           label="Ngôn ngữ tìm kiếm"
         />
       </header>
@@ -89,6 +112,7 @@ export function SearchPage() {
         state={search}
         savedIds={savedIds.data}
         onOpen={openWord}
+        onOpenSentence={openSentence}
         onPrefetch={prefetchWord}
         onToggleSave={(wordId) => toggleSave.mutate({ wordId, userWordId: null })}
         onRetry={() => void search.refetch()}
@@ -103,6 +127,7 @@ function SearchResults({
   state,
   savedIds,
   onOpen,
+  onOpenSentence,
   onPrefetch,
   onToggleSave,
   onRetry,
@@ -112,6 +137,7 @@ function SearchResults({
   state: ReturnType<typeof useSearchWords>
   savedIds: Set<number> | undefined
   onOpen: (id: number) => void
+  onOpenSentence: (zh: string) => void
   onPrefetch: (id: number) => void
   onToggleSave: (wordId: number) => void
   onRetry: () => void
@@ -161,8 +187,26 @@ function SearchResults({
   const stale = state.isPlaceholderData
 
   const words = state.data?.words ?? []
+  const translation = state.data?.translation ?? null
 
   if (words.length === 0) {
+    /*
+     * Có câu dịch mà không có mục từ nào là ca THƯỜNG với truy vấn dạng câu:
+     * `bệnh viện ở đâu` dịch được nhưng không từ nào trong đó là mục từ điển
+     * đáng trả về. Hiện "Không tìm thấy từ nào" ở đây là nói dối — app vừa trả
+     * lời được câu hỏi.
+     */
+    if (translation) {
+      return (
+        <div className="space-y-3">
+          <TranslationCard translation={translation} onSelect={() => onOpenSentence(translation.zh)} />
+          <p className="text-caption text-text-secondary px-1">
+            Không có mục từ điển nào khớp riêng lẻ với câu này.
+          </p>
+        </div>
+      )
+    }
+
     /*
      * `hv_not_found`: gõ tiếng Việt mà KHÔNG nhánh nào khớp được — không âm
      * Hán-Việt, không nghĩa tiếng Việt, không gì cả.
@@ -196,21 +240,34 @@ function SearchResults({
   }
 
   return (
-    <ul className={cn('space-y-3 transition-opacity', stale && 'opacity-50')} aria-busy={stale}>
-      {words.map((word) => (
-        <li key={word.id} onMouseEnter={() => onPrefetch(word.id)}>
-          <VocabularyCard
-            word={word}
-            variant="compact"
-            // Trạng thái đã lưu lấy từ `/vocabulary/ids`, KHÔNG từ response tìm
-            // kiếm — response từ điển không mang trường theo user (C2).
-            saved={savedIds?.has(word.id) ?? false}
-            onSelect={() => onOpen(word.id)}
-            onToggleSave={() => onToggleSave(word.id)}
-          />
-        </li>
-      ))}
-    </ul>
+    <div className={cn('space-y-3 transition-opacity', stale && 'opacity-50')} aria-busy={stale}>
+      {/*
+        Câu dịch đứng TRƯỚC danh sách từ. Người gõ cả một câu muốn câu trả lời
+        trước, rồi mới tra từng chữ — không phải ngược lại.
+
+        Ngoài `<ul>` chứ không phải một `<li>` đầu tiên: nó không cùng loại với
+        các mục còn lại, và nhét một phần tử không-phải-từ vào danh sách từ sẽ
+        làm trình đọc màn hình đếm sai số kết quả.
+      */}
+      {translation && (
+        <TranslationCard translation={translation} onSelect={() => onOpenSentence(translation.zh)} />
+      )}
+
+      <ul className="space-y-3">
+        {words.map((word) => (
+          <li key={word.id} onMouseEnter={() => onPrefetch(word.id)}>
+            <VocabularyCard
+              word={word}
+              // Trạng thái đã lưu lấy từ `/vocabulary/ids`, KHÔNG từ response
+              // tìm kiếm — response từ điển không mang trường theo user (C2).
+              saved={savedIds?.has(word.id) ?? false}
+              onSelect={() => onOpen(word.id)}
+              onToggleSave={() => onToggleSave(word.id)}
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
