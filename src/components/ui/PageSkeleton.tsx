@@ -103,6 +103,17 @@ export function SentenceDetailSkeleton({ back }: { back?: ReactNode }) {
   )
 }
 
+/** Danh sách phiên đã ôn — hình dạng KHÁC hẳn thẻ ôn tập. */
+export function ReviewHistorySkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 5 }, (_, index) => (
+        <Skeleton key={index} className="rounded-card h-20 w-full" />
+      ))}
+    </div>
+  )
+}
+
 export function ReviewSkeleton() {
   return (
     <div className="space-y-4">
@@ -223,6 +234,21 @@ export function PageSkeleton({ pathname }: { pathname: string }): ReactNode {
       <div className="space-y-4">
         <PageHeaderSkeleton search tabs={4} />
         <VocabularyListSkeleton />
+      </div>
+    )
+  }
+
+  /*
+   * TRƯỚC `/review`: `'/review/history'.startsWith('/review')` cũng đúng, nên
+   * đảo thứ tự sẽ cho trang lịch sử một khung xương hình THẺ ÔN TẬP — một thẻ
+   * lớn và 4 ô lựa chọn — rồi nhảy sang danh sách. Cùng cái bẫy đã ghi ở cặp
+   * `/account/settings` vs `/account` bên dưới.
+   */
+  if (pathname.startsWith('/review/history')) {
+    return (
+      <div className="space-y-4">
+        <PageHeaderSkeleton />
+        <ReviewHistorySkeleton />
       </div>
     )
   }

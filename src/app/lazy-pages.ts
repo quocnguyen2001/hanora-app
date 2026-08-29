@@ -48,6 +48,18 @@ export const ReviewPage = lazy(() =>
   import('@/features/review/pages/ReviewPage').then((m) => ({ default: m.ReviewPage })),
 )
 
+export const ReviewHistoryPage = lazy(() =>
+  import('@/features/review/pages/ReviewHistoryPage').then((m) => ({
+    default: m.ReviewHistoryPage,
+  })),
+)
+
+export const ReviewSessionDetailPage = lazy(() =>
+  import('@/features/review/pages/ReviewSessionDetailPage').then((m) => ({
+    default: m.ReviewSessionDetailPage,
+  })),
+)
+
 export const StatsPage = lazy(() =>
   import('@/features/stats/pages/StatsPage').then((m) => ({ default: m.StatsPage })),
 )

@@ -10,7 +10,9 @@ import {
   GalleryPage,
   RegisterPage,
   ResetPasswordPage,
+  ReviewHistoryPage,
   ReviewPage,
+  ReviewSessionDetailPage,
   SentenceDetailPage,
   StatsPage,
   VocabularyPage,
@@ -51,6 +53,12 @@ export const routes = [
           { path: 'sentence', Component: SentenceDetailPage },
           { path: 'vocabulary', Component: VocabularyPage },
           { path: 'review', Component: ReviewPage },
+          /*
+           * KHÔNG có tab trong điều hướng — lối vào là từ màn tổng kết phiên và
+           * trang Thống kê, đúng tiền lệ của `/stats` khi mới thêm.
+           */
+          { path: 'review/history', Component: ReviewHistoryPage },
+          { path: 'review/history/:id', Component: ReviewSessionDetailPage },
           { path: 'stats', Component: StatsPage },
           { path: 'account', Component: AccountPage },
           { path: 'account/settings', Component: DisplaySettingsPage },
