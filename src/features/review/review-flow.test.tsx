@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { StrictMode, type ReactNode } from 'react'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api'
 import { useReviewStore } from '@/stores/review'
@@ -74,14 +74,53 @@ const answerResult: AnswerResult = {
 const outcome: SessionDetail = {
   session: {
     ...session,
-    answered_count: 1,
+    answered_count: 2,
     correct_count: 1,
-    score: 100,
-    grade: 'excellent',
+    score: 50,
+    grade: 'fair',
     duration_seconds: 42,
     finished_at: '2026-08-29T10:00:42+07:00',
   },
-  answers: [],
+  answers: [
+    {
+      id: 1,
+      user_word_id: 3,
+      mode: 'typing',
+      is_correct: true,
+      is_retry: false,
+      answer_raw: '学习',
+      duration_ms: 4_000,
+      answered_at: '2026-08-29T10:00:10+07:00',
+      word: { id: 5, simplified: '学习', pinyin: 'xué xí', han_viet: 'học tập' },
+    },
+    {
+      id: 2,
+      user_word_id: 4,
+      mode: 'typing',
+      is_correct: false,
+      is_retry: false,
+      answer_raw: 'nganhang',
+      duration_ms: 12_000,
+      answered_at: '2026-08-29T10:00:30+07:00',
+      word: { id: 6, simplified: '银行', pinyin: 'yín háng', han_viet: 'ngân hàng' },
+    },
+    {
+      id: 3,
+      user_word_id: 4,
+      mode: 'typing',
+      is_correct: true,
+      is_retry: true,
+      answer_raw: '银行',
+      duration_ms: 2_000,
+      answered_at: '2026-08-29T10:00:40+07:00',
+      word: { id: 6, simplified: '银行', pinyin: 'yín háng', han_viet: 'ngân hàng' },
+    },
+  ],
+}
+
+/** Hiện đường dẫn hiện tại để test khẳng định ĐIỀU HƯỚNG, không chỉ "bấm được". */
+function LocationProbe() {
+  return <span data-testid="path">{useLocation().pathname}</span>
 }
 
 function renderPage() {
@@ -98,7 +137,13 @@ function renderPage() {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <StrictMode>
       <QueryClientProvider client={client}>
-        <MemoryRouter>{children}</MemoryRouter>
+        <MemoryRouter initialEntries={['/review']}>
+          <LocationProbe />
+          <Routes>
+            <Route path="/review" element={children} />
+            <Route path="*" element={null} />
+          </Routes>
+        </MemoryRouter>
       </QueryClientProvider>
     </StrictMode>
   )
@@ -211,8 +256,92 @@ describe('nộp bài', () => {
     await user.click(await screen.findByRole('button', { name: /Tiếp tục|Câu tiếp/i }))
 
     await waitFor(() => expect(finishSession).toHaveBeenCalledTimes(1))
-    expect(await screen.findByText('100')).toBeInTheDocument()
-    expect(screen.getByText('Xuất sắc')).toBeInTheDocument()
+    expect(await screen.findByText('50')).toBeInTheDocument()
+    expect(screen.getByText('Khá')).toBeInTheDocument()
+  })
+
+  it('gửi kèm thời gian trả lời của thẻ', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(screen.getByText('Gõ lại'))
+    await user.type(await screen.findByRole('textbox'), '学习')
+    await user.keyboard('{Enter}')
+
+    await waitFor(() => expect(submitAnswer).toHaveBeenCalled())
+
+    const payload = submitAnswer.mock.calls[0]?.[0]
+
+    expect(typeof payload?.duration_ms).toBe('number')
+    // Trần khớp validate ở server: tab bỏ quên qua đêm không được làm hỏng
+    // lượt nộp bằng một lỗi 422.
+    expect(payload?.duration_ms as number).toBeLessThanOrEqual(3_600_000)
+  })
+})
+
+describe('màn tổng kết', () => {
+  async function finishSessionFlow() {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByText('Gõ lại'))
+    await user.type(await screen.findByRole('textbox'), '学习')
+    await user.keyboard('{Enter}')
+    await user.click(await screen.findByRole('button', { name: /Tiếp tục|Câu tiếp/i }))
+    await screen.findByText('50')
+    return user
+  }
+
+  it('liệt kê TẤT CẢ các lượt, không chỉ câu sai', async () => {
+    await finishSessionFlow()
+
+    expect(screen.getByText(/Chi tiết 3 lượt/)).toBeInTheDocument()
+    // Cả từ trả lời đúng lẫn từ trả lời sai đều có mặt.
+    expect(screen.getAllByText('学习').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('银行').length).toBeGreaterThan(0)
+  })
+
+  it('câu sai hiện thứ người dùng đã nhập bên cạnh đáp án đúng', async () => {
+    await finishSessionFlow()
+
+    expect(screen.getByText('nganhang')).toBeInTheDocument()
+    expect(screen.getByText(/Bạn nhập/)).toBeInTheDocument()
+  })
+
+  it('KHÔNG hiện đáp án đã nhập cho câu đúng', async () => {
+    await finishSessionFlow()
+
+    // Chỉ có MỘT dòng "Bạn nhập" — của câu sai duy nhất.
+    expect(screen.getAllByText(/Bạn nhập/)).toHaveLength(1)
+  })
+
+  it('hiện thời gian từng lượt và trung bình mỗi thẻ', async () => {
+    await finishSessionFlow()
+
+    expect(screen.getByText('4.0s')).toBeInTheDocument()
+    expect(screen.getByText('12.0s')).toBeInTheDocument()
+    // Trung bình loại lượt làm lại: (4000 + 12000) / 2 = 8000ms.
+    expect(screen.getByText(/Trung bình 8\.0s mỗi thẻ/)).toBeInTheDocument()
+  })
+
+  it('đánh dấu lượt làm lại', async () => {
+    await finishSessionFlow()
+
+    expect(screen.getByText('làm lại')).toBeInTheDocument()
+  })
+
+  it('đếm từ sai theo lượt ĐẦU, không tính lượt làm lại', async () => {
+    await finishSessionFlow()
+
+    expect(screen.getByRole('button', { name: 'Ôn lại 1 từ sai' })).toBeInTheDocument()
+  })
+
+  it('bấm một lượt thì điều hướng sang chi tiết từ đó', async () => {
+    const user = await finishSessionFlow()
+
+    // Hai dòng cùng từ (lượt sai + lượt làm lại) — bấm dòng đầu.
+    await user.click(screen.getAllByText('银行')[0]!)
+
+    expect(screen.getByTestId('path')).toHaveTextContent('/words/6')
   })
 })
 

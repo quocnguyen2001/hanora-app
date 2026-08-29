@@ -37,6 +37,7 @@ export function SessionScoreCard({
   correct,
   total,
   durationSeconds,
+  averageMs,
   className,
 }: {
   score: number | null
@@ -44,6 +45,8 @@ export function SessionScoreCard({
   correct: number
   total: number
   durationSeconds?: number | null
+  /** Thời gian trung bình mỗi thẻ; `null` khi không lượt nào có số đo. */
+  averageMs?: number | null
   className?: string
 }) {
   const gradeInfo = grade ? GRADE_LABELS[grade] : null
@@ -64,6 +67,12 @@ export function SessionScoreCard({
         Đúng {correct}/{total}
         {typeof durationSeconds === 'number' && ` · ${formatDuration(durationSeconds)}`}
       </p>
+
+      {typeof averageMs === 'number' && (
+        <p className="text-caption text-text-secondary mt-1">
+          Trung bình {(averageMs / 1000).toFixed(1)}s mỗi thẻ
+        </p>
+      )}
     </Card>
   )
 }

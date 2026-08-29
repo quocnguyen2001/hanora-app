@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -92,6 +92,7 @@ export function ReviewPage() {
       }}
       onGoHistory={() => void navigate('/review/history')}
       onGoVocabulary={() => void navigate('/vocabulary')}
+      onSelectWord={(wordId) => void navigate(`/words/${wordId}`)}
     />
   )
 }
@@ -129,6 +130,7 @@ function ReviewSession({
   onRestart,
   onGoHistory,
   onGoVocabulary,
+  onSelectWord,
 }: {
   session: ReviewSessionMeta
   items: ReviewItem[]
@@ -136,6 +138,7 @@ function ReviewSession({
   onRestart: (config: SessionConfig) => void
   onGoHistory: () => void
   onGoVocabulary: () => void
+  onSelectWord: (wordId: number) => void
 }) {
   const submit = useSubmitAnswer()
   const finish = useFinishSession()
@@ -146,6 +149,17 @@ function ReviewSession({
   const [selected, setSelected] = useState<number | null>(null)
   const [outcome, setOutcome] = useState<SessionDetail | null>(null)
   const [answeredCount, setAnsweredCount] = useState(session.answered_count)
+
+  /*
+   * Mốc bắt đầu của thẻ đang hiện, để đo thời gian trả lời.
+   *
+   * `useRef` chứ không `useState`: đây không phải dữ liệu để render, và đặt nó
+   * vào state sẽ kích hoạt một lượt render thừa mỗi lần sang thẻ mới.
+   *
+   * Đặt lại ở `handleContinue` (sang thẻ kế) chứ không ở render — đọc `Date.now()`
+   * lúc render là một side effect, và StrictMode render hai lần.
+   */
+  const shownAt = useRef(Date.now())
 
   const current = queue[0]
 
@@ -158,6 +172,7 @@ function ReviewSession({
         }
         onGoHistory={onGoHistory}
         onGoVocabulary={onGoVocabulary}
+        onSelectWord={onSelectWord}
       />
     )
   }
@@ -265,6 +280,9 @@ function ReviewSession({
         mode: session.mode,
         answer_word_id: answer.answerWordId,
         answer: answer.text,
+        // Kẹp trần 1 giờ khớp với validate ở server: tab bị bỏ quên qua đêm
+        // không được làm hỏng cả lượt nộp bằng một lỗi 422.
+        duration_ms: Math.min(Date.now() - shownAt.current, 3_600_000),
         // KHÔNG gửi `is_retry`: server suy nó từ log của phiên.
       },
       {
@@ -299,6 +317,7 @@ function ReviewSession({
     setTyped('')
     setSelected(null)
     setQueue(next)
+    shownAt.current = Date.now()
 
     if (next.length === 0) finishNow()
   }

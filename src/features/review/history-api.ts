@@ -18,6 +18,8 @@ export interface ReviewAnswer {
   /** Lượt làm lại: hiện trong danh sách nhưng KHÔNG tính vào điểm. */
   is_retry: boolean
   answer_raw: string | null
+  /** `null` với log cũ hoặc lượt nộp không kèm số đo. */
+  duration_ms: number | null
   answered_at: string
   word: {
     id: number

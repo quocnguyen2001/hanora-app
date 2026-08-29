@@ -61,6 +61,7 @@ beforeEach(() => {
         is_correct: false,
         is_retry: false,
         answer_raw: 'xuexi',
+        duration_ms: 8_200,
         answered_at: '2026-08-29T09:01:00+07:00',
         word: { id: 5, simplified: '学习', pinyin: 'xué xí', han_viet: 'học tập' },
       },
@@ -71,6 +72,7 @@ beforeEach(() => {
         is_correct: true,
         is_retry: true,
         answer_raw: '学习',
+        duration_ms: 3_100,
         answered_at: '2026-08-29T09:02:00+07:00',
         word: { id: 5, simplified: '学习', pinyin: 'xué xí', han_viet: 'học tập' },
       },
@@ -100,7 +102,7 @@ describe('trang lịch sử', () => {
 
     await user.click(await screen.findByText('75'))
 
-    expect(await screen.findByText('Từng thẻ')).toBeInTheDocument()
+    expect(await screen.findByText(/Chi tiết \d+ lượt/)).toBeInTheDocument()
     expect(fetchSessionDetail).toHaveBeenCalledWith(12)
   })
 

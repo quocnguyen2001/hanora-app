@@ -95,6 +95,8 @@ export function submitAnswer(input: {
   mode: ReviewMode
   answer_word_id?: number
   answer?: string
+  /** Thời gian nghĩ + gõ cho thẻ này. CHỈ để hiển thị, không đụng điểm. */
+  duration_ms?: number
 }): Promise<AnswerResult> {
   return apiRequest<AnswerResult>('/reviews/answers', { method: 'POST', body: input })
 }
