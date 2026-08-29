@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SearchModeChoice } from '@/stores/search-mode'
-import { fetchSentence, fetchWord, searchWords } from './api'
+import { fetchSentence, fetchWord, fetchWordIllustration, searchWords } from './api'
 
 /** Query key — nơi duy nhất khai báo, theo quy ước P2. */
 export const dictionaryKeys = {
@@ -18,6 +18,7 @@ export const dictionaryKeys = {
    * làm khoá thì cả hai chia sẻ một lần phân tích.
    */
   sentence: (zh: string) => ['dictionary', 'sentence', zh] as const,
+  illustration: (id: number) => ['dictionary', 'illustration', id] as const,
 }
 
 /*
@@ -93,5 +94,44 @@ export function useSentence(zh: string) {
     queryFn: () => fetchSentence(zh),
     enabled: zh.trim().length > 0,
     retry: false,
+  })
+}
+
+/**
+ * Nhịp hỏi lại khi API còn báo `pending`, khớp `Retry-After: 3` mà nó trả về.
+ */
+const ILLUSTRATION_POLL_MS = 3000
+
+/**
+ * Trần số lần hỏi lại (~30 giây).
+ *
+ * KHÔNG có trần thì một job kẹt ở `pending` để lại một vòng poll chạy mãi suốt
+ * thời gian người dùng còn mở trang — một request mỗi 3 giây cho một câu trả
+ * lời không bao giờ tới.
+ */
+const ILLUSTRATION_MAX_POLLS = 10
+
+/**
+ * Ảnh minh hoạ của một từ.
+ *
+ * `retry: false` — API đã tự đếm và dừng hẳn sau 3 lần hỏng, nên thử lại tự
+ * động ở đây chỉ đốt hạn mức đó nhanh hơn. Cùng lý do `useSentence` đã ghi.
+ *
+ * Không cần `placeholderData`: ô ảnh đã có khung placeholder riêng nên không
+ * bao giờ nhấp nháy về trống.
+ */
+export function useWordIllustration(id: number) {
+  return useQuery({
+    queryKey: dictionaryKeys.illustration(id),
+    queryFn: () => fetchWordIllustration(id),
+    enabled: Number.isFinite(id) && id > 0,
+    retry: false,
+    refetchInterval: (query) => {
+      if (query.state.data?.status !== 'pending') return false
+
+      // `dataUpdateCount` đếm số lần queryFn trả về thành công, tức đúng số lần
+      // đã hỏi. Chạm trần thì thôi, coi như từ này không có ảnh.
+      return query.state.dataUpdateCount >= ILLUSTRATION_MAX_POLLS ? false : ILLUSTRATION_POLL_MS
+    },
   })
 }

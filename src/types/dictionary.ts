@@ -141,3 +141,35 @@ export interface SentenceDetail {
   grammar_notes: string[]
   source: 'ai'
 }
+
+/**
+ * Trạng thái ảnh minh hoạ, đọc từ `meta.status`.
+ *
+ * `none` KHÔNG phải lỗi — nó là kết luận "từ này đúng ra không có ảnh". Hư từ
+ * và từ trừu tượng chiếm một phần lớn từ điển, nên đây là kết cục thường gặp và
+ * hoàn toàn bình thường: màn chi tiết giữ nguyên khung placeholder.
+ */
+export type WordIllustrationStatus = 'ready' | 'none' | 'pending' | 'unavailable'
+
+/**
+ * Ảnh minh hoạ từ Pixabay.
+ *
+ * `author`, `author_url` và `page_url` KHÔNG phải metadata trang trí — cùng quy
+ * ước mà `ExampleSentence.contributor` đang giữ với Tatoeba. ToS Pixabay đòi
+ * hiển thị nguồn ảnh cho người dùng; bỏ dòng ghi công là dùng ảnh sai điều khoản.
+ */
+export interface WordIllustration {
+  /**
+   * URL ảnh. Đây là trường DUY NHẤT app dùng để render, có chủ đích: API đổi
+   * sang tự host ảnh về sau thì chỗ này không phải sửa gì.
+   */
+  url: string
+  /** Bản 150px, đường lui khi bản 640px hỏng. */
+  preview_url: string | null
+  width: number | null
+  height: number | null
+  author: string | null
+  author_url: string | null
+  page_url: string | null
+  source: 'pixabay'
+}

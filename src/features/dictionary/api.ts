@@ -5,6 +5,8 @@ import type {
   SearchTranslation,
   SentenceDetail,
   WordDetail,
+  WordIllustration,
+  WordIllustrationStatus,
   WordSummary,
 } from '@/types/dictionary'
 
@@ -99,4 +101,69 @@ export async function fetchSentence(zh: string): Promise<SentenceDetail> {
   }
 
   return data
+}
+
+/**
+ * Kiểm hình dạng ảnh trước khi cho nó vào app.
+ *
+ * Thiếu `url` thì coi như không có ảnh, thay vì render `<img src="undefined">`
+ * — cùng tinh thần phòng vệ mà `parseTranslation` đang giữ cho trường `translation`.
+ */
+function parseIllustration(raw: unknown): WordIllustration | null {
+  if (raw === null || typeof raw !== 'object') return null
+
+  const value = raw as Record<string, unknown>
+  const url = typeof value.url === 'string' ? value.url.trim() : ''
+
+  if (url === '') return null
+
+  const text = (key: string): string | null => {
+    const raw = value[key]
+
+    return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : null
+  }
+
+  const size = (key: string): number | null => {
+    const raw = value[key]
+
+    return typeof raw === 'number' && Number.isFinite(raw) ? raw : null
+  }
+
+  return {
+    url,
+    preview_url: text('preview_url'),
+    width: size('width'),
+    height: size('height'),
+    author: text('author'),
+    author_url: text('author_url'),
+    page_url: text('page_url'),
+    source: 'pixabay',
+  }
+}
+
+/**
+ * Ảnh minh hoạ của một từ.
+ *
+ * KHÔNG ném khi `data === null`, khác hẳn `fetchSentence`: ở đó `null` nghĩa là
+ * "phân tích hỏng", còn ở đây `none` nghĩa là "từ này đúng ra không có ảnh" —
+ * một câu trả lời THÀNH CÔNG. Ném ở đây sẽ buộc màn chi tiết thêm một nhánh
+ * catch cho tình huống bình thường nhất của tính năng này.
+ *
+ * Trạng thái đọc từ `meta.status`, KHÔNG từ mã HTTP: `apiRequestWithMeta` không
+ * phơi ra `response.status` khi thành công, nên 200 và 202 đi vào cùng một đường.
+ */
+export async function fetchWordIllustration(
+  id: number,
+): Promise<{ illustration: WordIllustration | null; status: WordIllustrationStatus }> {
+  const envelope = await apiRequestWithMeta<unknown>(`/dictionary/words/${id}/illustration`)
+
+  const meta = envelope.meta as { status?: unknown } | undefined
+  const raw = typeof meta?.status === 'string' ? meta.status : 'unavailable'
+  const status: WordIllustrationStatus = (
+    ['ready', 'none', 'pending', 'unavailable'] as const
+  ).includes(raw as WordIllustrationStatus)
+    ? (raw as WordIllustrationStatus)
+    : 'unavailable'
+
+  return { illustration: parseIllustration(envelope.data), status }
 }

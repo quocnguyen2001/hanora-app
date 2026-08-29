@@ -153,7 +153,16 @@ export function GalleryPage() {
       </Section>
 
       <Section title="WordDetailHero">
-        <WordDetailHero word={SAMPLE} actions={<Button variant="secondary">Lưu vào kho</Button>} />
+        {/*
+          Truyền placeholder vào `illustration` có chủ đích: `SAMPLE.id` là một
+          id giả, nên để hero tự gọi API ảnh sẽ tạo bản ghi và xếp một job
+          Pixabay thật cho một từ chẳng liên quan — mỗi lần ai đó mở gallery.
+        */}
+        <WordDetailHero
+          word={SAMPLE}
+          actions={<Button variant="secondary">Lưu vào kho</Button>}
+          illustration={<IllustrationPlaceholder className="mt-2 w-32" />}
+        />
       </Section>
 
       <Section title="Skeleton">

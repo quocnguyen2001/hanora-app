@@ -3,8 +3,8 @@ import type { WordSummary } from '@/types/dictionary'
 import { AudioButton, type AudioState } from './AudioButton'
 import { HanViet } from './HanViet'
 import { HanziText } from './HanziText'
-import { IllustrationPlaceholder } from './IllustrationPlaceholder'
 import { Pinyin } from './Pinyin'
+import { WordIllustration } from './WordIllustration'
 
 /**
  * Khối đầu màn chi tiết từ.
@@ -20,11 +20,21 @@ export function WordDetailHero({
   audioState = 'idle',
   onPlayAudio,
   actions,
+  illustration,
 }: {
   word: WordSummary
   audioState?: AudioState
   onPlayAudio?: () => void
   actions?: React.ReactNode
+  /**
+   * Ghi đè khối ảnh minh hoạ.
+   *
+   * Tồn tại cho trang gallery thiết kế: mặc định hero TỰ gọi API ảnh theo
+   * `word.id`, nên render nó với một từ mẫu sẽ tạo bản ghi và xếp một job
+   * Pixabay thật cho một từ chẳng liên quan. Gallery truyền thẳng placeholder
+   * vào đây thay vì kéo theo tác dụng phụ đó.
+   */
+  illustration?: React.ReactNode
 }) {
   return (
     <section className="bg-surface shadow-card flex flex-col items-center gap-3 rounded-hero p-6 text-center">
@@ -45,7 +55,13 @@ export function WordDetailHero({
 
       {word.hsk_level !== null && <Badge tone="primary">HSK {word.hsk_level}</Badge>}
 
-      <IllustrationPlaceholder className="mt-2 w-32" />
+      {/*
+        Ảnh minh hoạ giữ NGUYÊN vị trí và kích thước mà placeholder đang giữ.
+        `WordIllustration` tự rơi về chính placeholder đó khi từ này không có
+        ảnh — chuyện thường gặp, vì cổng chặn phía API cố tình từ chối hư từ và
+        từ trừu tượng.
+      */}
+      {illustration ?? <WordIllustration wordId={word.id} className="mt-2 w-32" />}
 
       {/*
         Nghĩa tiếng Việt đứng TRƯỚC — thứ người học Việt đọc trước — và hiện ĐỦ
