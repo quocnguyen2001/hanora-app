@@ -1,9 +1,11 @@
 import { useNavigate, useParams } from 'react-router'
 import { HanziText } from '@/components/common/HanziText'
+import { CloseIcon } from '@/components/icons'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { IconButton } from '@/components/ui/IconButton'
 import { ReviewHistorySkeleton } from '@/components/ui/PageSkeleton'
 import { cn } from '@/lib/cn'
 import { SessionScoreCard } from '../components/SessionScoreCard'
@@ -13,7 +15,26 @@ import { useSessionDetail } from '../hooks'
 export function ReviewSessionDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const detail = useSessionDetail(Number(id))
+
+  /*
+   * `Number.isInteger` chứ không `Number(id)` trần: `/review/history/abc` cho
+   * `NaN`, và `NaN` vừa serialize thành `null` trong query key vừa sinh ra một
+   * request tới `/reviews/sessions/NaN`.
+   */
+  const sessionId = Number(id)
+  const valid = Number.isInteger(sessionId) && sessionId > 0
+
+  const detail = useSessionDetail(valid ? sessionId : 0, valid)
+
+  if (!valid) {
+    return (
+      <EmptyState
+        title="Không tìm thấy phiên ôn này."
+        description="Đường dẫn không hợp lệ."
+        action={<Button onClick={() => void navigate('/review/history')}>Về lịch sử</Button>}
+      />
+    )
+  }
 
   if (detail.isPending) {
     return (
@@ -37,6 +58,17 @@ export function ReviewSessionDetailPage() {
 
   return (
     <div className="animate-rise space-y-4">
+      {/* Nút quay lại như mọi màn chi tiết khác — nếu không, lối ra duy nhất là
+          nút back của trình duyệt: tab "Ôn tập" đưa về `/review`, không về
+          danh sách. */}
+      <div className="flex items-center justify-between">
+        <IconButton
+          label="Quay lại lịch sử"
+          icon={<CloseIcon size={20} />}
+          onClick={() => void navigate('/review/history')}
+        />
+      </div>
+
       <SessionScoreCard
         score={session.score}
         grade={session.grade}
@@ -79,11 +111,15 @@ function AnswerRow({ answer, onSelect }: { answer: ReviewAnswer; onSelect: () =>
           answer.is_retry && 'opacity-60',
         )}
       >
+        {/* `role="img"` để `aria-label` hợp lệ: role ngầm `generic` của `span`
+            CẤM đặt tên khả truy cập, và nhãn hiện chỉ lọt ra nhờ thuật toán
+            name-from-content của `<button>` cha. */}
         <span
+          role="img"
           aria-label={answer.is_correct ? 'Đúng' : 'Sai'}
           className={cn(
             'text-body w-5 shrink-0 text-center',
-            answer.is_correct ? 'text-success' : 'text-danger',
+            answer.is_correct ? 'text-success' : 'text-error',
           )}
         >
           {answer.is_correct ? '✓' : '✕'}

@@ -6,22 +6,29 @@
  * gì cả.
  */
 export function ReviewProgress({ current, total }: { current: number; total: number }) {
-  const percent = total === 0 ? 0 : Math.round((current / total) * 100)
+  /*
+   * Kẹp trong [0, total]: `aria-valuenow` lớn hơn `aria-valuemax` là hợp đồng
+   * ARIA sai, và số hiển thị kiểu "13 / 10" thì vô nghĩa. Server hiện chỉ đếm
+   * lượt đầu nên không vượt được, nhưng thanh tiến độ không nên phụ thuộc vào
+   * một bất biến ở phía bên kia mạng.
+   */
+  const safeCurrent = Math.min(Math.max(current, 0), total)
+  const percent = total === 0 ? 0 : Math.round((safeCurrent / total) * 100)
 
   return (
     <div className="space-y-1.5">
       <div className="text-caption text-text-secondary flex items-center justify-between">
         <span>Tiến độ</span>
         <span>
-          {current} / {total}
+          {safeCurrent} / {total}
         </span>
       </div>
       <div
         role="progressbar"
-        aria-valuenow={current}
+        aria-valuenow={safeCurrent}
         aria-valuemin={0}
         aria-valuemax={total}
-        aria-label={`Đã làm ${current} trên ${total} thẻ`}
+        aria-label={`Đã làm ${safeCurrent} trên ${total} thẻ`}
         className="bg-primary-pale h-2 overflow-hidden rounded-full"
       >
         <div

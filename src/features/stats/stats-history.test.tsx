@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -117,12 +118,25 @@ describe('trang Thống kê', () => {
      */
     fetchWeakWords.mockResolvedValue({ items: [weakWord], nextPage: null })
 
+    const user = userEvent.setup()
+
     renderStats()
     await screen.findByText('Từ hay sai')
 
     const callsBefore = fetchWeakWords.mock.calls.length
 
-    screen.getByRole('tab', { name: 'Tháng' }).click()
+    /*
+     * `userEvent` + `waitFor`, không phải `.click()` DOM thô rồi assert ngay.
+     *
+     * Refetch của TanStack Query xảy ra trong passive effect + microtask SAU
+     * commit, nên một assert đồng bộ sẽ xanh kể cả khi ai đó đổi `useWeakWords`
+     * thành `useWeakWords(range)` — tức test canh một thứ mà nó không thể thấy.
+     */
+    await user.click(screen.getByRole('tab', { name: 'Tháng' }))
+
+    // Chờ tới khi số liệu của kỳ mới đã về, rồi mới khẳng định hai endpoint kia
+    // đứng yên.
+    await waitFor(() => expect(fetchStatsSummary.mock.calls.length).toBeGreaterThan(1))
 
     expect(fetchWeakWords.mock.calls.length).toBe(callsBefore)
   })

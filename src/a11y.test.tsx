@@ -45,7 +45,7 @@ async function renderRoute(path: string) {
 }
 
 describe('a11y', () => {
-  it.each(['/search', '/vocabulary', '/review', '/stats', '/account'])(
+  it.each(['/search', '/vocabulary', '/review', '/review/history', '/stats', '/account'])(
     'không có vi phạm axe ở %s',
     async (path) => {
       const container = await renderRoute(path)

@@ -76,19 +76,25 @@ export function WordReviewHistory({ wordId, saved }: { wordId: number; saved: bo
       )}
 
       {data.recent.length > 0 && (
-        <ul className="mt-3 flex flex-wrap gap-1.5">
+        <ul aria-label="Các lượt ôn gần nhất" className="mt-3 flex flex-wrap gap-1.5">
           {data.recent.map((answer) => (
             <li
               key={answer.id}
-              title={new Date(answer.answered_at).toLocaleString('vi-VN')}
               className={cn(
                 'text-caption rounded-control flex h-7 w-7 items-center justify-center',
-                answer.is_correct ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger',
+                answer.is_correct ? 'bg-success/15 text-success' : 'bg-error/15 text-error',
                 // Lượt làm lại nhạt hơn: chúng không tính vào ba con số ở trên.
                 answer.is_retry && 'opacity-50',
               )}
             >
-              {answer.is_correct ? '✓' : '✕'}
+              <span aria-hidden>{answer.is_correct ? '✓' : '✕'}</span>
+              {/* `opacity` và màu là tín hiệu THỊ GIÁC; screen reader cần chữ.
+                  `title` một mình không được đọc ổn định. */}
+              <span className="sr-only">
+                {answer.is_correct ? 'Đúng' : 'Sai'}
+                {answer.is_retry && ' (làm lại)'} ngày{' '}
+                {new Date(answer.answered_at).toLocaleDateString('vi-VN')}
+              </span>
             </li>
           ))}
         </ul>

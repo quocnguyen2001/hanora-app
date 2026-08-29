@@ -71,10 +71,18 @@ export function useSessionHistory() {
   })
 }
 
-export function useSessionDetail(id: number) {
+/**
+ * `enabled` để một id không hợp lệ trên URL không sinh request.
+ *
+ * Hook không gọi có điều kiện được, nên guard ở trang chỉ chặn phần RENDER —
+ * thiếu cờ này thì `/review/history/abc` vẫn bắn một lượt tới
+ * `/reviews/sessions/0`.
+ */
+export function useSessionDetail(id: number, enabled = true) {
   return useQuery({
     queryKey: reviewKeys.sessionDetail(id),
     queryFn: () => historyApi.fetchSessionDetail(id),
+    enabled,
     // Phiên đã chốt không đổi nữa.
     staleTime: Infinity,
   })

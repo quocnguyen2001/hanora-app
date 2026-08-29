@@ -180,6 +180,39 @@ function ReviewSession({
   }
 
   /*
+   * MỌI lỗi nộp bài khác, không riêng 409.
+   *
+   * Không có nhánh này thì thẻ mở khoá lại sau khi mutation reject và không có
+   * gì xảy ra: người dùng bấm đáp án rồi màn hình đứng im. Mất mạng giữa phiên
+   * là kịch bản thường gặp nhất — `lib/api.ts` chặn thẳng thao tác ghi khi
+   * `navigator.onLine` là `false`, nên nó tới đây dưới dạng `ApiError` status 0.
+   */
+  if (submit.isError) {
+    const offline = submit.error instanceof ApiError && submit.error.isNetworkError
+
+    return (
+      <EmptyState
+        title={offline ? 'Mất kết nối giữa phiên' : 'Không gửi được câu trả lời'}
+        description={
+          offline
+            ? 'Những câu đã trả lời trước đó vẫn được lưu. Có mạng lại thì thử tiếp nhé.'
+            : 'Những câu đã trả lời trước đó vẫn được lưu.'
+        }
+        action={
+          <div className="w-full space-y-2">
+            <Button fullWidth onClick={() => submit.reset()}>
+              Thử lại câu này
+            </Button>
+            <Button variant="secondary" fullWidth onClick={finishNow}>
+              Kết thúc phiên
+            </Button>
+          </div>
+        }
+      />
+    )
+  }
+
+  /*
    * Không chốt được phiên.
    *
    * Không có nhánh này thì hàng đợi rỗng + `outcome` null rơi vào khung xương
@@ -215,7 +248,10 @@ function ReviewSession({
   }
 
   function finishNow() {
-    // `finish` idempotent ở server nên bấm "Thử lại" luôn an toàn.
+    // Cửa thứ hai bên cạnh việc updater đã thuần: `finish` idempotent ở server
+    // nên bấm "Thử lại" luôn an toàn, nhưng không nên bắn trùng ngay từ đầu.
+    if (finish.isPending) return
+
     finish.mutate(session.id, { onSuccess: setOutcome })
   }
 
@@ -245,24 +281,26 @@ function ReviewSession({
     if (!current) return
 
     const wasCorrect = feedback?.correct ?? false
+    const [head, ...rest] = queue
+
+    /*
+     * Hàng đợi mới tính THUẦN ở đây, không trong updater của `setQueue`.
+     *
+     * Updater của `useState` bắt buộc phải thuần: StrictMode gọi nó hai lần ở
+     * dev đúng để lộ loại lỗi này, và React được phép chạy lại nó bất cứ lúc
+     * nào một lượt render bị bỏ đi. Gọi `finishNow()` bên trong nghĩa là mỗi
+     * phiên kết thúc bắn hai `POST .../finish`.
+     */
+    // Sai thì đẩy lại CUỐI hàng đợi — gặp lại trong cùng phiên là cách học, và
+    // lượt nộp sau sẽ được server đánh dấu là làm lại.
+    const next = wasCorrect || !head ? rest : [...rest, head]
 
     setFeedback(null)
     setTyped('')
     setSelected(null)
+    setQueue(next)
 
-    setQueue((previous) => {
-      const [head, ...rest] = previous
-
-      if (!head) return rest
-
-      // Sai thì đẩy lại CUỐI hàng đợi — gặp lại trong cùng phiên là cách học, và
-      // lượt nộp sau sẽ được server đánh dấu là làm lại.
-      const next = wasCorrect ? rest : [...rest, head]
-
-      if (next.length === 0) finishNow()
-
-      return next
-    })
+    if (next.length === 0) finishNow()
   }
 
   return (

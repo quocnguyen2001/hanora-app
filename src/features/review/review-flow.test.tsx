@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ReactNode } from 'react'
+import { StrictMode, type ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api'
@@ -87,10 +87,20 @@ const outcome: SessionDetail = {
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
+  /*
+   * `StrictMode` là BẮT BUỘC ở đây, không phải trang trí.
+   *
+   * `src/main.tsx` bọc app thật trong nó, và nó gọi updater của `useState` hai
+   * lần ở dev đúng để lộ ra side effect nằm nhầm chỗ. Không có nó, một
+   * `finishNow()` gọi bên trong updater vẫn cho `toHaveBeenCalledTimes(1)` xanh
+   * trong khi app thật bắn hai request.
+   */
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>
-      <MemoryRouter>{children}</MemoryRouter>
-    </QueryClientProvider>
+    <StrictMode>
+      <QueryClientProvider client={client}>
+        <MemoryRouter>{children}</MemoryRouter>
+      </QueryClientProvider>
+    </StrictMode>
   )
 
   return render(<ReviewPage />, { wrapper })

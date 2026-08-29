@@ -114,19 +114,44 @@ describe('trang lịch sử', () => {
 })
 
 describe('chi tiết phiên', () => {
+  /*
+   * Render QUA `<Route path="/review/history/:id">`, không render component
+   * trần: `useParams()` chỉ có giá trị khi có route khớp. Render trần cho
+   * `id === undefined`, và test khi đó xanh mà không bao giờ đọc tới id — mock
+   * trả về cùng một phiên bất kể tham số.
+   */
+  function renderDetail(path = '/review/history/12') {
+    return renderWithRouter(
+      <Routes>
+        <Route path="/review/history/:id" element={<ReviewSessionDetailPage />} />
+      </Routes>,
+      path,
+    )
+  }
+
   it('đánh dấu lượt làm lại để người dùng không tự cộng ra con số khác', async () => {
-    renderWithRouter(<ReviewSessionDetailPage />, '/review/history/12')
+    renderDetail()
 
     expect(await screen.findByText('làm lại')).toBeInTheDocument()
     // Lượt sai hiện đáp án đã gõ; lượt đúng thì không cần.
     expect(screen.getByText('xuexi')).toBeInTheDocument()
+    expect(fetchSessionDetail).toHaveBeenCalledWith(12)
   })
 
   it('hiện điểm phiên bằng cùng component với màn tổng kết', async () => {
-    renderWithRouter(<ReviewSessionDetailPage />, '/review/history/12')
+    renderDetail()
 
     expect(await screen.findByText('75')).toBeInTheDocument()
     expect(screen.getByText('Giỏi')).toBeInTheDocument()
+  })
+
+  it('KHÔNG gọi API với id không phải số', async () => {
+    // `Number('abc')` là `NaN`: serialize thành `null` trong query key và sinh
+    // một request tới `/reviews/sessions/NaN`.
+    renderDetail('/review/history/abc')
+
+    expect(await screen.findByText(/Đường dẫn không hợp lệ/)).toBeInTheDocument()
+    expect(fetchSessionDetail).not.toHaveBeenCalled()
   })
 })
 

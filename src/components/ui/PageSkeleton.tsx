@@ -244,6 +244,17 @@ export function PageSkeleton({ pathname }: { pathname: string }): ReactNode {
    * lớn và 4 ô lựa chọn — rồi nhảy sang danh sách. Cùng cái bẫy đã ghi ở cặp
    * `/account/settings` vs `/account` bên dưới.
    */
+  // TRƯỚC `/review/history`: trang chi tiết render một khối điểm lớn rồi mới
+  // tới danh sách, không phải một tiêu đề rồi năm dòng bằng nhau.
+  if (/^\/review\/history\/\d/.test(pathname)) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="rounded-hero h-40 w-full" />
+        <Skeleton className="rounded-card h-48 w-full" />
+      </div>
+    )
+  }
+
   if (pathname.startsWith('/review/history')) {
     return (
       <div className="space-y-4">

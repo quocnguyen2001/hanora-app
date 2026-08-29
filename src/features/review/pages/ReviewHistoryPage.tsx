@@ -53,7 +53,12 @@ export function ReviewHistoryPage() {
 
   return (
     <div className="animate-rise space-y-4">
-      <h1 className="text-title">Lịch sử ôn tập</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-title">Lịch sử ôn tập</h1>
+        <Button variant="ghost" size="sm" onClick={() => void navigate('/review')}>
+          Ôn tập
+        </Button>
+      </div>
 
       <div className="space-y-3">
         {sessions.map((session) => (
