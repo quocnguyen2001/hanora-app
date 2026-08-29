@@ -37,3 +37,15 @@ if (typeof window !== 'undefined' && !window.localStorage) {
     configurable: true,
   })
 }
+
+/**
+ * Stub `Element.scrollIntoView` — jsdom không cài đặt nó.
+ *
+ * `TypingCard` gọi hàm này để kéo ô nhập lên giữa màn hình khi bàn phím ảo mở
+ * ra. Trình duyệt thật có, jsdom thì ném `TypeError` và làm hỏng cả test file
+ * chứ không chỉ một assertion. Vá ở môi trường test chứ không bọc `try/catch`
+ * quanh mã sản phẩm cho một vấn đề chỉ tồn tại khi chạy test.
+ */
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}

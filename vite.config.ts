@@ -151,6 +151,20 @@ export default defineConfig({
            * MVP. Thao tác ghi khi offline báo lỗi rõ ràng thay vì giả vờ thành
            * công rồi âm thầm mất.
            */
+
+          /*
+           * KHÔNG có mục nào cho `/api/reviews/*` — cũng là chủ đích, và câu
+           * hỏi "route API mới thuộc bucket nào" ở đầu file đã được trả lời:
+           * KHÔNG bucket nào.
+           *
+           * Lịch sử ôn tập là số liệu đúng-tại-thời-điểm. Phục vụ một bản cache
+           * của nó khi offline nghĩa là hiện điểm và số lần sai CŨ mà không nói
+           * cho người dùng biết — tệ hơn hẳn so với nói thẳng "cần kết nối".
+           * Kho từ thì khác: một mục từ đã lưu vẫn đúng dù cũ mấy ngày.
+           *
+           * Hệ quả có chủ đích: hai màn `/review/history` hiện trạng thái ngoại
+           * tuyến khi mất mạng, thay vì số liệu cũ.
+           */
         ],
       },
       devOptions: { enabled: false },

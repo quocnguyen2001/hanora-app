@@ -1,23 +1,31 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { vocabularyKeys } from '@/features/vocabulary/hooks'
 import * as reviewApi from './api'
-import type { ReviewMode } from './api'
+import * as historyApi from './history-api'
 
 export const reviewKeys = {
-  session: (mode: ReviewMode) => ['reviews', 'session', mode] as const,
+  history: ['reviews', 'history'] as const,
+  /**
+   * `session-detail`, không phải `session`.
+   *
+   * Key cũ là `['reviews', 'session', mode]`; một key mới `['reviews', 'session', id]`
+   * sẽ cùng tiền tố với nó, và một `invalidateQueries({ queryKey: ['reviews', 'session'] })`
+   * sẽ quét cả hai.
+   */
+  sessionDetail: (id: number) => ['reviews', 'session-detail', id] as const,
+  weakWords: ['reviews', 'weak-words'] as const,
+  wordHistory: (wordId: number) => ['reviews', 'word-history', wordId] as const,
 }
 
-export function useReviewSession(mode: ReviewMode | null) {
-  return useQuery({
-    queryKey: reviewKeys.session(mode ?? 'mcq'),
-    queryFn: () => reviewApi.fetchSession(mode ?? 'mcq'),
-    enabled: mode !== null,
-    // Phiên ôn là ảnh chụp tại thời điểm bắt đầu — không tự làm mới giữa chừng,
-    // vì đổi danh sách thẻ khi người dùng đang làm là chuyện khó hiểu nhất có thể.
-    staleTime: Infinity,
-    gcTime: 0,
-    refetchOnMount: false,
-  })
+/**
+ * Mở phiên.
+ *
+ * Là MUTATION chứ không query, vì endpoint ghi một bản ghi vào DB. Hệ quả: nó
+ * KHÔNG được dedupe như `useQuery`, nên chỗ gọi phải tự đảm bảo chỉ bắn một lần
+ * — xem cờ `starting` ở `ReviewPage`.
+ */
+export function useStartSession() {
+  return useMutation({ mutationFn: reviewApi.startSession })
 }
 
 export function useSubmitAnswer() {
@@ -25,14 +33,73 @@ export function useSubmitAnswer() {
 
   return useMutation({
     mutationFn: reviewApi.submitAnswer,
-    onSuccess: (_result, variables) => {
-      // Chỉ lượt ĐẦU mới đổi lịch ôn và trạng thái từ (P14). Lượt làm lại không
-      // đụng gì nên không cần làm mới kho từ.
-      if (!variables.is_retry) {
+    onSuccess: (result) => {
+      /*
+       * `result.is_retry` — do SERVER quyết, không phải `variables.is_retry`.
+       * Chỉ lượt ĐẦU mới đổi lịch ôn, trạng thái từ và số lần sai.
+       */
+      if (!result.is_retry) {
         void queryClient.invalidateQueries({ queryKey: ['vocabulary', 'list'] })
         void queryClient.invalidateQueries({ queryKey: vocabularyKeys.ids })
         void queryClient.invalidateQueries({ queryKey: ['stats'] })
+        void queryClient.invalidateQueries({ queryKey: reviewKeys.weakWords })
+        void queryClient.invalidateQueries({ queryKey: ['reviews', 'word-history'] })
       }
     },
+  })
+}
+
+export function useFinishSession() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: historyApi.finishSession,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: reviewKeys.history })
+      void queryClient.invalidateQueries({ queryKey: reviewKeys.weakWords })
+      void queryClient.invalidateQueries({ queryKey: ['stats'] })
+    },
+  })
+}
+
+export function useSessionHistory() {
+  return useInfiniteQuery({
+    queryKey: reviewKeys.history,
+    queryFn: ({ pageParam }) => historyApi.fetchSessionHistory(pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  })
+}
+
+export function useSessionDetail(id: number) {
+  return useQuery({
+    queryKey: reviewKeys.sessionDetail(id),
+    queryFn: () => historyApi.fetchSessionDetail(id),
+    // Phiên đã chốt không đổi nữa.
+    staleTime: Infinity,
+  })
+}
+
+export function useWeakWords() {
+  return useInfiniteQuery({
+    queryKey: reviewKeys.weakWords,
+    queryFn: ({ pageParam }) => historyApi.fetchWeakWords(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+  })
+}
+
+/**
+ * Lịch sử ôn của một từ.
+ *
+ * `enabled` theo trạng thái đã lưu: từ chưa lưu trả 404, và gọi nó chỉ để nhận
+ * 404 là rác trong console lẫn một request thừa trên mọi lần mở màn chi tiết.
+ */
+export function useWordHistory(wordId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: reviewKeys.wordHistory(wordId),
+    queryFn: () => historyApi.fetchWordHistory(wordId),
+    enabled,
+    staleTime: 30_000,
   })
 }

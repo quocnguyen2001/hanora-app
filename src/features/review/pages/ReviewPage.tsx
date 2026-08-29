@@ -1,76 +1,45 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ReviewSkeleton } from '@/components/ui/PageSkeleton'
 import { ApiError } from '@/lib/api'
-import { useReviewStore } from '@/stores/review'
-import { isMcqItem, type AnswerResult, type ReviewItem, type ReviewMode } from '../api'
+import {
+  isMcqItem,
+  type AnswerResult,
+  type EmptyReason,
+  type ReviewItem,
+  type ReviewSessionMeta,
+  type StartedSession,
+} from '../api'
 import { AnswerFeedback } from '../components/AnswerFeedback'
 import { McqCard } from '../components/McqCard'
-import { ModePicker } from '../components/ModePicker'
+import { ModePicker, type SessionConfig } from '../components/ModePicker'
 import { ReviewProgress } from '../components/ReviewProgress'
-import { SessionSummary, type SessionResult } from '../components/SessionSummary'
+import { SessionSummary } from '../components/SessionSummary'
 import { TypingCard } from '../components/TypingCard'
-import { useReviewSession, useSubmitAnswer } from '../hooks'
+import type { SessionDetail } from '../history-api'
+import { useFinishSession, useStartSession, useSubmitAnswer } from '../hooks'
 
 export function ReviewPage() {
-  const [mode, setMode] = useState<ReviewMode | null>(null)
-  const store = useReviewStore()
-
-  function pickMode(next: ReviewMode) {
-    // Side effect nằm ở event handler, KHÔNG ở effect hay lúc render.
-    store.setLastMode(next)
-    store.resetSession()
-    setMode(next)
-  }
-
-  if (mode === null) {
-    return <ModePicker onPick={pickMode} />
-  }
-
-  // `key` để đổi mode dựng lại toàn bộ state phiên, không rò thẻ cũ sang mode mới.
-  return <ReviewSession key={mode} mode={mode} onExit={() => setMode(null)} />
-}
-
-function ReviewSession({ mode, onExit }: { mode: ReviewMode; onExit: () => void }) {
   const navigate = useNavigate()
-  const session = useReviewSession(mode)
-  const submit = useSubmitAnswer()
-  const store = useReviewStore()
+  const start = useStartSession()
+  const [started, setStarted] = useState<StartedSession | null>(null)
 
-  /**
-   * Hàng đợi thẻ của phiên. Từ trả lời SAI được đẩy lại cuối hàng đợi.
-   *
-   * Giữ hàng đợi ở state cục bộ chứ không ở query cache: nó là tiến độ của lần
-   * làm này, không phải dữ liệu server.
-   */
-  const [feedback, setFeedback] = useState<AnswerResult | null>(null)
-  const [typed, setTyped] = useState('')
-  const [selected, setSelected] = useState<number | null>(null)
-  const [done, setDone] = useState<SessionResult>({ correct: 0, total: 0, wrong: [] })
-  const [finished, setFinished] = useState(false)
+  function begin(config: SessionConfig) {
+    /*
+     * `useMutation` KHÔNG dedupe như `useQuery`.
+     *
+     * Bấm kép trên mạng chậm sẽ bắn hai `POST /reviews/sessions`, và hậu quả
+     * thường không phải hai phiên: phiên B chốt phiên A trong khi app giữ id
+     * của A, rồi mọi lượt nộp sau đó trả 409. Cờ `isPending` chặn cửa đó.
+     */
+    if (start.isPending) return
 
-  const items = useMemo(() => session.data?.items ?? [], [session.data])
-
-  /*
-   * Nạp hàng đợi từ phiên mới bằng cách CHỈNH STATE LÚC RENDER, không phải bằng
-   * `useEffect`.
-   *
-   * Đây là pattern React khuyến nghị cho "state dẫn xuất phải reset khi prop
-   * đổi": nó chạy đồng bộ trước khi commit nên không có một lần render trung
-   * gian với hàng đợi rỗng, còn `useEffect` thì có — và lần render đó sẽ nháy
-   * qua màn "hết thẻ".
-   */
-  const [queue, setQueue] = useState<ReviewItem[]>(items)
-  const [loadedItems, setLoadedItems] = useState(items)
-
-  if (loadedItems !== items) {
-    setLoadedItems(items)
-    setQueue(items)
+    start.mutate(config, { onSuccess: setStarted })
   }
 
-  if (session.isPending) {
+  if (start.isPending) {
     return (
       <div aria-busy>
         <ReviewSkeleton />
@@ -78,12 +47,12 @@ function ReviewSession({ mode, onExit }: { mode: ReviewMode; onExit: () => void 
     )
   }
 
-  if (session.isError) {
-    const offline = session.error instanceof ApiError && session.error.isNetworkError
+  if (start.isError) {
+    const offline = start.error instanceof ApiError && start.error.isNetworkError
 
     return (
       <EmptyState
-        title={offline ? 'Đang ngoại tuyến' : 'Không tải được phiên ôn'}
+        title={offline ? 'Đang ngoại tuyến' : 'Không mở được phiên ôn'}
         // Ôn tập cần ghi kết quả lên server, nên nó KHÔNG chạy offline được.
         // Nói thẳng thay vì để người dùng làm xong rồi mất sạch.
         description={
@@ -91,71 +60,182 @@ function ReviewSession({ mode, onExit }: { mode: ReviewMode; onExit: () => void 
             ? 'Ôn tập cần kết nối để lưu kết quả. Kho từ đã lưu vẫn xem được khi ngoại tuyến.'
             : 'Thử lại giúp mình nhé.'
         }
-        action={<Button onClick={() => void session.refetch()}>Thử lại</Button>}
+        action={<Button onClick={() => start.reset()}>Thử lại</Button>}
       />
     )
   }
 
-  if (items.length === 0) {
+  if (started === null) {
+    return <ModePicker onStart={begin} />
+  }
+
+  if (started.session === null) {
+    return <EmptySession reason={started.empty_reason} onBack={() => setStarted(null)} />
+  }
+
+  /*
+   * `key={session.id}` chứ không `key={mode}`.
+   *
+   * Hai phiên liên tiếp CÙNG mode là chuyện bình thường — bấm "Ôn lại từ sai"
+   * là đúng trường hợp đó. Khoá theo mode sẽ tái dùng component instance cũ và
+   * rò hàng đợi của phiên trước sang phiên mới.
+   */
+  return (
+    <ReviewSession
+      key={started.session.id}
+      session={started.session}
+      items={started.items}
+      onExit={() => setStarted(null)}
+      onRestart={(config) => {
+        setStarted(null)
+        begin(config)
+      }}
+      onGoHistory={() => void navigate('/review/history')}
+      onGoVocabulary={() => void navigate('/vocabulary')}
+    />
+  )
+}
+
+/**
+ * Hai lý do rỗng, hai câu trả lời.
+ *
+ * Gộp chúng lại sẽ khiến người dùng có đầy từ hay sai đọc được câu "Chưa có từ
+ * nào bạn từng sai" trong khi trang Thống kê đang hiện đúng những từ đó.
+ */
+function EmptySession({ reason, onBack }: { reason: EmptyReason | null; onBack: () => void }) {
+  if (reason === 'not_enough_options') {
     return (
       <EmptyState
-        title="Chưa có từ nào tới hạn ôn."
-        description="Quay lại sau nhé — hoặc lưu thêm từ mới để bắt đầu học. 🌸"
-        action={<Button onClick={() => void navigate('/vocabulary')}>Về kho từ</Button>}
+        title="Chưa dựng được câu trắc nghiệm."
+        description="Kho từ chưa đủ để tạo 4 lựa chọn khác nhau. Thử chế độ Gõ lại, hoặc lưu thêm vài từ nữa."
+        action={<Button onClick={onBack}>Đổi chế độ</Button>}
       />
     )
   }
 
-  if (finished) {
-    return (
-      <SessionSummary
-        result={done}
-        onReviewWrong={() => void session.refetch()}
-        onGoVocabulary={() => void navigate('/vocabulary')}
-      />
-    )
-  }
+  return (
+    <EmptyState
+      title="Chưa có từ nào để ôn."
+      description="Quay lại sau nhé — hoặc lưu thêm từ mới để bắt đầu học. 🌸"
+      action={<Button onClick={onBack}>Chọn lại</Button>}
+    />
+  )
+}
+
+function ReviewSession({
+  session,
+  items,
+  onExit,
+  onRestart,
+  onGoHistory,
+  onGoVocabulary,
+}: {
+  session: ReviewSessionMeta
+  items: ReviewItem[]
+  onExit: () => void
+  onRestart: (config: SessionConfig) => void
+  onGoHistory: () => void
+  onGoVocabulary: () => void
+}) {
+  const submit = useSubmitAnswer()
+  const finish = useFinishSession()
+
+  const [queue, setQueue] = useState<ReviewItem[]>(items)
+  const [feedback, setFeedback] = useState<AnswerResult | null>(null)
+  const [typed, setTyped] = useState('')
+  const [selected, setSelected] = useState<number | null>(null)
+  const [outcome, setOutcome] = useState<SessionDetail | null>(null)
+  const [answeredCount, setAnsweredCount] = useState(session.answered_count)
 
   const current = queue[0]
 
+  if (outcome) {
+    return (
+      <SessionSummary
+        outcome={outcome}
+        onReviewWrong={() =>
+          onRestart({ mode: session.mode, source: 'weak', limit: session.planned_count })
+        }
+        onGoHistory={onGoHistory}
+        onGoVocabulary={onGoVocabulary}
+      />
+    )
+  }
+
+  /*
+   * Phiên đã chốt dưới chân client (409).
+   *
+   * Xảy ra khi người dùng mở phiên mới ở tab/thiết bị khác — server tự chốt
+   * phiên cũ. Nói thẳng và cho lối đi, chứ không im lặng: lượt vừa nộp KHÔNG
+   * được ghi.
+   */
+  if (submit.error instanceof ApiError && submit.error.status === 409) {
+    return (
+      <EmptyState
+        title="Phiên ôn này đã kết thúc."
+        description="Có vẻ bạn đã mở một phiên khác ở nơi khác. Bắt đầu lại nhé."
+        action={<Button onClick={onExit}>Bắt đầu phiên mới</Button>}
+      />
+    )
+  }
+
+  /*
+   * Không chốt được phiên.
+   *
+   * Không có nhánh này thì hàng đợi rỗng + `outcome` null rơi vào khung xương
+   * bên dưới và đứng đó VĨNH VIỄN — không thông báo, không nút. Điểm thật ra
+   * vẫn an toàn trên server (bộ đếm cập nhật từng lượt), người dùng chỉ không
+   * biết.
+   */
+  if (finish.isError) {
+    return (
+      <EmptyState
+        title="Không chốt được phiên"
+        description="Kết quả từng câu đã được lưu rồi. Thử chốt lại, hoặc xem trong lịch sử ôn tập."
+        action={
+          <div className="w-full space-y-2">
+            <Button fullWidth onClick={() => finishNow()}>
+              Thử lại
+            </Button>
+            <Button variant="secondary" fullWidth onClick={onGoHistory}>
+              Xem lịch sử ôn tập
+            </Button>
+          </div>
+        }
+      />
+    )
+  }
+
   if (!current) {
-    return <ReviewSkeleton />
+    return (
+      <div aria-busy>
+        <ReviewSkeleton />
+      </div>
+    )
+  }
+
+  function finishNow() {
+    // `finish` idempotent ở server nên bấm "Thử lại" luôn an toàn.
+    finish.mutate(session.id, { onSuccess: setOutcome })
   }
 
   function handleSubmit(answer: { answerWordId?: number; text?: string }) {
     if (!current) return
 
-    /*
-     * `is_retry` = thẻ này đã nộp ít nhất một lần TRONG PHIÊN NÀY.
-     *
-     * Thiếu cờ này thì sai-rồi-sửa cho ra cùng lịch như đúng-ngay-lần-đầu (hình
-     * phạt SRS bị xóa sạch), và tỉ lệ nhớ tụt theo đúng mức độ chăm chỉ của
-     * người dùng — càng sửa lỗi càng bị báo kém (P14, red team H3).
-     */
-    const isRetry = store.isRetry(current.user_word_id)
-
     submit.mutate(
       {
         user_word_id: current.user_word_id,
-        mode,
+        review_session_id: session.id,
+        mode: session.mode,
         answer_word_id: answer.answerWordId,
         answer: answer.text,
-        is_retry: isRetry,
+        // KHÔNG gửi `is_retry`: server suy nó từ log của phiên.
       },
       {
         onSuccess: (result) => {
           setFeedback(result)
-          store.markAnswered(current.user_word_id)
-
-          // Chỉ lượt ĐẦU mới tính vào điểm tổng kết — khớp với cách P16 tính
-          // tỉ lệ nhớ, để hai con số không mâu thuẫn nhau.
-          if (!isRetry) {
-            setDone((previous) => ({
-              correct: previous.correct + (result.correct ? 1 : 0),
-              total: previous.total + 1,
-              wrong: result.correct ? previous.wrong : [...previous.wrong, result.correct_answer],
-            }))
-          }
+          // Tiến độ đến từ server — một nguồn sự thật, không cộng lại ở client.
+          setAnsweredCount(result.session.answered_count)
         },
       },
     )
@@ -175,23 +255,23 @@ function ReviewSession({ mode, onExit }: { mode: ReviewMode; onExit: () => void 
 
       if (!head) return rest
 
-      // Sai thì đẩy lại CUỐI hàng đợi — gặp lại trong cùng phiên là cách học,
-      // và lần nộp sau sẽ mang `is_retry: true`.
+      // Sai thì đẩy lại CUỐI hàng đợi — gặp lại trong cùng phiên là cách học, và
+      // lượt nộp sau sẽ được server đánh dấu là làm lại.
       const next = wasCorrect ? rest : [...rest, head]
 
-      if (next.length === 0) setFinished(true)
+      if (next.length === 0) finishNow()
 
       return next
     })
   }
 
   return (
-    // `animate-rise`: nhánh này mount mới khi `isPending` lật, nên nội dung tan
-    // vào đúng chỗ khung xương vừa đứng thay vì bị cắt cứng.
+    // `animate-rise`: nhánh này mount mới, nên nội dung tan vào đúng chỗ khung
+    // xương vừa đứng thay vì bị cắt cứng.
     <div className="animate-rise space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
-          <ReviewProgress current={done.total} total={items.length} />
+          <ReviewProgress current={answeredCount} total={session.planned_count} />
         </div>
         <Button variant="ghost" size="sm" onClick={onExit}>
           Đổi chế độ
