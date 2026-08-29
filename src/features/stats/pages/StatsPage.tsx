@@ -7,6 +7,9 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { StatsSkeleton } from '@/components/ui/PageSkeleton'
 import { Tabs } from '@/components/ui/Tabs'
+import { SessionHistoryItem } from '@/features/review/components/SessionHistoryItem'
+import { WeakWordItem } from '@/features/review/components/WeakWordItem'
+import { useSessionHistory, useWeakWords } from '@/features/review/hooks'
 import { ApiError } from '@/lib/api'
 import type { StatsRange } from '../api'
 import { DonutChart } from '../components/DonutChart'
@@ -24,6 +27,19 @@ export function StatsPage() {
   const [range, setRange] = useState<StatsRange>('week')
   const navigate = useNavigate()
   const stats = useStatsSummary(range)
+
+  /*
+   * Hai nguồn này KHÔNG chịu ảnh hưởng của bộ lọc khoảng thời gian ở trên.
+   *
+   * Chúng đọc endpoint riêng, không phải `/stats/summary`. "Sửa" cho chúng theo
+   * `range` sẽ tạo ra một tham số API không tồn tại — ghi rõ ở đây để lần sau
+   * không ai thử.
+   */
+  const history = useSessionHistory()
+  const weakWords = useWeakWords()
+
+  const recentSessions = (history.data?.pages[0]?.items ?? []).slice(0, 5)
+  const topWeakWords = (weakWords.data?.pages[0]?.items ?? []).slice(0, 5)
 
   return (
     <div className="space-y-4">
@@ -114,6 +130,60 @@ export function StatsPage() {
               <DonutChart distribution={stats.data.distribution} />
             </div>
           </Card>
+
+          {/* Ẩn HẲN khi rỗng, không hiện khung trống — cùng quy ước mà
+              `VocabularyCard` dùng cho nghĩa Việt thiếu. */}
+          {topWeakWords.length > 0 && (
+            <Card>
+              <h2 className="text-section">Từ hay sai</h2>
+
+              <div className="mt-2 space-y-1">
+                {topWeakWords.map((item) => (
+                  <WeakWordItem
+                    key={item.user_word_id}
+                    item={item}
+                    onSelect={() => void navigate(`/words/${item.word.id}`)}
+                  />
+                ))}
+              </div>
+
+              <Button
+                variant="secondary"
+                fullWidth
+                className="mt-3"
+                // `state.source` được `ModePicker` đọc và VALIDATE — màn ôn mở
+                // sẵn đúng nguồn thay vì bắt người dùng chọn lại.
+                onClick={() => void navigate('/review', { state: { source: 'weak' } })}
+              >
+                Ôn những từ này
+              </Button>
+            </Card>
+          )}
+
+          {recentSessions.length > 0 && (
+            <Card>
+              <h2 className="text-section">Phiên gần đây</h2>
+
+              <div className="mt-3 space-y-3">
+                {recentSessions.map((session) => (
+                  <SessionHistoryItem
+                    key={session.id}
+                    session={session}
+                    onSelect={() => void navigate(`/review/history/${session.id}`)}
+                  />
+                ))}
+              </div>
+
+              <Button
+                variant="ghost"
+                fullWidth
+                className="mt-3"
+                onClick={() => void navigate('/review/history')}
+              >
+                Xem tất cả
+              </Button>
+            </Card>
+          )}
         </div>
       )}
     </div>

@@ -41,6 +41,7 @@ export function VocabularyCard({
   variant = 'default',
   saved = false,
   loading = false,
+  wrongCount,
   onSelect,
   onToggleSave,
 }: {
@@ -48,6 +49,15 @@ export function VocabularyCard({
   variant?: VocabularyCardVariant
   saved?: boolean
   loading?: boolean
+  /*
+   * Số lần sai — prop DỮ LIỆU tuỳ chọn, không phải một variant hiển thị.
+   *
+   * Chỉ màn Kho từ truyền vào, vì chỉ ở đó mới có dữ liệu người dùng
+   * (`UserWordResource` đã trả sẵn `review_count`/`correct_count`, không cần
+   * đổi API). Màn Tìm kiếm không truyền → thẻ ở đó không đổi một pixel, và
+   * KHÔNG phát sinh lời gọi API nào.
+   */
+  wrongCount?: number
   onSelect?: () => void
   onToggleSave?: () => void
 }) {
@@ -97,11 +107,13 @@ export function VocabularyCard({
           <span className="text-body text-text-secondary line-clamp-2">{definition}</span>
         )}
 
-        {word.hsk_level !== null && (
-          <Badge tone="primary" className="mt-1">
-            HSK {word.hsk_level}
-          </Badge>
-        )}
+        <span className="mt-1 flex flex-wrap items-center gap-1.5">
+          {word.hsk_level !== null && <Badge tone="primary">HSK {word.hsk_level}</Badge>}
+
+          {/* Ẩn HẲN khi chưa từng sai — không hiện "sai 0 lần", cùng quy ước mà
+              nghĩa Việt thiếu dùng. */}
+          {typeof wrongCount === 'number' && wrongCount > 0 && <Badge>sai {wrongCount}</Badge>}
+        </span>
       </button>
 
       {onToggleSave && (

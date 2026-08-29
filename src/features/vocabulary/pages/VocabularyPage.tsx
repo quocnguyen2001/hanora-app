@@ -97,6 +97,9 @@ export function VocabularyPage() {
                 <VocabularyCard
                   word={item.word}
                   saved
+                  // Suy ra ở MỘT chỗ, không thêm cột nào ở server: số lần sai
+                  // đúng bằng hiệu hai bộ đếm mà cả hai chỉ tăng ở lượt đầu.
+                  wrongCount={item.review_count - item.correct_count}
                   onSelect={() => void navigate(`/words/${item.word.id}`)}
                   onToggleSave={() =>
                     // Đã ở trong kho nên đây luôn là thao tác BỎ lưu; truyền

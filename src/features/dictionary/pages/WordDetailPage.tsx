@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { IconButton } from '@/components/ui/IconButton'
 import { WordDetailSkeleton } from '@/components/ui/PageSkeleton'
+import { WordReviewHistory } from '@/features/review/components/WordReviewHistory'
 import { useSavedWordIds, useToggleSaveWord } from '@/features/vocabulary/hooks'
 import { useSpeech } from '@/hooks/use-speech'
 import { ApiError } from '@/lib/api'
@@ -113,6 +114,10 @@ export function WordDetailPage() {
           </ul>
         </Card>
       )}
+
+      {/* Chỉ hiện với từ ĐÃ LƯU: từ chưa lưu không có lịch sử ôn để nói, và
+          component tự bỏ qua lời gọi API trong trường hợp đó. */}
+      <WordReviewHistory wordId={word.id} saved={saved} />
     </div>
   )
 }
