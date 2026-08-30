@@ -279,6 +279,28 @@ describe('nộp bài', () => {
   })
 })
 
+describe('hết thẻ mà chưa chốt', () => {
+  it('hiện NÚT xem kết quả, không phải khung xương câm', async () => {
+    /*
+     * Trạng thái này server hiện không tạo ra (hết thẻ thì nó trả `session: null`),
+     * nhưng nếu việc chốt phiên không được kích hoạt vì bất kỳ lý do gì, màn
+     * hình phải có lối đi. Khung xương câm đứng mãi chính là thứ người dùng
+     * mô tả là "trả lời xong mà không có tổng kết".
+     */
+    startSession.mockResolvedValue({ ...started, items: [] })
+
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByText('Gõ lại'))
+
+    const button = await screen.findByRole('button', { name: 'Xem kết quả' })
+    await user.click(button)
+
+    await waitFor(() => expect(finishSession).toHaveBeenCalledTimes(1))
+    expect(await screen.findByText('50')).toBeInTheDocument()
+  })
+})
+
 describe('màn tổng kết', () => {
   async function finishSessionFlow() {
     const user = userEvent.setup()

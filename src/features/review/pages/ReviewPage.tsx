@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -18,7 +18,6 @@ import { ModePicker, type SessionConfig } from '../components/ModePicker'
 import { ReviewProgress } from '../components/ReviewProgress'
 import { SessionSummary } from '../components/SessionSummary'
 import { TypingCard } from '../components/TypingCard'
-import type { SessionDetail } from '../history-api'
 import { useFinishSession, useStartSession, useSubmitAnswer } from '../hooks'
 
 export function ReviewPage() {
@@ -141,13 +140,28 @@ function ReviewSession({
   onSelectWord: (wordId: number) => void
 }) {
   const submit = useSubmitAnswer()
-  const finish = useFinishSession()
+  // `mutate` ổn định về tham chiếu; bản thân object `finish` thì không, nên
+  // tách ra để `finishNow` có thể là một callback ổn định.
+  /*
+   * Đọc `data` của mutation làm kết quả, KHÔNG bọc qua `onSuccess` + state.
+   *
+   * Callback truyền vào `mutate(vars, { onSuccess })` gắn với lần gọi đó và bị
+   * BỎ khi observer được đăng ký lại — StrictMode dựng/dọn effect hai lượt là
+   * đúng tình huống đó, và hậu quả là request gửi đi thành công nhưng kết quả
+   * không bao giờ tới màn hình: người dùng trả lời xong thẻ cuối rồi ngồi nhìn
+   * khung xương. `data` sống trong chính mutation nên không rơi.
+   */
+  const {
+    mutate: finishMutate,
+    data: outcome,
+    isPending: finishPending,
+    isError: finishFailed,
+  } = useFinishSession()
 
   const [queue, setQueue] = useState<ReviewItem[]>(items)
   const [feedback, setFeedback] = useState<AnswerResult | null>(null)
   const [typed, setTyped] = useState('')
   const [selected, setSelected] = useState<number | null>(null)
-  const [outcome, setOutcome] = useState<SessionDetail | null>(null)
   const [answeredCount, setAnsweredCount] = useState(session.answered_count)
 
   /*
@@ -156,12 +170,44 @@ function ReviewSession({
    * `useRef` chứ không `useState`: đây không phải dữ liệu để render, và đặt nó
    * vào state sẽ kích hoạt một lượt render thừa mỗi lần sang thẻ mới.
    *
-   * Đặt lại ở `handleContinue` (sang thẻ kế) chứ không ở render — đọc `Date.now()`
-   * lúc render là một side effect, và StrictMode render hai lần.
+   * Khởi tạo bằng 0 rồi đặt trong effect, KHÔNG `useRef(Date.now())`: đọc đồng
+   * hồ lúc render là gọi hàm không thuần trong thân component, và StrictMode
+   * render hai lần nên giá trị đó không ổn định.
    */
-  const shownAt = useRef(Date.now())
+  const shownAt = useRef(0)
+
+  /** Đã gửi yêu cầu chốt phiên chưa — xem `finishNow`. */
+  const finishRequested = useRef(false)
 
   const current = queue[0]
+
+  // Đồng hồ chạy lại mỗi khi thẻ hiển thị đổi — gồm cả lần mount đầu tiên.
+  useEffect(() => {
+    shownAt.current = Date.now()
+  }, [current?.user_word_id])
+
+  /*
+   * Chốt phiên ĐÚNG MỘT LẦN.
+   *
+   * Khoá bằng `ref` chứ không bằng `isPending`: StrictMode gọi effect hai lượt
+   * liền nhau ở dev, và `isPending` chưa kịp bật giữa hai lượt đó — dùng nó làm
+   * cửa sẽ cho ra hai request. `ref` đặt đồng bộ nên lượt thứ hai bị chặn.
+   *
+   * Mở lại khi lỗi, để nút "Thử lại" còn dùng được.
+   */
+  const finishNow = useCallback(() => {
+    if (finishRequested.current) return
+
+    finishRequested.current = true
+
+    finishMutate(session.id, {
+      // Chỉ mở lại cửa khi lỗi, để nút "Thử lại" còn dùng được. Đường THÀNH
+      // CÔNG không cần callback — kết quả đọc từ `data`.
+      onError: () => {
+        finishRequested.current = false
+      },
+    })
+  }, [finishMutate, session.id])
 
   if (outcome) {
     return (
@@ -235,7 +281,7 @@ function ReviewSession({
    * vẫn an toàn trên server (bộ đếm cập nhật từng lượt), người dùng chỉ không
    * biết.
    */
-  if (finish.isError) {
+  if (finishFailed) {
     return (
       <EmptyState
         title="Không chốt được phiên"
@@ -254,20 +300,34 @@ function ReviewSession({
     )
   }
 
+  /*
+   * Hết thẻ nhưng chưa có kết quả.
+   *
+   * Lúc đang chốt thì khung xương là đúng. Nhưng nếu vì bất kỳ lý do gì việc
+   * chốt không được kích hoạt, màn hình PHẢI cho người dùng một lối đi thay vì
+   * một khung xương câm đứng mãi — đó chính là thứ hiện ra dưới dạng "trả lời
+   * xong thẻ cuối mà không có tổng kết".
+   *
+   * Không dùng `useEffect` để tự chốt: effect chạy hai lượt dưới StrictMode và
+   * callback của `mutate` gắn với lần gọi bị bỏ, nên cái "lưới" đó lại tự sinh
+   * ra đúng triệu chứng nó định chữa. Một cái nút thì không hỏng được.
+   */
   if (!current) {
+    if (finishPending) {
+      return (
+        <div aria-busy>
+          <ReviewSkeleton />
+        </div>
+      )
+    }
+
     return (
-      <div aria-busy>
-        <ReviewSkeleton />
-      </div>
+      <EmptyState
+        title="Xong hết thẻ rồi!"
+        description="Bấm để xem điểm và thời gian của phiên này."
+        action={<Button onClick={finishNow}>Xem kết quả</Button>}
+      />
     )
-  }
-
-  function finishNow() {
-    // Cửa thứ hai bên cạnh việc updater đã thuần: `finish` idempotent ở server
-    // nên bấm "Thử lại" luôn an toàn, nhưng không nên bắn trùng ngay từ đầu.
-    if (finish.isPending) return
-
-    finish.mutate(session.id, { onSuccess: setOutcome })
   }
 
   function handleSubmit(answer: { answerWordId?: number; text?: string }) {
@@ -317,7 +377,6 @@ function ReviewSession({
     setTyped('')
     setSelected(null)
     setQueue(next)
-    shownAt.current = Date.now()
 
     if (next.length === 0) finishNow()
   }
