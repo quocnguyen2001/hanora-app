@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useVoice } from '@/stores/voice'
+import { stubSynth, stubUtterance, voice } from '@/test/speech'
 import type { WordDetail } from '@/types/dictionary'
 import { WordDetailPage } from './pages/WordDetailPage'
 
@@ -46,31 +48,12 @@ function json(body: unknown): Response {
   })
 }
 
-/** jsdom KHÔNG có `speechSynthesis`; không giả lập thì mọi nút đều `unsupported`. */
-function stubSpeech(): void {
-  vi.stubGlobal('speechSynthesis', {
-    getVoices: () => [{ name: 'Tingting', lang: 'zh-CN', localService: true }],
-    cancel: vi.fn(),
-    speak: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  })
-  vi.stubGlobal(
-    'SpeechSynthesisUtterance',
-    class {
-      text: string
-      voice: SpeechSynthesisVoice | null = null
-      lang = ''
-      rate = 1
-      pitch = 1
-      constructor(text: string) {
-        this.text = text
-      }
-      // Không bắn `end`: câu ở trạng thái đang đọc suốt bài kiểm tra.
-      addEventListener() {}
-    },
-  )
-}
+/*
+ * Giọng nam đứng ĐẦU danh sách, giọng nữ đứng sau: thuật toán chấm điểm chọn
+ * `Tingting`, nên bài kiểm tra đổi giọng bên dưới phân biệt được "dùng giọng
+ * người dùng chọn" với "lấy đại phần tử đầu tiên".
+ */
+const VOICES = [voice('Kangkang', 'zh-CN'), voice('Tingting', 'zh-CN')]
 
 function Harness() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -86,8 +69,12 @@ function Harness() {
   )
 }
 
+let spoken: SpeechSynthesisUtterance[] = []
+
 beforeEach(() => {
-  stubSpeech()
+  stubUtterance()
+  spoken = stubSynth(VOICES)
+  useVoice.setState({ voiceURI: null })
   fetchMock.mockImplementation((input) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
 
@@ -123,5 +110,27 @@ describe('nút phát âm ở trang chi tiết từ', () => {
 
     expect(screen.getAllByRole('button', { name: 'Đang phát' })).toHaveLength(1)
     expect(screen.getAllByRole('button', { name: 'Phát âm' })).toHaveLength(buttons.length - 1)
+  })
+
+  it('đổi giọng ở cài đặt có hiệu lực ngay, không cần tải lại trang', async () => {
+    render(<Harness />)
+
+    const buttons = await screen.findAllByRole('button', { name: 'Phát âm' })
+    const first = buttons[0]
+    if (!first) throw new Error('không dựng được nút phát âm nào')
+
+    await userEvent.click(first)
+    expect(spoken.at(-1)?.voice?.name).toBe('Tingting')
+
+    /*
+     * Đổi store mà KHÔNG unmount/remount trang. Test nào dựng lại component
+     * giữa hai lần bấm là test rỗng — nó xanh kể cả khi hook chụp giọng một lần
+     * lúc mount, tức đúng cái lỗi nó phải bắt.
+     */
+    useVoice.setState({ voiceURI: 'Kangkang' })
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Phát âm' })[0] as HTMLElement)
+
+    expect(spoken.at(-1)?.voice?.name).toBe('Kangkang')
   })
 })

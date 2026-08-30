@@ -5,8 +5,27 @@
  * kén. Khi không có giọng, service báo `unsupported` và `AudioButton` chuyển
  * sang disabled kèm nhãn giải thích. Không bao giờ để nút chết bấm vào không có
  * gì xảy ra.
+ *
+ * Module này KHÔNG import store. Giọng người dùng chọn đi vào qua tham số của
+ * `speak()`, không phải qua một state toàn cục — nhờ vậy nó test được chỉ bằng
+ * cách stub `speechSynthesis`, và màn cài đặt nghe thử được một giọng KHÁC với
+ * giọng đang chọn mà không phải đụng vào store.
  */
 export type SpeechState = 'idle' | 'playing' | 'unsupported'
+
+/**
+ * Một giọng, ở dạng tầng giao diện cầm được.
+ *
+ * Không đưa `SpeechSynthesisVoice` thô lên UI: nó là đối tượng của trình duyệt,
+ * không serialize được và không stub gọn trong test.
+ */
+export interface VoiceOption {
+  uri: string
+  name: string
+  lang: string
+  /** Giọng cài sẵn trên máy: phát ngay, chạy được cả khi ngoại tuyến. */
+  local: boolean
+}
 
 const LANG_PREFIX = 'zh'
 
@@ -80,14 +99,65 @@ function scoreVoice(voice: SpeechSynthesisVoice): number {
   return score
 }
 
-function findChineseVoice(): SpeechSynthesisVoice | null {
-  const chinese = (synth()?.getVoices() ?? []).filter((voice) =>
+function chineseVoices(): SpeechSynthesisVoice[] {
+  return (synth()?.getVoices() ?? []).filter((voice) =>
     voice.lang.toLowerCase().startsWith(LANG_PREFIX),
   )
+}
 
-  if (chinese.length === 0) return null
+function bestVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+  if (voices.length === 0) return null
 
-  return chinese.reduce((best, voice) => (scoreVoice(voice) > scoreVoice(best) ? voice : best))
+  return voices.reduce((best, voice) => (scoreVoice(voice) > scoreVoice(best) ? voice : best))
+}
+
+/**
+ * Mọi giọng `zh-*` thiết bị có, sắp theo điểm giảm dần.
+ *
+ * Phần tử `[0]` chính là giọng chế độ "Tự động" sẽ chọn — màn cài đặt dựa vào
+ * điều đó để nói ra tên giọng đang được dùng thay vì để "Tự động" là hộp đen.
+ *
+ * `Array.prototype.sort` ổn định theo spec từ ES2019, nên những giọng cùng điểm
+ * giữ nguyên thứ tự trình duyệt trả về; danh sách không nhảy giữa hai lần mở màn.
+ */
+export function listChineseVoices(): VoiceOption[] {
+  /*
+   * Trùng `voiceURI` là có thật: một engine đăng ký cùng một giọng cho nhiều
+   * locale. Không lọc thì màn cài đặt dựng hai hàng cùng khóa — React cảnh báo
+   * trùng key, hai radio cùng được đánh dấu chọn, và mũi tên không bao giờ tới
+   * được hàng thứ hai. Lọc SAU khi sắp nên bản điểm cao nhất là bản sống sót.
+   */
+  const seen = new Set<string>()
+
+  return chineseVoices()
+    .sort((a, b) => scoreVoice(b) - scoreVoice(a))
+    .filter((voice) => {
+      if (seen.has(voice.voiceURI)) return false
+
+      seen.add(voice.voiceURI)
+
+      return true
+    })
+    .map((voice) => ({
+      uri: voice.voiceURI,
+      name: voice.name,
+      lang: voice.lang,
+      local: voice.localService,
+    }))
+}
+
+/**
+ * Giọng ứng với `voiceURI`, hoặc giọng chấm điểm cao nhất.
+ *
+ * URI không khớp thì rơi về chấm điểm chứ KHÔNG trả `null`: giọng đã lưu biến
+ * mất (đổi máy, đổi trình duyệt, iOS gỡ giọng) không phải lý do để nút loa chết.
+ * Người dùng nghe thấy đúng thứ họ nghe trước khi có tính năng này.
+ */
+function resolveVoice(voiceURI?: string | null): SpeechSynthesisVoice | null {
+  const voices = chineseVoices()
+  const chosen = voiceURI ? voices.find((voice) => voice.voiceURI === voiceURI) : undefined
+
+  return chosen ?? bestVoice(voices)
 }
 
 /**
@@ -114,12 +184,15 @@ export function onVoicesReady(callback: () => void): () => void {
 }
 
 export function isSupported(): boolean {
-  return synth() !== null && findChineseVoice() !== null
+  return synth() !== null && chineseVoices().length > 0
 }
 
-export function speak(text: string, onEnd?: () => void): boolean {
+export function speak(
+  text: string,
+  options?: { voiceURI?: string | null; onEnd?: () => void },
+): boolean {
   const speech = synth()
-  const voice = findChineseVoice()
+  const voice = resolveVoice(options?.voiceURI)
 
   if (!speech || !voice) return false
 
@@ -136,8 +209,8 @@ export function speak(text: string, onEnd?: () => void): boolean {
   // thành giọng hoạt hình và thanh điệu khó nghe ra.
   utterance.pitch = 1.2
 
-  utterance.addEventListener('end', () => onEnd?.())
-  utterance.addEventListener('error', () => onEnd?.())
+  utterance.addEventListener('end', () => options?.onEnd?.())
+  utterance.addEventListener('error', () => options?.onEnd?.())
 
   speech.speak(utterance)
 
