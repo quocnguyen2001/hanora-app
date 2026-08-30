@@ -123,6 +123,10 @@ export function SearchPage() {
         onPrefetch={prefetchWord}
         onToggleSave={(wordId) => toggleSave.mutate({ wordId, userWordId: null })}
         onRetry={() => void search.refetch()}
+        // Bấm một từ khoá cũ = gõ lại đúng chuỗi đó. Đi qua `setInput` chứ không
+        // gọi thẳng API: ô tìm kiếm phải hiện từ khoá vừa chọn, nếu không người
+        // dùng thấy kết quả đổi mà không biết mình đang tra gì.
+        onPickRecent={setInput}
       />
     </div>
   )
@@ -138,6 +142,7 @@ function SearchResults({
   onPrefetch,
   onToggleSave,
   onRetry,
+  onPickRecent,
 }: {
   query: string
   mode: SearchModeChoice
@@ -148,12 +153,13 @@ function SearchResults({
   onPrefetch: (id: number) => void
   onToggleSave: (wordId: number) => void
   onRetry: () => void
+  onPickRecent: (item: string) => void
 }) {
   const recent = useRecentSearches()
 
   // Ô rỗng → lịch sử tìm kiếm, không phải màn trắng.
   if (query === '') {
-    return <RecentSearches items={recent.items} onClear={recent.clear} />
+    return <RecentSearches items={recent.items} onClear={recent.clear} onPick={onPickRecent} />
   }
 
   /*
@@ -305,7 +311,15 @@ function SearchResults({
   )
 }
 
-function RecentSearches({ items, onClear }: { items: string[]; onClear: () => void }) {
+function RecentSearches({
+  items,
+  onClear,
+  onPick,
+}: {
+  items: string[]
+  onClear: () => void
+  onPick: (item: string) => void
+}) {
   if (items.length === 0) {
     return (
       <EmptyState
@@ -323,12 +337,31 @@ function RecentSearches({ items, onClear }: { items: string[]; onClear: () => vo
           Xóa
         </Button>
       </div>
+      {/*
+        Chip là `<button>` chứ KHÔNG phải `<span>`.
+
+        Trước đây đây là một `<span>` không có handler: nó mang nền pill, bo tròn
+        và màu nhấn — tức trông y hệt một thứ bấm được — mà chạm vào thì không có
+        gì xảy ra. Đó đúng là "nút chết" mà chính file này viện ra để cắt nút
+        camera và hai tab thừa; lịch sử tìm kiếm mà không tra lại được thì cũng
+        không còn lý do tồn tại.
+
+        `min-h-11` = 44px, ngưỡng vùng chạm tối thiểu — `py-2` cũ chỉ cho 38px.
+      */}
       <ul className="flex flex-wrap gap-2">
         {items.map((item) => (
           <li key={item}>
-            <span className="bg-primary-pale text-body text-text-secondary inline-flex rounded-full px-3 py-2">
+            <button
+              type="button"
+              onClick={() => onPick(item)}
+              className={cn(
+                'bg-primary-pale text-body text-text-secondary inline-flex min-h-11 items-center rounded-full px-4',
+                'duration-press ease-soft cursor-pointer transition active:scale-[0.97]',
+                'hover:bg-primary-soft hover:text-primary',
+              )}
+            >
               {item}
-            </span>
+            </button>
           </li>
         ))}
       </ul>
