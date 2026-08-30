@@ -2,7 +2,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { AudioButton } from '@/components/common/AudioButton'
 import { HanziText } from '@/components/common/HanziText'
 import { Pinyin } from '@/components/common/Pinyin'
-import { CloseIcon } from '@/components/icons'
+import { ChevronLeftIcon } from '@/components/icons'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -35,7 +35,11 @@ export function SentenceDetailPage() {
   const speech = useSpeech()
 
   const back = (
-    <IconButton label="Quay lại" icon={<CloseIcon size={20} />} onClick={() => void navigate(-1)} />
+    <IconButton
+      label="Quay lại"
+      icon={<ChevronLeftIcon size={20} />}
+      onClick={() => void navigate(-1)}
+    />
   )
 
   if (zh.trim() === '') {
@@ -91,6 +95,16 @@ export function SentenceDetailPage() {
         {back}
         <Badge tone="primary">AI phân tích</Badge>
       </div>
+
+      {/*
+        `<h1>` của màn này — `sr-only` vì cùng lý do đã ghi ở `WordDetailPage`:
+        chữ Hán trong hero đã giữ thứ bậc thị giác, chỉ thiếu mốc ngữ nghĩa.
+
+        Có tiền tố `Chi tiết câu:` chứ không phải chuỗi Hán trần. Chuỗi trần sẽ
+        LẶP nguyên văn câu đang hiện ngay bên dưới: screen reader đọc hai lần,
+        và `getByText` không còn phân biệt được hai nút đó nữa.
+      */}
+      <h1 className="sr-only">Chi tiết câu: {data.zh}</h1>
 
       <section className="bg-surface shadow-card rounded-hero space-y-2 p-5">
         <div className="flex items-start gap-3">

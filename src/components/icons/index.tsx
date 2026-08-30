@@ -180,6 +180,21 @@ export const ChevronRightIcon = (props: IconProps) => (
   </Icon>
 )
 
+/**
+ * Nút quay lại ở các màn chi tiết.
+ *
+ * Tách khỏi `CloseIcon` vì hai dấu này nói hai chuyện khác nhau trên mobile: ✕
+ * là "đóng lớp phủ này lại", ← là "lùi một bậc trong ngăn xếp điều hướng". Ba
+ * màn chi tiết (từ, câu, phiên ôn) đều là TRANG thật có URL riêng chứ không
+ * phải sheet, nên chúng cần dấu thứ hai — và dấu ← còn khớp hướng của cử chỉ
+ * vuốt-để-lùi mà cả iOS lẫn Android đều dùng.
+ */
+export const ChevronLeftIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m15 5-7 7 7 7" />
+  </Icon>
+)
+
 export const TextSizeIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M3 7V5h8v2M7 5v14M13 12v-1.5h7V12M16.5 10.5V19" />

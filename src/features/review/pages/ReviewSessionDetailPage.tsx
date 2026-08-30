@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router'
-import { CloseIcon } from '@/components/icons'
+import { ChevronLeftIcon } from '@/components/icons'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -60,13 +60,16 @@ export function ReviewSessionDetailPage() {
       {/* Nút quay lại như mọi màn chi tiết khác — nếu không, lối ra duy nhất là
           nút back của trình duyệt: tab "Ôn tập" đưa về `/review`, không về
           danh sách. */}
-      <div className="flex items-center justify-between">
-        <IconButton
-          label="Quay lại lịch sử"
-          icon={<CloseIcon size={20} />}
-          onClick={() => void navigate('/review/history')}
-        />
-      </div>
+      {/* Lớp bọc `justify-between` cũ chỉ có một con nên không sắp xếp gì — bỏ. */}
+      <IconButton
+        label="Quay lại lịch sử"
+        icon={<ChevronLeftIcon size={20} />}
+        onClick={() => void navigate('/review/history')}
+      />
+
+      {/* `<h1>` của màn này — `SessionScoreCard` bên dưới đã giữ thứ bậc thị
+          giác, đây chỉ bù mốc ngữ nghĩa còn thiếu. */}
+      <h1 className="sr-only">Chi tiết phiên ôn tập</h1>
 
       <SessionScoreCard
         score={session.score}

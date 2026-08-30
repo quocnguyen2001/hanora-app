@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router'
 import { AudioButton } from '@/components/common/AudioButton'
 import { WordDetailHero } from '@/components/common/WordDetailHero'
-import { CloseIcon } from '@/components/icons'
+import { ChevronLeftIcon } from '@/components/icons'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -73,13 +73,26 @@ export function WordDetailPage() {
     // `animate-rise`: nhánh này mount mới khi `isPending` lật, nên nội dung tan
     // vào đúng chỗ khung xương vừa đứng thay vì bị cắt cứng.
     <div className="animate-rise space-y-4">
-      <div className="flex items-center justify-between">
-        <IconButton
-          label="Quay lại"
-          icon={<CloseIcon size={20} />}
-          onClick={() => void navigate(-1)}
-        />
-      </div>
+      {/* `justify-between` cũ bọc đúng MỘT nút nên nó không sắp xếp gì cả — bỏ
+          luôn lớp bọc thay vì giữ một flex container một con. */}
+      <IconButton
+        label="Quay lại"
+        icon={<ChevronLeftIcon size={20} />}
+        onClick={() => void navigate(-1)}
+      />
+
+      {/*
+        `<h1>` của màn này. `sr-only` vì thứ bậc THỊ GIÁC đã đúng sẵn — chữ Hán
+        trong hero là thứ to nhất trang — nhưng thứ bậc NGỮ NGHĨA thì hụt: trang
+        nhảy thẳng từ không có `<h1>` sang `<h2>Hán tự`, nên người dùng screen
+        reader mất mốc "đang ở trang nào".
+
+        Không đưa `<h1>` vào `WordDetailHero`: hero còn được `GalleryPage` dùng,
+        mà trang đó đã có `<h1>Gallery</h1>` của riêng nó.
+      */}
+      <h1 className="sr-only">
+        {word.simplified} — {word.pinyin}
+      </h1>
 
       <WordDetailHero
         word={word}
