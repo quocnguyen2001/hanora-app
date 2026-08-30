@@ -37,7 +37,7 @@ export function WordDetailHero({
   illustration?: React.ReactNode
 }) {
   return (
-    <section className="bg-surface shadow-card flex flex-col items-center gap-3 rounded-hero p-6 text-center">
+    <section className="bg-surface shadow-card rounded-hero flex flex-col items-center gap-3 p-6 text-center">
       <HanziText size="hero">{word.simplified}</HanziText>
 
       {word.traditional !== word.simplified && (
@@ -72,7 +72,7 @@ export function WordDetailHero({
         Anh, đúng như trước phase này.
       */}
       {word.definitions_vi && word.definitions_vi.length > 0 && (
-        <ul className="text-meaning text-text-primary mt-1 space-y-1">
+        <ul className="text-meaning text-text-primary mt-1 w-full space-y-1 text-left">
           {word.definitions_vi.map((meaning) => (
             <li key={meaning}>{meaning}</li>
           ))}
@@ -89,7 +89,22 @@ export function WordDetailHero({
         duy nhất người học có khi nghi ngờ. Nó nhạt hơn nghĩa Việt về mặt thị
         giác, nhưng có mặt.
       */}
-      <ul className="text-body text-text-secondary space-y-1">
+      {/*
+        HAI khối nghĩa căn TRÁI, phần còn lại của hero vẫn căn giữa.
+
+        Khối nhận diện phía trên — chữ Hán, pinyin, âm Hán-Việt, badge, ảnh — là
+        những dòng ngắn, một dòng mỗi thứ, và căn giữa làm chúng đọc ra như một
+        khối duy nhất. Hai danh sách nghĩa thì ngược lại: chúng nhiều mục, dài
+        ngắn khác nhau, và trên máy 360px gần như mục nào cũng xuống dòng. Căn
+        giữa một danh sách như thế cho mỗi mục một mép trái riêng, nên mắt phải
+        dò lại điểm bắt đầu ở từng dòng — chính thứ mà quy tắc độ dài dòng của
+        `responsive.md` muốn tránh.
+
+        `w-full` là BẮT BUỘC đi kèm `text-left`. Cha là `flex flex-col
+        items-center`, nên `<ul>` co về đúng bề rộng nội dung và một mình
+        `text-left` sẽ không đổi gì thấy được.
+      */}
+      <ul className="text-body text-text-secondary w-full space-y-1 text-left">
         {word.definitions_en.map((definition) => (
           <li key={definition}>{definition}</li>
         ))}

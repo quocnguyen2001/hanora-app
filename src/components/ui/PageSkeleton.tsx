@@ -146,8 +146,10 @@ function CardShellSkeleton({ children }: { children: ReactNode }) {
  *     được — `h-40` (160px) hụt 55px ở mobile và hụt 104px ở desktop. Đây là
  *     nguyên nhân nhảy layout lớn nhất của màn này, và nó chỉ lộ ra khi tính
  *     theo tỉ lệ khung hình chứ không phải khi nhìn.
- *   - `StatCard` cao đúng 72px (`p-4` 32 + caption 18 + section 22), không phải
- *     80px của `h-20`.
+ *   - `StatCard` xếp DỌC nên cao đúng 100px (`p-4` 32 + icon 20 + caption 18 +
+ *     section 22 + hai `gap-1` 8). Bản `h-20` cũ hụt 20px, và bản ngang trước
+ *     đó hụt 28px — chiều cao ở đây phải đi theo `StatCard`, sửa một bên là
+ *     phải sửa cả bên kia.
  *
  * `aspect-320/120` sao chép đúng `viewBox` của `LineChart`, nên xương co giãn
  * cùng nhịp với biểu đồ thật ở mọi bề rộng.
@@ -167,15 +169,10 @@ export function StatsSkeleton() {
 
       <div className="grid grid-cols-3 gap-3">
         {Array.from({ length: 3 }, (_, index) => (
-          <div
-            key={index}
-            className="bg-surface shadow-card rounded-card flex items-center gap-3 p-4"
-          >
-            <Skeleton className="size-5 shrink-0 rounded-full" />
-            <div className="flex-1">
-              <Skeleton className="h-4.5 w-10" />
-              <Skeleton className="h-5.5 w-8" />
-            </div>
+          <div key={index} className="bg-surface shadow-card rounded-card flex flex-col gap-1 p-4">
+            <Skeleton className="size-5 rounded-full" />
+            <Skeleton className="h-4.5 w-full" />
+            <Skeleton className="h-5.5 w-8" />
           </div>
         ))}
       </div>
