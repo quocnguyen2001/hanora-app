@@ -83,8 +83,8 @@ export function WordDetailPage() {
 
       <WordDetailHero
         word={word}
-        audioState={speech.state}
-        onPlayAudio={() => speech.play(word.simplified)}
+        audioState={speech.stateFor('word')}
+        onPlayAudio={() => speech.play(word.simplified, 'word')}
         actions={
           <Button
             variant={saved ? 'secondary' : 'primary'}
@@ -107,12 +107,14 @@ export function WordDetailPage() {
         <Card>
           <h2 className="text-section">Hán tự</h2>
           <ul className="mt-3 space-y-3">
-            {word.characters.map((character) => (
+            {word.characters.map((character, index) => (
               <CharacterRow
                 key={`${character.char}-${character.pinyin}`}
                 character={character}
-                audioState={speech.state}
-                onPlay={() => speech.play(character.char)}
+                /* Khoá theo VỊ TRÍ: từ láy (谢谢) có hai Hán tự giống hệt nhau,
+                   khoá theo chữ sẽ làm cả hai nút cùng sáng. */
+                audioState={speech.stateFor(`char:${index}`)}
+                onPlay={() => speech.play(character.char, `char:${index}`)}
               />
             ))}
           </ul>
@@ -146,8 +148,8 @@ export function WordDetailPage() {
                 // không có gì bảo đảm trả về cùng một thứ tự.
                 translation={translationById.get(example.id) ?? null}
                 translating={translating}
-                audioState={speech.state}
-                onPlay={() => speech.play(example.sentence_zh)}
+                audioState={speech.stateFor(`example:${example.id}`)}
+                onPlay={() => speech.play(example.sentence_zh, `example:${example.id}`)}
               />
             ))}
           </ul>
