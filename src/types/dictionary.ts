@@ -51,6 +51,33 @@ export interface ExampleSentence {
   license: string
 }
 
+/**
+ * Bản dịch tiếng Việt của MỘT câu ví dụ.
+ *
+ * Đến từ một endpoint RIÊNG chứ không nằm trong `WordDetail`, và đó là bản chất
+ * chứ không phải cách đóng gói: response chi tiết từ được cache dài hạn, còn bản
+ * dịch thì điền dần khi có người mở từ. Nhét nó vào `WordDetail` là đóng băng
+ * `null` trên CDN cho mọi từ chưa ai mở.
+ *
+ * `id` là id của chính câu ví dụ. Ghép theo id, KHÔNG theo thứ tự mảng.
+ */
+export interface ExampleTranslation {
+  id: number
+  translation_vi: string
+}
+
+/**
+ * Trạng thái lớp dịch câu ví dụ, đọc từ `meta.status`.
+ *
+ * `unavailable` KHÔNG phải lỗi — nó là "chưa dịch được và sẽ không thử nữa"
+ * (cạn lượt, hoặc lớp AI đang tắt). Khối "Ví dụ" khi đó trông đúng như trước
+ * khi có tính năng này: câu Hán, bản tiếng Anh, dòng ghi công.
+ *
+ * Mỗi trạng thái vẫn kèm phần ĐÃ dịch được: một từ có thể xong 2 câu rồi cạn
+ * lượt ở câu thứ ba.
+ */
+export type ExampleTranslationStatus = 'ready' | 'pending' | 'unavailable'
+
 export interface WordDetail extends WordSummary {
   characters: CharacterBreakdown[]
   /** Rỗng là trạng thái HỢP LỆ — FE ẩn hẳn section, không hiện khung trống. */

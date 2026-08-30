@@ -1,6 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SearchModeChoice } from '@/stores/search-mode'
-import { fetchSentence, fetchWord, fetchWordIllustration, searchWords } from './api'
+import {
+  fetchExampleTranslations,
+  fetchSentence,
+  fetchWord,
+  fetchWordIllustration,
+  searchWords,
+} from './api'
 
 /** Query key — nơi duy nhất khai báo, theo quy ước P2. */
 export const dictionaryKeys = {
@@ -19,6 +25,7 @@ export const dictionaryKeys = {
    */
   sentence: (zh: string) => ['dictionary', 'sentence', zh] as const,
   illustration: (id: number) => ['dictionary', 'illustration', id] as const,
+  exampleTranslations: (id: number) => ['dictionary', 'example-translations', id] as const,
 }
 
 /*
@@ -99,8 +106,11 @@ export function useSentence(zh: string) {
 
 /**
  * Nhịp hỏi lại khi API còn báo `pending`, khớp `Retry-After: 3` mà nó trả về.
+ *
+ * Dùng chung cho cả ảnh minh hoạ lẫn dịch câu ví dụ: hai lớp lười này bám cùng
+ * một `Retry-After` từ API, nên hai hằng số riêng chỉ là hai chỗ để lệch nhau.
  */
-const ILLUSTRATION_POLL_MS = 3000
+const LAZY_POLL_MS = 3000
 
 /**
  * Trần số lần hỏi lại (~30 giây).
@@ -109,7 +119,7 @@ const ILLUSTRATION_POLL_MS = 3000
  * thời gian người dùng còn mở trang — một request mỗi 3 giây cho một câu trả
  * lời không bao giờ tới.
  */
-const ILLUSTRATION_MAX_POLLS = 10
+const LAZY_MAX_POLLS = 10
 
 /**
  * Ảnh minh hoạ của một từ.
@@ -131,7 +141,32 @@ export function useWordIllustration(id: number) {
 
       // `dataUpdateCount` đếm số lần queryFn trả về thành công, tức đúng số lần
       // đã hỏi. Chạm trần thì thôi, coi như từ này không có ảnh.
-      return query.state.dataUpdateCount >= ILLUSTRATION_MAX_POLLS ? false : ILLUSTRATION_POLL_MS
+      return query.state.dataUpdateCount >= LAZY_MAX_POLLS ? false : LAZY_POLL_MS
+    },
+  })
+}
+
+/**
+ * Nghĩa tiếng Việt của các câu ví dụ.
+ *
+ * `enabled` phải do chỗ gọi truyền vào theo SỐ CÂU ví dụ của từ: ~15% từ trong
+ * tập ưu tiên không có câu nào, và gọi endpoint dịch cho chúng là một request
+ * chắc chắn trả về mảng rỗng.
+ *
+ * `retry: false` và vòng poll có trần — cùng hai lý do mà `useWordIllustration`
+ * đã ghi: API tự đếm và dừng sau 3 lần hỏng, còn một job kẹt ở `pending` không
+ * được phép để lại một vòng poll chạy mãi.
+ */
+export function useExampleTranslations(id: number, options: { enabled: boolean }) {
+  return useQuery({
+    queryKey: dictionaryKeys.exampleTranslations(id),
+    queryFn: () => fetchExampleTranslations(id),
+    enabled: options.enabled && Number.isFinite(id) && id > 0,
+    retry: false,
+    refetchInterval: (query) => {
+      if (query.state.data?.status !== 'pending') return false
+
+      return query.state.dataUpdateCount >= LAZY_MAX_POLLS ? false : LAZY_POLL_MS
     },
   })
 }

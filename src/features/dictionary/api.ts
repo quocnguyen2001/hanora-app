@@ -1,6 +1,8 @@
 import { ApiError, apiRequestWithMeta, apiRequest } from '@/lib/api'
 import type { SearchModeChoice } from '@/stores/search-mode'
 import type {
+  ExampleTranslation,
+  ExampleTranslationStatus,
   SearchMeta,
   SearchTranslation,
   SentenceDetail,
@@ -101,6 +103,53 @@ export async function fetchSentence(zh: string): Promise<SentenceDetail> {
   }
 
   return data
+}
+
+/**
+ * Nghĩa tiếng Việt của các câu ví dụ thuộc một từ.
+ *
+ * `data` LUÔN là mảng, kể cả khi `status` là `pending` hay `unavailable`: một từ
+ * có thể dịch xong 2 câu rồi cạn lượt ở câu thứ ba, và vứt cả lô khi đó là vứt
+ * đi hai bản dịch đã có.
+ *
+ * KHÔNG ném khi chưa có gì — khác `fetchSentence`. Ở đó `null` nghĩa là "phân
+ * tích hỏng"; ở đây "chưa dịch xong" là một câu trả lời THÀNH CÔNG, và câu ví dụ
+ * vẫn đọc được bằng bản tiếng Anh.
+ */
+export async function fetchExampleTranslations(
+  wordId: number,
+): Promise<{ translations: ExampleTranslation[]; status: ExampleTranslationStatus }> {
+  const envelope = await apiRequestWithMeta<unknown>(
+    `/dictionary/words/${wordId}/example-translations`,
+  )
+
+  const meta = envelope.meta as { status?: unknown } | undefined
+  const raw = typeof meta?.status === 'string' ? meta.status : 'unavailable'
+  const status: ExampleTranslationStatus = (['ready', 'pending', 'unavailable'] as const).includes(
+    raw as ExampleTranslationStatus,
+  )
+    ? (raw as ExampleTranslationStatus)
+    : 'unavailable'
+
+  /*
+   * Kiểm từng mục thay vì tin cả mảng, cùng tinh thần phòng vệ mà
+   * `parseIllustration` giữ: một mục hỏng chỉ được làm mất đúng dòng tiếng Việt
+   * của nó, không được kéo theo cả khối ví dụ.
+   */
+  const translations = Array.isArray(envelope.data)
+    ? envelope.data.flatMap((item): ExampleTranslation[] => {
+        if (item === null || typeof item !== 'object') return []
+
+        const value = item as Record<string, unknown>
+        const text = typeof value.translation_vi === 'string' ? value.translation_vi.trim() : ''
+
+        if (typeof value.id !== 'number' || text === '') return []
+
+        return [{ id: value.id, translation_vi: text }]
+      })
+    : []
+
+  return { translations, status }
 }
 
 /**

@@ -7,12 +7,13 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { IconButton } from '@/components/ui/IconButton'
 import { WordDetailSkeleton } from '@/components/ui/PageSkeleton'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { WordReviewHistory } from '@/features/review/components/WordReviewHistory'
 import { useSavedWordIds, useToggleSaveWord } from '@/features/vocabulary/hooks'
 import { useSpeech } from '@/hooks/use-speech'
 import { ApiError } from '@/lib/api'
 import type { CharacterBreakdown, ExampleSentence } from '@/types/dictionary'
-import { useWord } from '../hooks'
+import { useExampleTranslations, useWord } from '../hooks'
 
 export function WordDetailPage() {
   const params = useParams<{ id: string }>()
@@ -21,6 +22,13 @@ export function WordDetailPage() {
 
   const { data: word, isPending, isError, error, refetch } = useWord(wordId)
   const savedIds = useSavedWordIds()
+  /*
+   * Gọi SAU khi `word` đã có, và chỉ khi từ này thật sự có câu ví dụ. `useWord`
+   * còn `isPending` thì `word` là `undefined` và hook tự đứng im.
+   */
+  const translations = useExampleTranslations(wordId, {
+    enabled: (word?.examples.length ?? 0) > 0,
+  })
   const toggleSave = useToggleSaveWord()
   const speech = useSpeech()
 
@@ -47,6 +55,19 @@ export function WordDetailPage() {
   }
 
   const saved = savedIds.data?.has(word.id) ?? false
+
+  const translationById = new Map(
+    (translations.data?.translations ?? []).map((item) => [item.id, item.translation_vi]),
+  )
+
+  /*
+   * Còn đang dịch: đây là thứ quyết định câu CHƯA có bản dịch hiện dòng chờ hay
+   * không hiện gì. `unavailable` phải rơi vào vế "không hiện gì" — khối ví dụ khi
+   * đó trông đúng như trước khi có tính năng này.
+   */
+  const translating = translations.isPending || translations.data?.status === 'pending'
+
+  const hasAnyTranslation = translationById.size > 0
 
   return (
     // `animate-rise`: nhánh này mount mới khi `isPending` lật, nên nội dung tan
@@ -102,11 +123,29 @@ export function WordDetailPage() {
       {word.examples.length > 0 && (
         <Card>
           <h2 className="text-section">Ví dụ</h2>
-          <ul className="mt-3 space-y-4">
+
+          {/*
+            Nhãn nguồn — nghĩa vụ gắn nhãn nội dung AI của dự án, cùng quy ước mà
+            thẻ dịch ở màn Tìm kiếm đang giữ.
+
+            MỘT lần cho cả khối, không phải mỗi câu: ba nhãn giống hệt nhau trong
+            một thẻ là nhiễu, và người đọc bỏ qua cả ba.
+          */}
+          {hasAnyTranslation && (
+            <p className="text-caption text-text-secondary mt-1">
+              Nghĩa tiếng Việt do AI dịch từ bản tiếng Anh.
+            </p>
+          )}
+
+          <ul className="mt-3 space-y-4" aria-busy={translating}>
             {word.examples.map((example) => (
               <ExampleRow
                 key={example.id}
                 example={example}
+                // Ghép theo id, KHÔNG theo thứ tự mảng: hai truy vấn khác nhau
+                // không có gì bảo đảm trả về cùng một thứ tự.
+                translation={translationById.get(example.id) ?? null}
+                translating={translating}
                 audioState={speech.state}
                 onPlay={() => speech.play(example.sentence_zh)}
               />
@@ -124,10 +163,14 @@ export function WordDetailPage() {
 
 function ExampleRow({
   example,
+  translation,
+  translating,
   audioState,
   onPlay,
 }: {
   example: ExampleSentence
+  translation: string | null
+  translating: boolean
   audioState: ReturnType<typeof useSpeech>['state']
   onPlay: () => void
 }) {
@@ -140,7 +183,33 @@ function ExampleRow({
         <AudioButton state={audioState} onPlay={onPlay} size="sm" />
       </div>
 
-      {/* KHÔNG có dòng pinyin cho câu (D6). */}
+      {/*
+        Nghĩa tiếng Việt đứng TRÊN dòng tiếng Anh và ở bậc chữ cao hơn: đây là
+        dòng người học đọc trước.
+
+        Không có bản dịch thì ẩn HẲN, không hiện khung trống — cùng quy ước mà
+        `han_viet: null` và `examples: []` đang giữ.
+      */}
+      {translation !== null && <p className="text-meaning text-text-primary">{translation}</p>}
+
+      {/*
+        `h-6` khớp hộp dòng của `text-meaning` (24px), nên bản dịch tới nơi thay
+        vào đúng chỗ khung xương đang đứng thay vì đẩy phần còn lại của thẻ xuống.
+
+        Skeleton chứ không phải spinner hay chữ "đang dịch", theo `ux-rules.md`:
+        spinner nói "đang chờ", skeleton nói "sắp có gì ở đây".
+      */}
+      {translation === null && translating && <Skeleton className="h-6 w-4/5" />}
+
+      {/*
+        Dòng tiếng Anh Ở LẠI, nhỏ và nhạt hơn dòng Việt.
+
+        Bản Việt do máy dịch và không có người rà, nên đây là cơ chế đối chiếu duy
+        nhất người học có — cùng lý do `definitions_vi` không bao giờ thay thế
+        `definitions_en`.
+
+        KHÔNG có dòng pinyin cho câu (D6).
+      */}
       <p className="text-body text-text-secondary">{example.translation_en}</p>
 
       {/*
