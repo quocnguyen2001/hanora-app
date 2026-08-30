@@ -4,8 +4,23 @@
  * Con số hiển thị bằng CHỮ chứ không chỉ bằng độ dài thanh: thanh màu một mình
  * không nói được còn bao nhiêu thẻ, và người dùng screen reader thì không thấy
  * gì cả.
+ *
+ * `current` phải là SỐ THẺ ĐÃ XONG (đã trả lời đúng và rời hàng đợi), không
+ * phải số lượt đã nộp. Hai con số đó bằng nhau cho tới khi có một câu sai: thẻ
+ * sai quay lại cuối hàng đợi, và nếu đếm theo lượt nộp thì thanh chạm 6/6 trong
+ * khi màn hình vẫn còn thẻ — người dùng đọc đó là "đã xong mà không có tổng
+ * kết", và không có gì nói cho họ biết còn lại bao nhiêu.
  */
-export function ReviewProgress({ current, total }: { current: number; total: number }) {
+export function ReviewProgress({
+  current,
+  total,
+  retrying = false,
+}: {
+  current: number
+  total: number
+  /** Mọi thẻ đã trả lời lượt đầu; phần còn lại là làm lại thẻ đã sai. */
+  retrying?: boolean
+}) {
   /*
    * Kẹp trong [0, total]: `aria-valuenow` lớn hơn `aria-valuemax` là hợp đồng
    * ARIA sai, và số hiển thị kiểu "13 / 10" thì vô nghĩa. Server hiện chỉ đếm
@@ -18,7 +33,9 @@ export function ReviewProgress({ current, total }: { current: number; total: num
   return (
     <div className="space-y-1.5">
       <div className="text-caption text-text-secondary flex items-center justify-between">
-        <span>Tiến độ</span>
+        {/* Nói rõ đang ở vòng nào: thẻ lặp lại mà không giải thích thì trông
+            như màn hình bị kẹt. */}
+        <span>{retrying ? 'Làm lại thẻ đã sai' : 'Tiến độ'}</span>
         <span>
           {safeCurrent} / {total}
         </span>
@@ -28,7 +45,11 @@ export function ReviewProgress({ current, total }: { current: number; total: num
         aria-valuenow={safeCurrent}
         aria-valuemin={0}
         aria-valuemax={total}
-        aria-label={`Đã làm ${safeCurrent} trên ${total} thẻ`}
+        aria-label={
+          retrying
+            ? `Còn ${total - safeCurrent} thẻ sai cần làm lại`
+            : `Đã xong ${safeCurrent} trên ${total} thẻ`
+        }
         className="bg-primary-pale h-2 overflow-hidden rounded-full"
       >
         <div

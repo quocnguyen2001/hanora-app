@@ -387,7 +387,16 @@ function ReviewSession({
     <div className="animate-rise space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
-          <ReviewProgress current={answeredCount} total={session.planned_count} />
+          {/*
+            Thẻ ĐÃ XONG = số thẻ đã rời hàng đợi. Một thẻ chỉ rời hàng đợi khi
+            trả lời đúng, nên con số này chạm `planned_count` đúng vào lúc phiên
+            kết thúc — không còn cảnh thanh đầy mà màn hình vẫn còn thẻ.
+          */}
+          <ReviewProgress
+            current={session.planned_count - queue.length}
+            total={session.planned_count}
+            retrying={answeredCount >= session.planned_count}
+          />
         </div>
         <Button variant="ghost" size="sm" onClick={onExit}>
           Đổi chế độ

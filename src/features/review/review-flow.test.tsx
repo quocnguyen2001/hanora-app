@@ -279,6 +279,40 @@ describe('nộp bài', () => {
   })
 })
 
+describe('thanh tiến độ trong vòng làm lại', () => {
+  it('KHÔNG đầy khi thẻ sai còn phải làm lại', async () => {
+    /*
+     * Đây là thứ người dùng báo là "trả lời xong câu cuối mà không có tổng kết".
+     *
+     * Đếm theo LƯỢT NỘP: mọi thẻ đã trả lời lượt đầu → thanh chạm 1/1, trong khi
+     * thẻ sai đã quay lại cuối hàng đợi và màn hình vẫn còn thẻ. Không có gì nói
+     * cho người dùng biết vì sao thẻ lặp lại hay còn bao nhiêu.
+     *
+     * Đếm theo thẻ ĐÃ XONG: thẻ chỉ rời hàng đợi khi trả lời đúng, nên thanh chỉ
+     * đầy đúng lúc phiên kết thúc.
+     */
+    submitAnswer.mockResolvedValue({
+      ...answerResult,
+      correct: false,
+      session: { ...session, answered_count: 1, correct_count: 0 },
+    })
+
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(screen.getByText('Gõ lại'))
+    await user.type(await screen.findByRole('textbox'), 'sai')
+    await user.keyboard('{Enter}')
+    await user.click(await screen.findByRole('button', { name: /Tiếp tục|Câu tiếp/i }))
+
+    // Server báo đã nộp 1/1 lượt, nhưng thẻ sai vẫn nằm trong hàng đợi.
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0')
+    expect(screen.getByText('0 / 1')).toBeInTheDocument()
+    expect(screen.getByText('Làm lại thẻ đã sai')).toBeInTheDocument()
+    expect(finishSession).not.toHaveBeenCalled()
+  })
+})
+
 describe('hết thẻ mà chưa chốt', () => {
   it('hiện NÚT xem kết quả, không phải khung xương câm', async () => {
     /*
