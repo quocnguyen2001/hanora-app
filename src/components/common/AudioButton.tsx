@@ -15,16 +15,32 @@ export function AudioButton({
   state = 'idle',
   onPlay,
   size = 'md',
+  name,
 }: {
   state?: AudioState
   onPlay?: () => void
   size?: 'sm' | 'md'
+  /**
+   * Đối tượng của nút, gắn thêm vào nhãn.
+   *
+   * Cần khi một màn có nhiều nút loa KHÁC ĐỐI TƯỢNG nhau — màn Giọng đọc có một
+   * nút cho mỗi giọng, và mười lăm nút cùng tên "Phát âm" thì người dùng screen
+   * reader nghe xong vẫn không biết mình đang nghe thử giọng nào.
+   *
+   * Trang chi tiết từ thì KHÔNG cần: ở đó các nút đứng ngay cạnh nội dung của
+   * chính nó, ngữ cảnh đã đủ.
+   */
+  name?: string
 }) {
-  const label = {
+  const base = {
     idle: 'Phát âm',
     playing: 'Đang phát',
     unsupported: 'Thiết bị không hỗ trợ phát âm tiếng Trung',
   }[state]
+
+  // Trạng thái không hỗ trợ giữ nguyên câu giải thích — dán thêm tên giọng vào
+  // một lời từ chối chỉ làm nó khó đọc hơn.
+  const label = name && state !== 'unsupported' ? `${base} ${name}` : base
 
   return (
     <IconButton

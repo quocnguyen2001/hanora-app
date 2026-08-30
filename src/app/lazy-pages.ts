@@ -70,6 +70,12 @@ export const DisplaySettingsPage = lazy(() =>
   })),
 )
 
+export const VoiceSettingsPage = lazy(() =>
+  import('@/features/settings/pages/VoiceSettingsPage').then((m) => ({
+    default: m.VoiceSettingsPage,
+  })),
+)
+
 export const GalleryPage = lazy(() =>
   import('@/features/gallery/pages/GalleryPage').then((m) => ({ default: m.GalleryPage })),
 )

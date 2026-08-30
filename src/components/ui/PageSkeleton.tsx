@@ -210,6 +210,26 @@ export function AccountCardSkeleton() {
 }
 
 /**
+ * Danh sách giọng ở màn Giọng đọc.
+ *
+ * Dùng ở CẢ HAI chỗ theo đúng luật đã ghi ở đầu file: fallback cấp route, và
+ * nhánh "chưa biết có giọng nào" trong chính trang — `getVoices()` trả rỗng ở
+ * lần gọi đầu nên trang phải chờ `voiceschanged` mới kết luận được.
+ *
+ * Sáu hàng: đủ để lấp một màn điện thoại mà không hứa hẹn một con số cụ thể.
+ * `h-17` xấp xỉ hàng thật (hai dòng chữ + `py-3`).
+ */
+export function VoiceListSkeleton() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: 6 }, (_, index) => (
+        <Skeleton key={index} className="rounded-card h-17 w-full" />
+      ))}
+    </div>
+  )
+}
+
+/**
  * Khung xương cấp ROUTE, chọn theo pathname.
  *
  * Chỉ chạy trong lúc chunk của trang lười đang tải, nên nó phải dựng cả phần
@@ -268,6 +288,18 @@ export function PageSkeleton({ pathname }: { pathname: string }): ReactNode {
       <div className="space-y-4">
         <PageHeaderSkeleton tabs={3} />
         <StatsSkeleton />
+      </div>
+    )
+  }
+
+  // TRƯỚC `/account/settings`: cùng cái bẫy `startsWith` một lần nữa. Đảo thứ
+  // tự thì màn Giọng đọc mượn khung xương của màn Hiển thị — một khối hero và
+  // hai thẻ — rồi nhảy sang một danh sách sáu hàng.
+  if (pathname.startsWith('/account/settings/voice')) {
+    return (
+      <div className="space-y-6">
+        <PageHeaderSkeleton />
+        <VoiceListSkeleton />
       </div>
     )
   }

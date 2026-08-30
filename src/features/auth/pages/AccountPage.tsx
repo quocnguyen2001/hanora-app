@@ -1,5 +1,6 @@
+import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { ChevronRightIcon, SettingsIcon } from '@/components/icons'
+import { ChevronRightIcon, SettingsIcon, SpeakerIcon } from '@/components/icons'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AccountCardSkeleton } from '@/components/ui/PageSkeleton'
@@ -35,27 +36,20 @@ export function AccountPage() {
         Đăng xuất là hành động hiếm và cần tách bạch (`ux-rules.md`); nhét một
         hàng bấm được ngay cạnh nó là mời người dùng bấm nhầm.
       */}
-      <Link
-        to="/account/settings"
-        className={cn(
-          'bg-surface shadow-card rounded-card flex items-center gap-3 p-4',
-          'duration-press ease-soft transition active:scale-[0.99]',
-          'hover:bg-primary-pale active:bg-primary-soft',
-        )}
-      >
-        <span className="text-primary">
-          <SettingsIcon size={22} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="text-section text-text-primary block">Hiển thị &amp; chữ</span>
-          <span className="text-caption text-text-secondary block">
-            Chủ đề, font, cỡ chữ, tông chữ
-          </span>
-        </span>
-        <span className="text-text-secondary">
-          <ChevronRightIcon size={20} />
-        </span>
-      </Link>
+      <div className="space-y-3">
+        <SettingsLink
+          to="/account/settings"
+          icon={<SettingsIcon size={22} />}
+          title="Hiển thị & chữ"
+          hint="Chủ đề, font, cỡ chữ, tông chữ"
+        />
+        <SettingsLink
+          to="/account/settings/voice"
+          icon={<SpeakerIcon size={22} />}
+          title="Giọng đọc"
+          hint="Chọn giọng phát âm tiếng Trung"
+        />
+      </div>
 
       <Card>
         <h2 className="text-section">Về hanora</h2>
@@ -149,5 +143,44 @@ export function AccountPage() {
         Đăng xuất
       </Button>
     </div>
+  )
+}
+
+/**
+ * Một hàng dẫn tới màn cài đặt.
+ *
+ * Tách ra khi có hàng thứ hai, không phải từ đầu: hai hàng cùng lặp lại một
+ * chuỗi class dài thì lần thêm hàng thứ ba chỉ cần sửa một chỗ, và không có
+ * nguy cơ hai hàng lệch nhau vài pixel.
+ */
+function SettingsLink({
+  to,
+  icon,
+  title,
+  hint,
+}: {
+  to: string
+  icon: ReactNode
+  title: string
+  hint: string
+}) {
+  return (
+    <Link
+      to={to}
+      className={cn(
+        'bg-surface shadow-card rounded-card flex items-center gap-3 p-4',
+        'duration-press ease-soft transition active:scale-[0.99]',
+        'hover:bg-primary-pale active:bg-primary-soft',
+      )}
+    >
+      <span className="text-primary">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="text-section text-text-primary block">{title}</span>
+        <span className="text-caption text-text-secondary block">{hint}</span>
+      </span>
+      <span className="text-text-secondary">
+        <ChevronRightIcon size={20} />
+      </span>
+    </Link>
   )
 }

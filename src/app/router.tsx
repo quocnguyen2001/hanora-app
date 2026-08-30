@@ -16,6 +16,7 @@ import {
   SentenceDetailPage,
   StatsPage,
   VocabularyPage,
+  VoiceSettingsPage,
   WordDetailPage,
 } from './lazy-pages'
 
@@ -62,6 +63,7 @@ export const routes = [
           { path: 'stats', Component: StatsPage },
           { path: 'account', Component: AccountPage },
           { path: 'account/settings', Component: DisplaySettingsPage },
+          { path: 'account/settings/voice', Component: VoiceSettingsPage },
           // Trang nội bộ kiểm tra thị giác — cố tình không có trong điều hướng.
           { path: '__gallery', Component: GalleryPage },
         ],
