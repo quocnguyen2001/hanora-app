@@ -173,6 +173,11 @@ Ba luật hiển thị, và luật thứ ba là phần khó:
 `refine` nằm trong query key vì đúng lý do `mode` nằm trong đó: thiếu nó thì bấm
 nút xong TanStack Query trả lại kết quả cũ từ cache và nút trông như hỏng.
 
+Nút này chỉ cần bấm MỘT lần cho mỗi truy vấn, kể cả trên máy khác và với người
+dùng khác: API đọc lại dòng diễn giải đã có cho cả đường tra thường, nên lần tra
+sau đã trả `source: 'ai'` và luật 1 tự ẩn nút. Không có gì phải làm ở FE cho
+chuyện đó — nó đã đúng sẵn.
+
 ## Học theo chủ đề
 
 `/topics` là lưới 16 chủ đề (tình yêu, văn phòng, thiên nhiên, thức ăn…);
