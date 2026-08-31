@@ -71,7 +71,26 @@ export function SearchPage() {
    * đắt hơn hẳn 150ms chờ thêm.
    */
   const query = useDebouncedValue(input.trim(), 400)
-  const search = useSearchWords(query, mode)
+
+  /*
+   * "Đã bấm tìm lại bằng AI cho truy vấn nào" — trạng thái của MÀN HÌNH, khoá
+   * theo cặp `(mode, query)`.
+   *
+   * Không thể suy ra từ `meta.source`: khi AI chạy mà trả về rỗng, API vẫn báo
+   * `source: 'sql'`, và mảng rỗng đó được cache VĨNH VIỄN phía API. Nếu điều
+   * kiện hiện nút chỉ đọc `source` thì bấm xong nút vẫn còn, bấm lại ra đúng cái
+   * cũ — một vòng lặp vô tận, đúng loại "nút chết" mà file này đã viện ra để cắt
+   * nút camera và hai tab thừa.
+   *
+   * Khoá theo cả `mode` vì cùng một chuỗi ở `vi` và ở `cn` là hai câu hỏi khác
+   * nhau; refine cái này không nói gì về cái kia. Gõ tiếp thì `query` đổi, khoá
+   * đổi, và `refined` tự về `false` — không cần dọn dẹp, không cần `useEffect`.
+   */
+  const refineKey = `${mode ?? 'auto'}::${query}`
+  const [refinedKey, setRefinedKey] = useState<string | null>(null)
+  const refined = refinedKey === refineKey
+
+  const search = useSearchWords(query, mode, refined)
   const savedIds = useSavedWordIds()
   const toggleSave = useToggleSaveWord()
 
@@ -118,6 +137,11 @@ export function SearchPage() {
         mode={mode}
         state={search}
         savedIds={savedIds.data}
+        refined={refined}
+        // CHỈ khi lượt refine đang bay. `isFetching` một mình cũng bật lên ở mỗi
+        // nhịp gõ bình thường, và khi đó cái nút sẽ nháy spinner suốt lúc gõ.
+        refining={refined && search.isFetching}
+        onRefine={() => setRefinedKey(refineKey)}
         onOpen={openWord}
         onOpenSentence={openSentence}
         onPrefetch={prefetchWord}
@@ -137,6 +161,9 @@ function SearchResults({
   mode,
   state,
   savedIds,
+  refined,
+  refining,
+  onRefine,
   onOpen,
   onOpenSentence,
   onPrefetch,
@@ -148,6 +175,9 @@ function SearchResults({
   mode: SearchModeChoice
   state: ReturnType<typeof useSearchWords>
   savedIds: Set<number> | undefined
+  refined: boolean
+  refining: boolean
+  onRefine: () => void
   onOpen: (id: number) => void
   onOpenSentence: (zh: string) => void
   onPrefetch: (id: number) => void
@@ -307,6 +337,74 @@ function SearchResults({
           </li>
         ))}
       </ul>
+
+      {/*
+        DƯỚI danh sách, không phải trên.
+
+        Người dùng chỉ biết kết quả sai sau khi đã đọc nó. Đặt lối thoát ở nơi họ
+        đi tới khi thất vọng, chứ không phải chắn trước thứ họ đang cần đọc.
+      */}
+      <RefinePrompt
+        source={state.data?.meta.source ?? 'sql'}
+        refined={refined}
+        refining={refining}
+        onRefine={onRefine}
+      />
+    </div>
+  )
+}
+
+/**
+ * Lối thoát khi dữ liệu không chuẩn.
+ *
+ * Ba trạng thái, và cái thứ ba là lý do component này tồn tại thay vì một dòng
+ * JSX nội tuyến.
+ */
+function RefinePrompt({
+  source,
+  refined,
+  refining,
+  onRefine,
+}: {
+  source: 'sql' | 'ai'
+  refined: boolean
+  refining: boolean
+  onRefine: () => void
+}) {
+  /*
+   * AI đã trả lời rồi thì không còn gì để hỏi thêm: cache diễn giải phía API là
+   * VĨNH VIỄN theo `(truy vấn, mode)`, nên bấm lại chỉ nhận đúng câu trả lời
+   * vừa hiện. Một cái nút như thế là nút chết.
+   */
+  if (source === 'ai') return null
+
+  /*
+   * Đã hỏi AI mà kết quả vẫn là của SQL — AI trả rỗng hoặc gọi hỏng. Nói thẳng
+   * ra, và KHÔNG mời bấm lại: câu trả lời rỗng đó đã nằm trong cache vĩnh viễn
+   * của API, nên lần bấm sau ra đúng cái này.
+   *
+   * `refining` chặn câu đó hiện SỚM: trong lúc lượt gọi còn đang bay, dữ liệu
+   * đang hiển thị vẫn là của SQL, và tuyên bố "chưa có kết quả tốt hơn" lúc ấy
+   * là nói về một câu trả lời chưa tới.
+   */
+  if (refined && !refining) {
+    return (
+      <p className="text-caption text-text-secondary px-1">
+        Đã thử tìm lại bằng AI, chưa có kết quả tốt hơn.
+      </p>
+    )
+  }
+
+  return (
+    <div className="flex justify-center pt-1">
+      {/*
+        `secondary`, KHÔNG `primary`. Hành động chính của màn này là mở một từ;
+        đây là lối thoát cho thiểu số. Cho nó gờ hồng đậm là để nó tranh sự chú ý
+        với chính danh sách kết quả mà nó đang nói là sai.
+      */}
+      <Button variant="secondary" size="sm" loading={refining} onClick={onRefine}>
+        Kết quả chưa đúng? Tìm lại bằng AI
+      </Button>
     </div>
   )
 }

@@ -43,7 +43,7 @@ describe('hủy request cũ', () => {
   it('chuyển signal xuống fetch để gõ tiếp là cắt request trước', async () => {
     const controller = new AbortController()
 
-    await searchWords('học tập', 'vi', 1, controller.signal)
+    await searchWords('học tập', 'vi', { signal: controller.signal })
 
     expect(fetchMock.mock.calls[0]?.[1]?.signal).toBe(controller.signal)
   })
@@ -55,8 +55,10 @@ describe('hủy request cũ', () => {
       return Promise.reject(new DOMException('Aborted', 'AbortError'))
     })
 
-    await expect(searchWords('học tập', 'vi', 1, controller.signal)).rejects.toMatchObject({
-      name: 'AbortError',
-    })
+    await expect(searchWords('học tập', 'vi', { signal: controller.signal })).rejects.toMatchObject(
+      {
+        name: 'AbortError',
+      },
+    )
   })
 })

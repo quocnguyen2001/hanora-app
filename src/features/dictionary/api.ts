@@ -55,19 +55,35 @@ function parseTranslation(raw: unknown): SearchTranslation | null {
  * hủy ngay tại tầng `fetch`. Thiếu nó thì mỗi nhịp gõ để lại một request treo
  * chạy tới cùng — server vẫn phải dịch bằng AI cho một truy vấn không ai còn
  * nhìn nữa, và trần throttle vẫn bị trừ.
+ *
+ * `refine` là người dùng nói "kết quả không chuẩn": nó gửi `refine=ai` để API bỏ
+ * qua cổng `SearchWeakness` và luôn hỏi AI. Cũng bỏ hẳn khỏi query string khi
+ * `false`, cùng lý do `mode` làm vậy — `refine=` rỗng trượt `Rule::in` và trả 422.
+ *
+ * Đuôi chữ ký là OBJECT chứ không phải thêm tham số vị trí: chèn `refine` vào
+ * giữa sẽ khiến `searchWords(q, mode, 1, signal)` đọc `1` thành `refine`, và bốn
+ * tham số vị trí liên tiếp là thứ dễ nối sai khi bảo trì.
  */
 export async function searchWords(
   query: string,
   mode: SearchModeChoice,
-  page = 1,
-  signal?: AbortSignal,
+  {
+    page = 1,
+    signal,
+    refine = false,
+  }: { page?: number; signal?: AbortSignal; refine?: boolean } = {},
 ): Promise<{
   words: WordSummary[]
   meta: SearchMeta
   translation: SearchTranslation | null
 }> {
   const envelope = await apiRequestWithMeta<WordSummary[]>('/dictionary/search', {
-    query: { q: query, page, ...(mode === null ? {} : { mode }) },
+    query: {
+      q: query,
+      page,
+      ...(mode === null ? {} : { mode }),
+      ...(refine ? { refine: 'ai' } : {}),
+    },
     signal,
   })
 

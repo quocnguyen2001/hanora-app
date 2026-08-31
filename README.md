@@ -83,7 +83,7 @@ Chốt ở đây, mọi phase sau bám theo. Key đặt trong `features/*/hooks.
 chính feature đó, không tập trung vào một file dùng chung.
 
 ```text
-['dictionary', 'search', q]
+['dictionary', 'search', mode, refine, q]
 ['streak', 'summary']
 ['streak', 'summary', 'calendar']
 ['dictionary', 'word', id]
@@ -147,6 +147,31 @@ thấy một landmark điều hướng. Mục đó phải nằm CUỐI mảng `T
 vào việc chỉ số của năm mục đầu giống nhau ở cả hai bố cục.
 
 `/account/settings` là trang con, cố ý KHÔNG có mục riêng.
+
+## Tìm lại bằng AI
+
+Dưới danh sách kết quả ở `/search` có nút **"Kết quả chưa đúng? Tìm lại bằng
+AI"**. Bấm nó gửi `refine=ai`, và API bỏ qua cổng `SearchWeakness` để luôn hỏi
+lớp diễn giải AI.
+
+Nó tồn tại cho đúng một ca: SQL trông tự tin nhưng SAI. Khi SQL yếu thì API đã tự
+gọi AI rồi; khi SQL mạnh mà sai thì KHÔNG có tín hiệu cấu trúc nào nhận ra —
+người dùng là tín hiệu duy nhất.
+
+Ba luật hiển thị, và luật thứ ba là phần khó:
+
+1. `meta.source === 'ai'` → không có nút. Cache diễn giải phía API là vĩnh viễn
+   theo `(truy vấn, mode)`, nên bấm lại chỉ nhận đúng câu trả lời vừa hiện.
+2. Không có kết quả nào → không có nút. `total === 0` đã được coi là yếu nên AI
+   đã chạy rồi.
+3. **Đã bấm rồi → không có nút, kể cả khi `source` vẫn là `sql`.** Khi AI trả
+   rỗng, API vẫn báo `source: 'sql'` và cache câu trả lời rỗng đó vĩnh viễn. Suy
+   điều kiện hiện nút từ `source` thôi sẽ cho ra một cái nút bấm mãi không đổi gì.
+   Vì thế màn hình tự nhớ đã refine cho cặp `(mode, query)` nào, và đổi nút thành
+   câu trả lời: "Đã thử tìm lại bằng AI, chưa có kết quả tốt hơn."
+
+`refine` nằm trong query key vì đúng lý do `mode` nằm trong đó: thiếu nó thì bấm
+nút xong TanStack Query trả lại kết quả cũ từ cache và nút trông như hỏng.
 
 ## Học theo chủ đề
 

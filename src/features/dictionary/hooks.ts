@@ -15,8 +15,14 @@ export const dictionaryKeys = {
    *
    * Thiếu nó thì bấm toggle xong TanStack Query trả lại kết quả cũ từ cache và
    * toggle trông như hỏng — cùng một `query`, hai kết quả hoàn toàn khác nhau.
+   *
+   * `refine` nằm trong key vì ĐÚNG lý do đó: `?q=bác sĩ` và
+   * `?q=bác sĩ&refine=ai` là hai câu hỏi khác nhau với hai câu trả lời khác
+   * nhau. Thiếu nó thì bấm "tìm lại bằng AI" xong query key không đổi, TanStack
+   * Query trả lại đúng kết quả cũ từ cache, và cái nút trông như hỏng.
    */
-  search: (query: string, mode: SearchModeChoice) => ['dictionary', 'search', mode, query] as const,
+  search: (query: string, mode: SearchModeChoice, refine = false) =>
+    ['dictionary', 'search', mode, refine, query] as const,
   word: (id: number) => ['dictionary', 'word', id] as const,
   /*
    * Khoá theo chính chuỗi Hán, đúng như khoá cache phía API. Câu không có id,
@@ -55,10 +61,10 @@ export function isSearchableQuery(query: string): boolean {
  * `signal` đi thẳng vào `fetch`: gõ tiếp là request cũ bị hủy, không để lại một
  * chuỗi request treo mỗi khi người dùng gõ nhanh hơn mạng trả lời.
  */
-export function useSearchWords(query: string, mode: SearchModeChoice) {
+export function useSearchWords(query: string, mode: SearchModeChoice, refine = false) {
   return useQuery({
-    queryKey: dictionaryKeys.search(query, mode),
-    queryFn: ({ signal }) => searchWords(query, mode, 1, signal),
+    queryKey: dictionaryKeys.search(query, mode, refine),
+    queryFn: ({ signal }) => searchWords(query, mode, { signal, refine }),
     enabled: isSearchableQuery(query),
     placeholderData: (previous) => previous,
   })
