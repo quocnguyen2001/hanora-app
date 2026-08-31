@@ -87,13 +87,16 @@ afterEach(() => {
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
-  return render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <SearchPage />
-      </MemoryRouter>
-    </QueryClientProvider>,
-  )
+  return {
+    client,
+    ...render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <SearchPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    ),
+  }
 }
 
 const BUTTON = { name: /Tìm lại bằng AI/ }
@@ -240,6 +243,30 @@ describe('bấm nút', () => {
     await user.type(screen.getByRole('searchbox'), ' khác')
 
     expect(await screen.findByRole('button', BUTTON)).toBeInTheDocument()
+  })
+})
+
+describe('kết quả refine phải tới được lần tra sau', () => {
+  it('chép sang khoá KHÔNG refine', async () => {
+    /*
+     * Thiếu bước chép này, gõ lại đúng truy vấn đó sẽ hiện lại danh sách SQL cũ:
+     * khoá không-refine vẫn giữ bản cũ và `staleTime` một tiếng nghĩa là nó
+     * không hỏi lại server. Nút trông như không có tác dụng.
+     */
+    respondWith(searchBody([WORD], 'sql'), searchBody([WORD], 'ai'))
+    const user = userEvent.setup()
+
+    const { client } = renderPage()
+    await search(user)
+    await user.click(await screen.findByRole('button', BUTTON))
+
+    await waitFor(() => expect(screen.queryByRole('button', BUTTON)).not.toBeInTheDocument())
+
+    const mirrored = client.getQueryData<{ meta: { source: string } }>(
+      dictionaryKeys.search('bác sĩ', null, false),
+    )
+
+    expect(mirrored?.meta.source).toBe('ai')
   })
 })
 

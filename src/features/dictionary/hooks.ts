@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import type { SearchModeChoice } from '@/stores/search-mode'
 import {
   fetchExampleTranslations,
@@ -62,12 +63,40 @@ export function isSearchableQuery(query: string): boolean {
  * chuỗi request treo mỗi khi người dùng gõ nhanh hơn mạng trả lời.
  */
 export function useSearchWords(query: string, mode: SearchModeChoice, refine = false) {
-  return useQuery({
+  const queryClient = useQueryClient()
+
+  const result = useQuery({
     queryKey: dictionaryKeys.search(query, mode, refine),
     queryFn: ({ signal }) => searchWords(query, mode, { signal, refine }),
     enabled: isSearchableQuery(query),
     placeholderData: (previous) => previous,
   })
+
+  const { data, isPlaceholderData } = result
+
+  /*
+   * Chép kết quả refine sang khoá KHÔNG refine.
+   *
+   * Thiếu bước này, bấm nút xong rồi gõ lại đúng truy vấn đó sẽ hiện lại kết quả
+   * CŨ: khoá không-refine vẫn giữ danh sách SQL, và `staleTime` một tiếng
+   * (`query-client.ts`) nghĩa là nó không thèm hỏi lại server. Tính năng trông
+   * như không có tác dụng, dù API đã trả lời đúng.
+   *
+   * Chép chứ không `invalidateQueries`: hai khoá vừa nhận CÙNG một câu trả lời
+   * từ cùng một truy vấn, nên gọi lại mạng chỉ để nghe lại điều vừa nghe — và
+   * request đó còn có thể bị chính cache HTTP của trình duyệt phục vụ bằng bản
+   * cũ.
+   *
+   * `isPlaceholderData` chặn việc chép danh sách của truy vấn TRƯỚC đè lên khoá
+   * của truy vấn này trong lúc lượt refine còn đang bay.
+   */
+  useEffect(() => {
+    if (!refine || isPlaceholderData || data === undefined) return
+
+    queryClient.setQueryData(dictionaryKeys.search(query, mode, false), data)
+  }, [refine, data, isPlaceholderData, queryClient, query, mode])
+
+  return result
 }
 
 export function useWord(id: number) {
