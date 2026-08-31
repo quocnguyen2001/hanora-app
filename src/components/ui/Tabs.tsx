@@ -42,7 +42,7 @@ export function Tabs({
             aria-selected={selected}
             onClick={() => onChange(item.value)}
             className={cn(
-              'text-body min-h-11 shrink-0 rounded-full px-4 font-medium transition duration-press ease-soft active:scale-95',
+              'text-body duration-press ease-soft min-h-11 shrink-0 rounded-full px-4 font-medium transition active:scale-95',
               selected
                 ? 'bg-primary text-on-primary'
                 : 'bg-primary-pale text-text-secondary hover:bg-primary-soft',

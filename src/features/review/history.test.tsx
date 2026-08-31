@@ -12,9 +12,10 @@ import { ReviewHistoryPage } from './pages/ReviewHistoryPage'
 import { ReviewSessionDetailPage } from './pages/ReviewSessionDetailPage'
 
 const { fetchSessionHistory, fetchSessionDetail } = vi.hoisted(() => ({
-  fetchSessionHistory: vi.fn<
-    (cursor?: string | null) => Promise<{ items: ReviewSessionMeta[]; nextCursor: string | null }>
-  >(),
+  fetchSessionHistory:
+    vi.fn<
+      (cursor?: string | null) => Promise<{ items: ReviewSessionMeta[]; nextCursor: string | null }>
+    >(),
   fetchSessionDetail: vi.fn<(id: number) => Promise<SessionDetail>>(),
 }))
 

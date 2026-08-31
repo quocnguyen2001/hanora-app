@@ -8,9 +8,12 @@ const fetchMock = vi.fn<typeof fetch>()
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
   fetchMock.mockResolvedValue(
-    new Response(JSON.stringify({ data: [], meta: { page: 1, per_page: 20, total: 0, hint: null } }), {
-      headers: { 'Content-Type': 'application/json' },
-    }),
+    new Response(
+      JSON.stringify({ data: [], meta: { page: 1, per_page: 20, total: 0, hint: null } }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    ),
   )
 })
 

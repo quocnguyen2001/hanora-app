@@ -44,9 +44,7 @@ describe('TranslationCard', () => {
 
     // `unsupported` trong jsdom (không có Web Speech API) — nút vẫn phải tồn tại
     // và nói rõ lý do thay vì biến mất.
-    expect(
-      screen.getByRole('button', { name: /phát âm|không hỗ trợ/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /phát âm|không hỗ trợ/i })).toBeInTheDocument()
   })
 
   it('KHÔNG có nút lưu — câu dịch không lưu được vào kho từ', () => {

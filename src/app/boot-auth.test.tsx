@@ -78,7 +78,8 @@ describe('tải lại trang khi đã đăng nhập', () => {
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
 
     const missing = fetchMock.mock.calls.filter(
-      ([, init]) => new Headers((init as RequestInit | undefined)?.headers).get('Authorization') === null,
+      ([, init]) =>
+        new Headers((init as RequestInit | undefined)?.headers).get('Authorization') === null,
     )
 
     expect(missing).toEqual([])

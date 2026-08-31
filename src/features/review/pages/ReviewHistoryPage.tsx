@@ -32,9 +32,7 @@ export function ReviewHistoryPage() {
          * hiện số liệu cũ mà không nói gì còn tệ hơn nói thẳng là cần kết nối.
          */
         description={
-          offline
-            ? 'Lịch sử ôn tập cần kết nối để hiện số liệu đúng.'
-            : 'Thử lại giúp mình nhé.'
+          offline ? 'Lịch sử ôn tập cần kết nối để hiện số liệu đúng.' : 'Thử lại giúp mình nhé.'
         }
         action={<Button onClick={() => void history.refetch()}>Thử lại</Button>}
       />

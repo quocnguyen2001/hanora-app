@@ -64,7 +64,9 @@ export function NewTopicForm({ open, onClose }: { open: boolean; onClose: () => 
                 aria-label={`Chọn biểu tượng ${choice}`}
                 className={cn(
                   'rounded-control-lg flex h-11 w-11 items-center justify-center text-xl',
-                  emoji === choice ? 'bg-primary-soft ring-primary ring-2' : 'bg-surface border-border border',
+                  emoji === choice
+                    ? 'bg-primary-soft ring-primary ring-2'
+                    : 'bg-surface border-border border',
                 )}
               >
                 <span aria-hidden>{choice}</span>
@@ -81,7 +83,11 @@ export function NewTopicForm({ open, onClose }: { open: boolean; onClose: () => 
           Chủ đề sẽ sẵn sàng sau khoảng nửa phút. Chỉ mình bạn nhìn thấy nó.
         </p>
 
-        <Button type="submit" className="w-full" disabled={create.isPending || name.trim().length < 2}>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={create.isPending || name.trim().length < 2}
+        >
           {create.isPending ? 'Đang tạo…' : 'Tạo chủ đề'}
         </Button>
       </form>

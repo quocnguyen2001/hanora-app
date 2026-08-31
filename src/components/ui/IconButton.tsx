@@ -43,7 +43,7 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={cn(
-        'inline-flex items-center justify-center rounded-full transition duration-press ease-soft active:scale-95',
+        'duration-press ease-soft inline-flex items-center justify-center rounded-full transition active:scale-95',
         'disabled:cursor-not-allowed disabled:opacity-40',
         VARIANTS[variant],
         SIZES[size],

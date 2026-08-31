@@ -147,7 +147,13 @@ describe('lưới chủ đề', () => {
     // Nếu không tách trạng thái, thẻ đang sinh hiện `0/0` và bấm vào là màn "đã
     // học hết" — người dùng vừa tạo xong lại tưởng nó hỏng.
     fetchTopics.mockResolvedValue([
-      topic({ slug: 'phim-anh', name: 'Phim ảnh', status: 'generating', is_custom: true, word_count: 0 }),
+      topic({
+        slug: 'phim-anh',
+        name: 'Phim ảnh',
+        status: 'generating',
+        is_custom: true,
+        word_count: 0,
+      }),
     ])
     renderGrid()
 
@@ -160,8 +166,12 @@ describe('lưới chủ đề', () => {
   it('chủ đề hỏng nói rõ lý do và cho xoá', async () => {
     fetchTopics.mockResolvedValue([
       topic({
-        slug: 'phim-anh', name: 'Phim ảnh', status: 'failed',
-        is_custom: true, failed_reason: 'rate_limited', word_count: 0,
+        slug: 'phim-anh',
+        name: 'Phim ảnh',
+        status: 'failed',
+        is_custom: true,
+        failed_reason: 'rate_limited',
+        word_count: 0,
       }),
     ])
     renderGrid()

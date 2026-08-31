@@ -56,7 +56,10 @@ if (markup.includes('<text')) {
 }
 
 for (const { file, size } of TARGETS) {
-  const png = await sharp(svg, { density: 512 }).resize(size, size).png({ compressionLevel: 9 }).toBuffer()
+  const png = await sharp(svg, { density: 512 })
+    .resize(size, size)
+    .png({ compressionLevel: 9 })
+    .toBuffer()
 
   writeFileSync(join(OUT_DIR, file), png)
   console.log(`${file.padEnd(24)} ${size}×${size}  ${(png.length / 1024).toFixed(1)} KB`)

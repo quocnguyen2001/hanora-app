@@ -45,7 +45,7 @@ export function TranslationCard({
       aria-label="Bản dịch câu vừa nhập"
       className={cn(
         'bg-primary-pale border-primary rounded-card flex items-start gap-3 border-l-4 p-4',
-        'transition duration-press ease-soft',
+        'duration-press ease-soft transition',
         onSelect && 'hover:bg-primary-soft active:scale-[0.99]',
       )}
     >
@@ -59,7 +59,8 @@ export function TranslationCard({
         onClick={onSelect}
         disabled={!onSelect}
         aria-label={`Phân tích câu ${translation.zh}`}
-        className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left disabled:cursor-default">
+        className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left disabled:cursor-default"
+      >
         <Badge tone="primary">AI dịch</Badge>
 
         {/*

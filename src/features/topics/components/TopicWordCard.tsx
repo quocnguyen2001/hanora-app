@@ -46,11 +46,7 @@ export function TopicWordCard({
       </p>
 
       <Card size="hero" className="space-y-4 text-center">
-        <WordIllustration
-          wordId={word.id}
-          maxPolls={CARD_MAX_POLLS}
-          className="mx-auto w-32"
-        />
+        <WordIllustration wordId={word.id} maxPolls={CARD_MAX_POLLS} className="mx-auto w-32" />
 
         <div className="flex items-center justify-center gap-2">
           <HanziText>{word.simplified}</HanziText>

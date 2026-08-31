@@ -17,7 +17,7 @@ function word(id: number, rank: number): TopicWord {
 }
 
 /** Bỏ xáo trộn để khẳng định được THỨ TỰ, không phải xác suất. */
-const noShuffle = <T,>(items: T[]) => items
+const noShuffle = <T>(items: T[]) => items
 
 describe('pickSession', () => {
   it('loại từ đã lưu và từ đã bỏ qua', () => {

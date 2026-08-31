@@ -15,9 +15,8 @@ import type { StatsSummary } from './api'
 import { StatsPage } from './pages/StatsPage'
 
 const { fetchSessionHistory, fetchWeakWords, fetchWordHistory } = vi.hoisted(() => ({
-  fetchSessionHistory: vi.fn<
-    () => Promise<{ items: ReviewSessionMeta[]; nextCursor: string | null }>
-  >(),
+  fetchSessionHistory:
+    vi.fn<() => Promise<{ items: ReviewSessionMeta[]; nextCursor: string | null }>>(),
   fetchWeakWords: vi.fn<() => Promise<{ items: WeakWord[]; nextPage: number | null }>>(),
   fetchWordHistory: vi.fn<(wordId: number) => Promise<WordHistory>>(),
 }))

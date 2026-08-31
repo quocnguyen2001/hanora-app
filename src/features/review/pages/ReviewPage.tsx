@@ -69,11 +69,13 @@ export function ReviewPage() {
   }
 
   if (started.session === null) {
-    return <EmptySession
+    return (
+      <EmptySession
         reason={started.empty_reason}
         onBack={() => setStarted(null)}
         onGoTopics={() => void navigate('/topics')}
       />
+    )
   }
 
   /*

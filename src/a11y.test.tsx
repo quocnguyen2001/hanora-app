@@ -56,15 +56,12 @@ describe('a11y', () => {
     // vá a11y, và bỏ màn mới ra ngoài audit là cách chắc chắn để lặp lại nó.
     '/topics',
     '/topics/tinh-yeu',
-  ])(
-    'không có vi phạm axe ở %s',
-    async (path) => {
-      const container = await renderRoute(path)
-      const results = await axe(container)
+  ])('không có vi phạm axe ở %s', async (path) => {
+    const container = await renderRoute(path)
+    const results = await axe(container)
 
-      expect(results.violations).toEqual([])
-    },
-  )
+    expect(results.violations).toEqual([])
+  })
 
   it('không có vi phạm ở màn đăng nhập', async () => {
     useAuthStore.setState({ token: null })

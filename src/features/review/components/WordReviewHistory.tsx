@@ -71,9 +71,7 @@ export function WordReviewHistory({ wordId, saved }: { wordId: number; saved: bo
 
       {/* Dòng "sai gần nhất" ẩn HẲN khi chưa từng sai — cùng bộ lọc mà
           `wrong_count` dùng, nên hai con số này không thể mâu thuẫn. */}
-      {lastWrong && (
-        <p className="text-body text-text-secondary mt-1">Sai gần nhất: {lastWrong}</p>
-      )}
+      {lastWrong && <p className="text-body text-text-secondary mt-1">Sai gần nhất: {lastWrong}</p>}
 
       {data.recent.length > 0 && (
         <ul aria-label="Các lượt ôn gần nhất" className="mt-3 flex flex-wrap gap-1.5">
