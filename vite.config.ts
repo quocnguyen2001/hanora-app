@@ -165,6 +165,24 @@ export default defineConfig({
            * Hệ quả có chủ đích: hai màn `/review/history` hiện trạng thái ngoại
            * tuyến khi mất mạng, thay vì số liệu cũ.
            */
+
+          /*
+           * KHÔNG có mục nào cho `/api/topics/*` — trả lời tường minh cho câu
+           * hỏi ở đầu file, chứ không phải bỏ sót.
+           *
+           * `/topics` và `/topics/skips` là `private, no-store`: chúng mang
+           * tiến độ và lựa chọn theo user, đúng loại dữ liệu tuyệt đối không
+           * được nằm trong cache dùng chung của thiết bị.
+           *
+           * `/topics/{slug}/words` KHÔNG mang dữ liệu theo user và cache được —
+           * nhưng nó đã có `max-age=300, stale-while-revalidate` ở tầng HTTP.
+           * Thêm một tầng SW nữa chỉ kéo dài đúng cái lệch mà API vừa cố ý rút
+           * xuống 5 phút: sau khi bộ từ được mở rộng, thẻ chủ đề (no-store) sẽ
+           * báo còn từ mới trong khi màn học đọc bản cache cũ và báo đã học hết.
+           *
+           * Hệ quả có chủ đích: học từ mới CẦN kết nối — cùng điều mà màn Ôn
+           * tập đã nói thẳng, và vì cùng lý do (thao tác chính ở đây là GHI).
+           */
         ],
       },
       devOptions: { enabled: false },

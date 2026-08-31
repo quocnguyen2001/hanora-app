@@ -15,8 +15,17 @@ import { IllustrationPlaceholder } from './IllustrationPlaceholder'
  * còn ảnh sai thì có hại: người học nhớ `可能` là một loài chim còn tệ hơn hẳn
  * việc không nhìn thấy ảnh nào.
  */
-export function WordIllustration({ wordId, className }: { wordId: number; className?: string }) {
-  const { data } = useWordIllustration(wordId)
+export function WordIllustration({
+  wordId,
+  className,
+  maxPolls,
+}: {
+  wordId: number
+  className?: string
+  /** Màn học chủ đề hạ trần này xuống — xem ghi chú ở `useWordIllustration`. */
+  maxPolls?: number
+}) {
+  const { data } = useWordIllustration(wordId, { maxPolls })
   const illustration = data?.illustration ?? null
 
   /*

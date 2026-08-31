@@ -15,6 +15,8 @@ import {
   ReviewSessionDetailPage,
   SentenceDetailPage,
   StatsPage,
+  TopicLearnPage,
+  TopicsPage,
   VocabularyPage,
   VoiceSettingsPage,
   WordDetailPage,
@@ -60,6 +62,13 @@ export const routes = [
            */
           { path: 'review/history', Component: ReviewHistoryPage },
           { path: 'review/history/:id', Component: ReviewSessionDetailPage },
+          /*
+           * Chủ đề: KHÔNG có tab trong điều hướng ở v1 — lối vào là từ màn Kho
+           * từ và empty state của màn Ôn tập, đúng tiền lệ `/stats` khi mới
+           * thêm. Tab chỉ đáng thêm khi đã biết người dùng có dùng hay không.
+           */
+          { path: 'topics', Component: TopicsPage },
+          { path: 'topics/:slug', Component: TopicLearnPage },
           { path: 'stats', Component: StatsPage },
           { path: 'account', Component: AccountPage },
           { path: 'account/settings', Component: DisplaySettingsPage },

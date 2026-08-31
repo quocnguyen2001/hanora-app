@@ -79,3 +79,11 @@ export const VoiceSettingsPage = lazy(() =>
 export const GalleryPage = lazy(() =>
   import('@/features/gallery/pages/GalleryPage').then((m) => ({ default: m.GalleryPage })),
 )
+
+export const TopicsPage = lazy(() =>
+  import('@/features/topics/pages/TopicsPage').then((m) => ({ default: m.TopicsPage })),
+)
+
+export const TopicLearnPage = lazy(() =>
+  import('@/features/topics/pages/TopicLearnPage').then((m) => ({ default: m.TopicLearnPage })),
+)

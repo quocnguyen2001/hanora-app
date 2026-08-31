@@ -69,7 +69,11 @@ export function ReviewPage() {
   }
 
   if (started.session === null) {
-    return <EmptySession reason={started.empty_reason} onBack={() => setStarted(null)} />
+    return <EmptySession
+        reason={started.empty_reason}
+        onBack={() => setStarted(null)}
+        onGoTopics={() => void navigate('/topics')}
+      />
   }
 
   /*
@@ -102,7 +106,15 @@ export function ReviewPage() {
  * Gộp chúng lại sẽ khiến người dùng có đầy từ hay sai đọc được câu "Chưa có từ
  * nào bạn từng sai" trong khi trang Thống kê đang hiện đúng những từ đó.
  */
-function EmptySession({ reason, onBack }: { reason: EmptyReason | null; onBack: () => void }) {
+function EmptySession({
+  reason,
+  onBack,
+  onGoTopics,
+}: {
+  reason: EmptyReason | null
+  onBack: () => void
+  onGoTopics: () => void
+}) {
   if (reason === 'not_enough_options') {
     return (
       <EmptyState
@@ -116,8 +128,15 @@ function EmptySession({ reason, onBack }: { reason: EmptyReason | null; onBack: 
   return (
     <EmptyState
       title="Chưa có từ nào để ôn."
-      description="Quay lại sau nhé — hoặc lưu thêm từ mới để bắt đầu học. 🌸"
-      action={<Button onClick={onBack}>Chọn lại</Button>}
+      description="Quay lại sau nhé — hoặc học vài từ mới theo chủ đề. 🌸"
+      action={
+        <div className="flex flex-col gap-2">
+          <Button onClick={onGoTopics}>Học từ mới theo chủ đề</Button>
+          <Button variant="ghost" onClick={onBack}>
+            Chọn lại
+          </Button>
+        </div>
+      }
     />
   )
 }

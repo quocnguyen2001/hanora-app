@@ -42,6 +42,12 @@ export function VocabularyPage() {
   return (
     <div className="space-y-4">
       <header className="space-y-3">
+        {/*
+          KHÔNG có nút "Học chủ đề" ở đây nữa: thanh điều hướng đã có tab Chủ đề
+          nên nút này là đường thứ hai tới cùng một chỗ, ngay cạnh nhau. Lối vào
+          theo NGỮ CẢNH thì vẫn giữ — empty state của màn này và của màn Ôn tập,
+          nơi câu chữ đang mời người dùng học thêm.
+        */}
         <h1 className="text-title">Kho từ</h1>
         <SearchBar
           value={input}
@@ -71,6 +77,7 @@ export function VocabularyPage() {
           tab={tab}
           searching={query !== ''}
           onGoSearch={() => void navigate('/search')}
+          onGoTopics={() => void navigate('/topics')}
         />
       ) : (
         /*
@@ -132,10 +139,12 @@ function EmptyStateForTab({
   tab,
   searching,
   onGoSearch,
+  onGoTopics,
 }: {
   tab: string
   searching: boolean
   onGoSearch: () => void
+  onGoTopics: () => void
 }) {
   if (searching) {
     return <EmptyState title="Không có từ nào khớp." description="Thử một từ khóa khác." />
@@ -146,7 +155,14 @@ function EmptyStateForTab({
       <EmptyState
         title="Chưa có từ nào trong kho."
         description="Hãy tìm một từ bạn muốn nhớ hôm nay 🌸"
-        action={<Button onClick={onGoSearch}>Tìm từ đầu tiên</Button>}
+        action={
+          <div className="flex flex-col gap-2">
+            <Button onClick={onGoSearch}>Tìm từ đầu tiên</Button>
+            <Button variant="ghost" onClick={onGoTopics}>
+              Hoặc học theo chủ đề
+            </Button>
+          </div>
+        }
       />
     )
   }
