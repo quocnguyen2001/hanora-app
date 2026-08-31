@@ -1,21 +1,36 @@
 import type { CSSProperties } from 'react'
 import { NavLink, useLocation } from 'react-router'
-import { BookmarkIcon, ChartIcon, ReviewIcon, SearchIcon, UserIcon } from '@/components/icons'
+import { BookmarkIcon, ChartIcon, ReviewIcon, SearchIcon, TopicIcon, UserIcon } from '@/components/icons'
 import { cn } from '@/lib/cn'
 
 /**
- * NĂM tab kể từ P17.
+ * NĂM tab trên mobile, SÁU mục trên desktop.
  *
- * Bốn tab trong suốt vạch ship MVP; tab Thống kê chỉ được thêm khi P16/P17 đã
- * xong và màn đó có nội dung thật — không ship tab dẫn tới màn trống.
+ * Bốn tab trong suốt vạch ship MVP; Thống kê thêm ở P17; Chủ đề thêm khi màn
+ * học theo chủ đề lên — không ship tab dẫn tới màn trống.
+ *
+ * `desktopOnly` là điểm khác biệt duy nhất giữa hai bố cục về NỘI DUNG.
+ * "Học theo chủ đề" là việc hàng ngày và cần chỗ trong thanh dưới; "Tài khoản"
+ * là màn mở vài lần rồi thôi, nên trên mobile nó lùi lên icon ở header. Thanh
+ * dưới 360px chia sáu là 60px mỗi tab, và ở cỡ chữ 130% nhãn dài bắt đầu chật —
+ * đây là cách giữ năm tab mà vẫn có Chủ đề.
+ *
+ * Desktop là sidebar dọc, không có ràng buộc bề ngang đó, nên nó giữ đủ sáu.
+ *
+ * Mục `desktopOnly` phải nằm CUỐI mảng: chỉ số của năm mục còn lại nhờ vậy
+ * giống nhau ở cả hai bố cục, và pill nền không cần biết mình đang ở đâu.
  */
 const TABS = [
-  { to: '/search', label: 'Tìm kiếm', Icon: SearchIcon },
-  { to: '/vocabulary', label: 'Kho từ', Icon: BookmarkIcon },
-  { to: '/review', label: 'Ôn tập', Icon: ReviewIcon },
-  { to: '/stats', label: 'Thống kê', Icon: ChartIcon },
-  { to: '/account', label: 'Tài khoản', Icon: UserIcon },
+  { to: '/search', label: 'Tìm kiếm', Icon: SearchIcon, desktopOnly: false },
+  { to: '/vocabulary', label: 'Kho từ', Icon: BookmarkIcon, desktopOnly: false },
+  { to: '/review', label: 'Ôn tập', Icon: ReviewIcon, desktopOnly: false },
+  { to: '/topics', label: 'Chủ đề', Icon: TopicIcon, desktopOnly: false },
+  { to: '/stats', label: 'Thống kê', Icon: ChartIcon, desktopOnly: false },
+  { to: '/account', label: 'Tài khoản', Icon: UserIcon, desktopOnly: true },
 ] as const
+
+/** Số tab THẤY ĐƯỢC trên mobile — pill nền chia theo con số này. */
+const MOBILE_TAB_COUNT = TABS.filter((tab) => !tab.desktopOnly).length
 
 /**
  * MỘT `<nav>` duy nhất, đổi hình dạng bằng CSS.
@@ -64,17 +79,29 @@ export function BottomNavigation() {
             aria-hidden
             // `--tab-count` lấy từ TABS chứ không viết cứng `w-1/5`: thêm tab
             // thứ sáu mà quên sửa chiều rộng thì pill sẽ lệch mà không báo gì.
-            style={{ '--tab-index': activeIndex, '--tab-count': TABS.length } as CSSProperties}
+            style={{ '--tab-index': activeIndex, '--tab-count': MOBILE_TAB_COUNT } as CSSProperties}
             className={cn(
               'bg-primary-soft rounded-control-lg duration-ui ease-soft absolute -z-10 transition-transform',
               'inset-y-1 left-0 w-[calc(100%/var(--tab-count))] translate-x-[calc(var(--tab-index)*100%)]',
               'lg:inset-x-0 lg:top-0 lg:h-11 lg:w-full lg:translate-x-0 lg:translate-y-[calc(var(--tab-index)*3rem)]',
+              // Đang ở một mục chỉ-có-trên-desktop (`/account`): trên mobile
+              // mục đó không có ô nào để tô, và pill sẽ trượt ra ngoài màn hình.
+              activeIndex >= MOBILE_TAB_COUNT && 'max-lg:hidden',
             )}
           />
         )}
 
-        {TABS.map(({ to, label, Icon }) => (
-          <li key={to} className="flex-1 lg:flex-none">
+        {TABS.map(({ to, label, Icon, desktopOnly }) => (
+          <li
+            key={to}
+            className={cn(
+              'flex-1 lg:flex-none',
+              // Ẩn bằng CSS, KHÔNG bỏ khỏi DOM: cây DOM giữ nguyên ở mọi cỡ màn
+              // nên vẫn chỉ có một landmark điều hướng, đúng lý do file này từ
+              // chối tách thành hai component.
+              desktopOnly && 'hidden lg:block',
+            )}
+          >
             <NavLink
               to={to}
               className={({ isActive }) =>

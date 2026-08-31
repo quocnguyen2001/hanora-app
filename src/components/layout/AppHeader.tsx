@@ -1,7 +1,8 @@
 import { Link } from 'react-router'
 import { BrandMark } from '@/components/common/BrandMark'
-import { ContrastIcon, MoonIcon, SunIcon } from '@/components/icons'
+import { ContrastIcon, MoonIcon, SunIcon, UserIcon } from '@/components/icons'
 import { IconButton } from '@/components/ui/IconButton'
+import { cn } from '@/lib/cn'
 import { THEMES, type Theme } from '@/lib/display-theme'
 import { useDisplay } from '@/stores/display'
 
@@ -34,6 +35,11 @@ const ICONS: Record<Theme, typeof SunIcon> = {
  * Nút đổi chủ đề ở đây KHÔNG thay màn Hiển thị & chữ. Nó là lối tắt cho trục
  * được dùng nhiều nhất; font, cỡ chữ, tông chữ và độ mượt vẫn nằm ở
  * `/account/settings`. Cả hai đọc chung một store nên không bao giờ lệch nhau.
+ *
+ * Icon Tài khoản CHỈ hiện trên mobile (`lg:hidden`). Thanh dưới nhường chỗ cho
+ * tab Chủ đề — việc hàng ngày — còn Tài khoản là màn mở vài lần rồi thôi, nên
+ * nó lùi lên đây. Sidebar desktop vẫn có mục Tài khoản đầy đủ, nên trên desktop
+ * icon này là thừa và bị ẩn.
  */
 export function AppHeader() {
   const theme = useDisplay((state) => state.theme)
@@ -71,7 +77,29 @@ export function AppHeader() {
           hanora
         </Link>
 
-        <IconButton label={NEXT_LABEL[theme]} icon={<Icon size={20} />} onClick={cycleTheme} />
+        <div className="flex items-center gap-1">
+          <IconButton label={NEXT_LABEL[theme]} icon={<Icon size={20} />} onClick={cycleTheme} />
+
+          {/*
+            `<Link>` chứ không phải `IconButton` + `navigate()`: đây là ĐIỀU
+            HƯỚNG, nên nó phải mở được ở tab mới, copy được địa chỉ, và hiện ra
+            trong danh sách link của screen reader. Một `<button>` không làm
+            được gì trong ba thứ đó.
+          */}
+          <Link
+            to="/account"
+            aria-label="Tài khoản"
+            className={cn(
+              'text-text-secondary hover:bg-primary-pale active:bg-primary-soft',
+              'rounded-control-lg flex size-11 items-center justify-center',
+              'duration-ui ease-soft transition-colors',
+              // Sidebar desktop đã có mục Tài khoản — ở đó icon này là thừa.
+              'lg:hidden',
+            )}
+          >
+            <UserIcon size={20} />
+          </Link>
+        </div>
       </div>
     </header>
   )

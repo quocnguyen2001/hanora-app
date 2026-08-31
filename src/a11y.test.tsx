@@ -45,7 +45,18 @@ async function renderRoute(path: string) {
 }
 
 describe('a11y', () => {
-  it.each(['/search', '/vocabulary', '/review', '/review/history', '/stats', '/account'])(
+  it.each([
+    '/search',
+    '/vocabulary',
+    '/review',
+    '/review/history',
+    '/stats',
+    '/account',
+    // Hai màn mới cũng phải qua axe: commit gần nhất của nhánh này là một bản
+    // vá a11y, và bỏ màn mới ra ngoài audit là cách chắc chắn để lặp lại nó.
+    '/topics',
+    '/topics/tinh-yeu',
+  ])(
     'không có vi phạm axe ở %s',
     async (path) => {
       const container = await renderRoute(path)

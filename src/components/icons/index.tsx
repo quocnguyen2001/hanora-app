@@ -69,6 +69,15 @@ export const UserIcon = (props: IconProps) => (
   </Icon>
 )
 
+export const TopicIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+  </Icon>
+)
+
 export const SpeakerIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M11 5 6.5 9H4v6h2.5L11 19Z" />

@@ -66,6 +66,31 @@ export function VocabularyListSkeleton({ count = 5 }: { count?: number }) {
   )
 }
 
+/** Lưới chủ đề — 2 cột mobile, khớp `TopicsPage`. */
+export function TopicsGridSkeleton({ count = 8 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+      {Array.from({ length: count }, (_, index) => (
+        <Skeleton key={index} className="rounded-card h-32 w-full" />
+      ))}
+    </div>
+  )
+}
+
+/** Màn học thẻ — một thẻ lớn giữa màn, không phải một lưới. */
+export function TopicLearnSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="mx-auto h-4 w-16" />
+      <Skeleton className="rounded-hero h-80 w-full" />
+      <div className="flex gap-3">
+        <Skeleton className="rounded-control-lg h-12 flex-1" />
+        <Skeleton className="rounded-control-lg h-12 flex-1" />
+      </div>
+    </div>
+  )
+}
+
 /** Nút quay lại ở đầu hai màn chi tiết. */
 function BackLinkSkeleton() {
   return <Skeleton className="h-10 w-24" />
@@ -277,6 +302,29 @@ export function PageSkeleton({ pathname }: { pathname: string }): ReactNode {
       <div className="space-y-4">
         <PageHeaderSkeleton />
         <ReviewHistorySkeleton />
+      </div>
+    )
+  }
+
+  /*
+   * TRƯỚC `/topics`: `'/topics/tinh-yeu'.startsWith('/topics')` cũng đúng, nên
+   * đảo thứ tự thì màn học mượn khung xương của lưới — tám ô vuông — rồi nhảy
+   * sang một thẻ lớn. Cùng cái bẫy đã ghi cho `/account/settings/voice`.
+   */
+  if (pathname.startsWith('/topics/')) {
+    return (
+      <div className="space-y-4">
+        <PageHeaderSkeleton />
+        <TopicLearnSkeleton />
+      </div>
+    )
+  }
+
+  if (pathname.startsWith('/topics')) {
+    return (
+      <div className="space-y-4">
+        <PageHeaderSkeleton />
+        <TopicsGridSkeleton />
       </div>
     )
   }

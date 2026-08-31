@@ -130,7 +130,19 @@ const LAZY_MAX_POLLS = 10
  * Không cần `placeholderData`: ô ảnh đã có khung placeholder riêng nên không
  * bao giờ nhấp nháy về trống.
  */
-export function useWordIllustration(id: number) {
+export function useWordIllustration(id: number, options: { maxPolls?: number } = {}) {
+  /*
+   * `maxPolls` hạ được cho MÀN HỌC CHỦ ĐỀ, mặc định giữ nguyên 10 cho màn chi
+   * tiết từ.
+   *
+   * Lý do là số đo: bảng `dictionary_word_illustrations` có 12 dòng trên
+   * 123.646 mục, nên từ chủ đề — theo định nghĩa là từ CHƯA AI MỞ — gần như
+   * luôn rơi vào nhánh `pending`. Một phiên 10 thẻ với trần 10 lượt hỏi là tới
+   * 110 request, trong khi trần throttle của API là 60/phút THEO USER: người
+   * dùng sẽ bị chính vòng poll ảnh của mình chặn không lưu được từ.
+   */
+  const maxPolls = options.maxPolls ?? LAZY_MAX_POLLS
+
   return useQuery({
     queryKey: dictionaryKeys.illustration(id),
     queryFn: () => fetchWordIllustration(id),
@@ -141,7 +153,7 @@ export function useWordIllustration(id: number) {
 
       // `dataUpdateCount` đếm số lần queryFn trả về thành công, tức đúng số lần
       // đã hỏi. Chạm trần thì thôi, coi như từ này không có ảnh.
-      return query.state.dataUpdateCount >= LAZY_MAX_POLLS ? false : LAZY_POLL_MS
+      return query.state.dataUpdateCount >= maxPolls ? false : LAZY_POLL_MS
     },
   })
 }
