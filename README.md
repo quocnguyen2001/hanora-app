@@ -119,14 +119,111 @@ URL tuyệt đối.
 
 ## Điều hướng
 
-**5 tab**: Tìm kiếm · Kho từ · Ôn tập · Thống kê · Tài khoản.
+**Mobile — 5 tab**: Tìm kiếm · Kho từ · Ôn tập · Chủ đề · Thống kê.
+**Desktop — 6 mục**: cùng năm mục trên, cộng Tài khoản.
 
 Route `/stats` tồn tại từ P2 để deep link không gãy, nhưng tab Thống kê chỉ xuất
-hiện cùng P17 — không ship tab dẫn tới màn trống.
+hiện cùng P17 — không ship tab dẫn tới màn trống. Tab Chủ đề thêm theo cùng
+nguyên tắc, khi màn học theo chủ đề đã có nội dung thật.
 
-`/account/settings` là trang con, cố ý KHÔNG có tab riêng: thêm tab thứ sáu làm
-chật thanh điều hướng trên mobile, đổi lại rất ít giá trị cho một màn người dùng
-mở vài lần rồi thôi.
+### Vì sao "Tài khoản" rời thanh dưới trên mobile
+
+Thanh dưới 360px chia SÁU là 60px mỗi tab, và ở cỡ chữ 130% (mức lớn nhất người
+dùng chọn được ở màn Hiển thị & chữ) nhãn dài như "Thống kê", "Tài khoản" bắt
+đầu chật. Nên thay vì nhồi tab thứ sáu, Tài khoản lùi lên **icon ở header**
+(`lg:hidden`) và nhường chỗ cho Chủ đề.
+
+Đó là đánh đổi theo TẦN SUẤT: học từ mới là việc hàng ngày, Tài khoản là màn mở
+vài lần rồi thôi. Sidebar desktop xếp dọc nên không có ràng buộc bề ngang đó và
+vẫn giữ đủ sáu mục.
+
+`BottomNavigation` vẫn là **một `<nav>` duy nhất** cho mọi cỡ màn — mục
+`desktopOnly` ẩn bằng CSS chứ không bị bỏ khỏi DOM, nên screen reader vẫn chỉ
+thấy một landmark điều hướng. Mục đó phải nằm CUỐI mảng `TABS`: pill nền dựa
+vào việc chỉ số của năm mục đầu giống nhau ở cả hai bố cục.
+
+`/account/settings` là trang con, cố ý KHÔNG có mục riêng.
+
+## Học theo chủ đề
+
+`/topics` là lưới 16 chủ đề (tình yêu, văn phòng, thiên nhiên, thức ăn…);
+`/topics/:slug` là màn học thẻ. Đây là lối vào NỘI DUNG MỚI — mọi đường khác vào
+từ vựng đều bắt đầu bằng "người dùng đã biết cần tra từ gì".
+
+**Tab "Chủ đề" trong thanh điều hướng** là lối vào chính — xem mục Điều hướng ở
+trên để biết vì sao nó thay chỗ của Tài khoản trên mobile.
+
+Bản đầu cố ý KHÔNG thêm tab, lấy lý do "thêm tab sau khi biết người dùng có dùng
+hay không". Lập luận đó tự phủ định: không tìm thấy tính năng thì không ai dùng,
+nên dữ liệu đó không bao giờ tới. Người dùng đầu tiên mở app đã không thấy nó.
+
+Hai lối vào theo NGỮ CẢNH vẫn giữ, vì chúng xuất hiện đúng lúc người dùng đang
+muốn học thêm chứ không phải chỉ để dẫn đường:
+
+| Lối vào | Vì sao ở đó |
+|---|---|
+| Empty state màn **Kho từ** | Hành động PHỤ — chỗ này đã có đích (`/search`), không cướp chỗ của nó |
+| Empty state màn **Ôn tập** (`no_words`) | Câu chữ ở đây đang hứa "lưu thêm từ mới để bắt đầu học" mà chưa có đích |
+
+Luồng một phiên: bấm **Bắt đầu học** → 10 thẻ → mỗi thẻ chọn *Thêm vào kho*
+hoặc *Đã biết rồi* → tổng kết → **Ôn ngay**. Từ vừa thêm đi thẳng vào SRS.
+
+### Ba điểm dễ làm sai
+
+**Bốc thẻ trong EVENT HANDLER, không phải `useState` khởi tạo lười.** Initializer
+chạy ở render đầu tiên, khi cả ba query (`words`, `saved`, `skips`) còn
+`pending` — nó sẽ bốc từ mảng rỗng và rơi thẳng vào màn "đã học hết". Nút "Bắt
+đầu học" đóng vai `ModePicker` của màn Ôn tập, và tiện thể cho người dùng biết
+còn bao nhiêu từ.
+
+**KHÔNG optimistic cho thao tác ghi.** `api.ts` chặn mọi non-GET khi ngoại tuyến
+với hợp đồng *"tuyệt đối không giả vờ đã lưu"*. Sang thẻ ngay khi bấm chính là
+giả vờ đã lưu: mất mạng ở thẻ 2 thì người dùng học hết phiên, thấy "đã thêm 6
+từ", rồi vào `/review` không thấy gì. Thẻ đứng yên, báo lỗi, cho thử lại.
+
+**"Học tiếp chủ đề này" phải `await` refetch trước khi bốc bộ mới.**
+`invalidateQueries` bất đồng bộ và trả `data` cũ trong lúc refetch
+(`useSavedWordIds` có `staleTime` 30 giây), nên bốc ngay sau khi invalidate sẽ
+phát lại đúng 10 từ vừa học.
+
+### Chủ đề tự tạo
+
+Nút **+ Chủ đề mới** trên `/topics` mở `NewTopicForm`: gõ tên, chọn emoji, gửi.
+API trả `202` ngay và job sinh từ chạy nền ~20 giây.
+
+`useTopics` **tự poll mỗi 3 giây khi còn chủ đề `generating`**, và dừng hẳn khi
+hết — không cần endpoint trạng thái riêng. Vòng poll có điều kiện dừng vì cùng
+lý do `LAZY_MAX_POLLS` tồn tại bên lớp ảnh: một vòng chạy mãi cho câu trả lời
+không bao giờ tới là chi phí thật.
+
+Thẻ chủ đề có **ba hình dạng**, không phải một:
+
+| Trạng thái | Thẻ hiện gì |
+|---|---|
+| `generating` | "Đang tìm từ…", không phải link, không hiện `0/0` |
+| `failed` | Lý do đọc được + nút **Xoá** |
+| `ready` | Như chủ đề gốc |
+
+Tách `generating` ra là bắt buộc: gộp vào nhánh thường thì thẻ vừa tạo hiện
+`0/0`, bấm vào ra màn "đã học hết", và người dùng tưởng nó hỏng.
+
+Chủ đề tự tạo **chỉ người tạo thấy**, và chỉ chúng mới có nút xoá — `is_custom`
+từ API quyết định điều đó, app không tự suy.
+
+### Ngân sách request của một phiên
+
+Ảnh minh hoạ dùng `maxPolls: 2` thay vì 10 như màn chi tiết từ. Từ chủ đề theo
+định nghĩa là từ **chưa ai mở** (bảng ảnh có 12 dòng trên 123.646 mục), nên gần
+như luôn rơi vào nhánh `pending`. Với trần 10 lượt hỏi, một phiên 10 thẻ là tới
+110 request — trong khi throttle của API là 60/phút **theo user**, tức người
+dùng sẽ bị chính vòng poll ảnh của mình chặn không lưu được từ.
+
+Cùng lý do, màn học dùng `useSaveTopicWord` riêng thay vì `useToggleSaveWord`:
+hook kia invalidate `vocabularyKeys.ids` sau MỖI thẻ, và query đó đang active vì
+chính màn học đọc nó. Invalidate gom về cuối phiên.
+
+Ảnh chỉ resolve cho thẻ ĐANG HIỆN — không prefetch thẻ sau. Người dùng thoát ở
+thẻ 2 thì tám từ còn lại không tốn lượt gọi nào.
 
 ## Tùy chỉnh hiển thị
 
