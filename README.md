@@ -84,6 +84,8 @@ chính feature đó, không tập trung vào một file dùng chung.
 
 ```text
 ['dictionary', 'search', q]
+['streak', 'summary']
+['streak', 'summary', 'calendar']
 ['dictionary', 'word', id]
 ['vocabulary', 'list', filters]
 ['vocabulary', 'ids']
@@ -120,6 +122,8 @@ URL tuyệt đối.
 ## Điều hướng
 
 **Mobile — 5 tab**: Tìm kiếm · Kho từ · Ôn tập · Chủ đề · Thống kê.
+Header mang thêm **chip chuỗi ngày** (`/streak`) — nó tự ẩn khi người dùng chưa
+có chuỗi nào, nên không vi phạm luật "không ship nút chết".
 **Desktop — 6 mục**: cùng năm mục trên, cộng Tài khoản.
 
 Route `/stats` tồn tại từ P2 để deep link không gãy, nhưng tab Thống kê chỉ xuất
@@ -224,6 +228,43 @@ chính màn học đọc nó. Invalidate gom về cuối phiên.
 
 Ảnh chỉ resolve cho thẻ ĐANG HIỆN — không prefetch thẻ sau. Người dùng thoát ở
 thẻ 2 thì tám từ còn lại không tốn lượt gọi nào.
+
+## Chuỗi ngày
+
+Chip lửa trên header ở **mọi màn**, bấm vào ra `/streak` (chuỗi hiện tại, kỷ lục,
+lịch 30 ngày, tiến độ hôm nay).
+
+Mục tiêu mỗi ngày: **5 từ mới HOẶC một phiên ôn đã chốt**. Luật sống ở API; app
+không tự tính lại — xem `hanora-api/README.md`, mục Chuỗi ngày.
+
+### Ba điểm dễ làm sai
+
+**Chip nhận dữ liệu ĐẨY VÀO, không refetch.** `useSaveTopicWord` cố ý không
+invalidate gì sau mỗi thẻ vì trần 60 request/phút theo user (xem "Ngân sách
+request của một phiên"). Nếu chip phải gọi lại `/streak` để nhích thì hoặc nó
+đứng im tới cuối phiên, hoặc ta phá chính ngân sách đó. Giải: mọi đường ghi trả
+`streak` ngay trong response, và `useApplyStreak()` ghi thẳng vào cache.
+
+Có test khoá việc này, và nó đi qua **hook thật** (`useSaveTopicWord`) chứ không
+gọi `useApplyStreak()` trực tiếp: bản đầu làm thế và nó chứng minh cơ chế chạy
+đúng trong khi vẫn để xoá được cả dòng nối hai đầu mà suite không đỏ.
+
+**Ngoại tuyến, số đến từ `/auth/me`.** Query client không có persister và
+`/api/streak` cố ý `no-store`, nên đường duy nhất chip có số khi mở app lúc mất
+mạng là bucket service worker của `/api/auth/me` — response đó mang thêm
+`streak`. Số có thể cũ tới 7 ngày; vẫn tốt hơn hẳn chip biến mất với người đang
+giữ chuỗi 40 ngày. Bucket đó nằm trong trình tự xoá của `clearSession()`.
+
+**Chúc mừng đọc cờ `advanced` từ server.** Màn tổng kết chỉ mount SAU khi
+mutation chốt phiên xong, nên nó không bao giờ quan sát được trạng thái "trước".
+So hai lần đọc ở client sẽ hoặc không bao giờ đúng, hoặc chúc mừng lại ở mọi
+phiên trong cùng một ngày.
+
+### `streak_days` không còn trong `/stats/summary`
+
+Ô "Chuỗi ngày" ở màn Thống kê đọc `useStreak()`, cùng nguồn với chip. Endpoint
+thống kê bị server cache 60 giây nên giữ trường đó lại là tự tạo ra hai con số
+lệch nhau trên hai màn.
 
 ## Tùy chỉnh hiển thị
 
