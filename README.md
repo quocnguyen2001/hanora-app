@@ -150,9 +150,14 @@ vào việc chỉ số của năm mục đầu giống nhau ở cả hai bố c�
 
 ## Tìm lại bằng AI
 
-Dưới danh sách kết quả ở `/search` có nút **"Kết quả chưa đúng? Tìm lại bằng
+Trên cùng khối kết quả ở `/search` có nút **"Kết quả chưa đúng? Tìm lại bằng
 AI"**. Bấm nó gửi `refine=ai`, và API bỏ qua cổng `SearchWeakness` để luôn hỏi
 lớp diễn giải AI.
+
+Nút dùng `variant="ghost"` — phẳng, canh trái, đọc như một dòng phụ chú. Đứng
+trên cùng mà mang gờ dày thì nó đọc ra như hành động chính của màn hình, trong
+khi hành động chính là mở một từ. Nó không giành chỗ với thẻ dịch: `translation`
+chỉ có khi AI đã tham gia, và khi đó nút đã tự ẩn theo luật 1 bên dưới.
 
 Nó tồn tại cho đúng một ca: SQL trông tự tin nhưng SAI. Khi SQL yếu thì API đã tự
 gọi AI rồi; khi SQL mạnh mà sai thì KHÔNG có tín hiệu cấu trúc nào nhận ra —

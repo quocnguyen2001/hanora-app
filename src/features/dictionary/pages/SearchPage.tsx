@@ -309,6 +309,20 @@ function SearchResults({
       aria-busy={stale}
     >
       {/*
+        TRÊN CÙNG. Lối thoát phải thấy được ngay, không phải cuộn hết danh sách
+        mới gặp.
+
+        Nó KHÔNG giành chỗ với thẻ dịch: `translation` chỉ có khi AI đã tham gia,
+        và khi đó `source === 'ai'` nên khối này tự trả về `null`.
+      */}
+      <RefinePrompt
+        source={state.data?.meta.source ?? 'sql'}
+        refined={refined}
+        refining={refining}
+        onRefine={onRefine}
+      />
+
+      {/*
         Câu dịch đứng TRƯỚC danh sách từ. Người gõ cả một câu muốn câu trả lời
         trước, rồi mới tra từng chữ — không phải ngược lại.
 
@@ -337,19 +351,6 @@ function SearchResults({
           </li>
         ))}
       </ul>
-
-      {/*
-        DƯỚI danh sách, không phải trên.
-
-        Người dùng chỉ biết kết quả sai sau khi đã đọc nó. Đặt lối thoát ở nơi họ
-        đi tới khi thất vọng, chứ không phải chắn trước thứ họ đang cần đọc.
-      */}
-      <RefinePrompt
-        source={state.data?.meta.source ?? 'sql'}
-        refined={refined}
-        refining={refining}
-        onRefine={onRefine}
-      />
     </div>
   )
 }
@@ -396,16 +397,18 @@ function RefinePrompt({
   }
 
   return (
-    <div className="flex justify-center pt-1">
-      {/*
-        `secondary`, KHÔNG `primary`. Hành động chính của màn này là mở một từ;
-        đây là lối thoát cho thiểu số. Cho nó gờ hồng đậm là để nó tranh sự chú ý
-        với chính danh sách kết quả mà nó đang nói là sai.
-      */}
-      <Button variant="secondary" size="sm" loading={refining} onClick={onRefine}>
-        Kết quả chưa đúng? Tìm lại bằng AI
-      </Button>
-    </div>
+    /*
+      `ghost`, KHÔNG `secondary`. Đứng trên cùng thì một pill có gờ dày đọc ra
+      như hành động chính của màn hình, trong khi hành động chính là mở một từ —
+      đây chỉ là lối thoát cho thiểu số. Phẳng và canh trái làm nó thành một dòng
+      phụ chú, thấy được ngay mà không chắn thứ người dùng đang cần đọc.
+
+      `-mx-1` kéo phần đệm ngang của nút về sát lề chữ của danh sách bên dưới:
+      vùng chạm vẫn 44px, nhưng chữ thẳng hàng thay vì thụt vào.
+    */
+    <Button variant="ghost" size="sm" className="-mx-1" loading={refining} onClick={onRefine}>
+      Kết quả chưa đúng? Tìm lại bằng AI
+    </Button>
   )
 }
 
