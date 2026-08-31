@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useApplyStreak } from '@/features/streak/hooks'
 import * as vocabularyApi from './api'
 
 export const vocabularyKeys = {
@@ -56,11 +57,17 @@ export function useVocabulary(filters: { status?: string; q?: string }) {
  */
 export function useToggleSaveWord() {
   const queryClient = useQueryClient()
+  const applyStreak = useApplyStreak()
 
   return useMutation({
     mutationFn: async ({ wordId, userWordId }: { wordId: number; userWordId: number | null }) => {
       if (userWordId === null) {
-        await vocabularyApi.saveWord(wordId)
+        const { streak } = await vocabularyApi.saveWord(wordId)
+
+        // Chip trên header nhích ngay từ chính response này — không tốn thêm
+        // một lượt gọi nào.
+        applyStreak(streak)
+
         return
       }
 

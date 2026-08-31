@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { BrandMark } from '@/components/common/BrandMark'
 import { ContrastIcon, MoonIcon, SunIcon, UserIcon } from '@/components/icons'
+import { StreakChip } from '@/features/streak/components/StreakChip'
 import { IconButton } from '@/components/ui/IconButton'
 import { cn } from '@/lib/cn'
 import { THEMES, type Theme } from '@/lib/display-theme'
@@ -26,11 +27,15 @@ const ICONS: Record<Theme, typeof SunIcon> = {
 }
 
 /**
- * Thanh trên cùng: wordmark + lối tắt đổi chủ đề.
+ * Thanh trên cùng: wordmark + chuỗi ngày + lối tắt đổi chủ đề.
  *
- * KHÔNG có nút chuông như bản showcase. App chưa có tính năng thông báo, và
- * `SearchBar` đã bỏ nút camera vì đúng lý do đó — ship một nút không làm gì còn
- * tệ hơn không có nút, vì người dùng bấm rồi tự hỏi mình làm sai chỗ nào.
+ * KHÔNG có nút chuông như bản showcase, và luật đứng sau chỗ trống đó vẫn
+ * nguyên: `SearchBar` đã bỏ nút camera vì cùng lý do — ship một nút không làm gì
+ * còn tệ hơn không có nút, vì người dùng bấm rồi tự hỏi mình làm sai chỗ nào.
+ *
+ * `StreakChip` được thêm vì nó KHÔNG phải một nút chết: nó mang một con số thật
+ * và dẫn tới một màn thật. Nó tự ẩn khi người dùng chưa có chuỗi nào — đúng
+ * cùng luật đó, áp cho một thứ chỉ có nghĩa khi đã có dữ liệu.
  *
  * Nút đổi chủ đề ở đây KHÔNG thay màn Hiển thị & chữ. Nó là lối tắt cho trục
  * được dùng nhiều nhất; font, cỡ chữ, tông chữ và độ mượt vẫn nằm ở
@@ -78,6 +83,8 @@ export function AppHeader() {
         </Link>
 
         <div className="flex items-center gap-1">
+          <StreakChip />
+
           <IconButton label={NEXT_LABEL[theme]} icon={<Icon size={20} />} onClick={cycleTheme} />
 
           {/*

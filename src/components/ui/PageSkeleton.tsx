@@ -331,6 +331,25 @@ export function PageSkeleton({ pathname }: { pathname: string }): ReactNode {
 
   if (pathname.startsWith('/review')) return <ReviewSkeleton />
 
+  /*
+   * `/streak` KHÔNG có tiền tố chung với route nào nên nó không dính bẫy thứ tự
+   * `startsWith`.
+   *
+   * KHÔNG mượn `StatsSkeleton`: màn đó là biểu đồ + hàng ba thẻ + donut, còn màn
+   * này là một thẻ hai số + một thẻ tiến độ + lưới 30 ô. Mượn nhầm là tạo ra
+   * đúng cú nhảy bố cục mà mấy khung xương theo route này sinh ra để tránh.
+   */
+  if (pathname.startsWith('/streak')) {
+    return (
+      <div className="space-y-4">
+        <PageHeaderSkeleton />
+        <Skeleton className="rounded-card h-24 w-full" />
+        <Skeleton className="rounded-card h-28 w-full" />
+        <Skeleton className="rounded-card h-56 w-full max-w-sm" />
+      </div>
+    )
+  }
+
   if (pathname.startsWith('/stats')) {
     return (
       <div className="space-y-4">

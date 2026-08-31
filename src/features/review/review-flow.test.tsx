@@ -5,6 +5,7 @@ import { StrictMode, type ReactNode } from 'react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api'
+import type { StreakDelta } from '@/features/streak/api'
 import { useReviewStore } from '@/stores/review'
 import type * as reviewApi from './api'
 import type { AnswerResult, ReviewSessionMeta, StartedSession } from './api'
@@ -27,7 +28,7 @@ import { ReviewPage } from './pages/ReviewPage'
 const { startSession, submitAnswer, finishSession } = vi.hoisted(() => ({
   startSession: vi.fn<(input: SessionConfig) => Promise<StartedSession>>(),
   submitAnswer: vi.fn<(input: Record<string, unknown>) => Promise<AnswerResult>>(),
-  finishSession: vi.fn<(id: number) => Promise<SessionDetail>>(),
+  finishSession: vi.fn<(id: number) => Promise<{ detail: SessionDetail; streak?: StreakDelta }>>(),
 }))
 
 vi.mock('./api', async (importOriginal) => {
@@ -156,7 +157,12 @@ beforeEach(() => {
   useReviewStore.setState({ lastMode: 'typing', lastSource: 'due', lastLimit: 10 })
   startSession.mockResolvedValue(started)
   submitAnswer.mockResolvedValue(answerResult)
-  finishSession.mockResolvedValue(outcome)
+  /*
+   * `finishSession` trả `{ detail, streak }`: chuỗi ngày là trường cấp envelope
+   * cạnh `data`, không nằm trong `data` — vì `data` phải giữ đúng hình dạng của
+   * `GET /reviews/sessions/{id}` (có test khoá sự bằng nhau đó bên API).
+   */
+  finishSession.mockResolvedValue({ detail: outcome })
 })
 
 describe('mở phiên', () => {

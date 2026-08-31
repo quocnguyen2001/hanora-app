@@ -66,7 +66,6 @@ const summary: StatsSummary = {
   words_learned: 12,
   words_learned_delta_pct: 0,
   reviews_count: 40,
-  streak_days: 3,
   memory_rate: 75,
   series: [{ label: '2026-08-29', value: 4 }],
   distribution: { new: 20, learning: 50, mastered: 30 },

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { StatCard } from '@/components/common/StatCard'
 import { CalendarIcon, ChartIcon, HeartIcon } from '@/components/icons'
 import { Button } from '@/components/ui/Button'
@@ -14,6 +14,7 @@ import { ApiError } from '@/lib/api'
 import type { StatsRange } from '../api'
 import { DonutChart } from '../components/DonutChart'
 import { LineChart } from '../components/LineChart'
+import { useStreakValue } from '@/features/streak/hooks'
 import { useStatsSummary } from '../hooks'
 
 const RANGES = [
@@ -27,6 +28,7 @@ export function StatsPage() {
   const [range, setRange] = useState<StatsRange>('week')
   const navigate = useNavigate()
   const stats = useStatsSummary(range)
+  const streak = useStreakValue()
 
   /*
    * Hai nguồn này KHÔNG chịu ảnh hưởng của bộ lọc khoảng thời gian ở trên.
@@ -111,11 +113,22 @@ export function StatsPage() {
               value={stats.data.reviews_count}
               icon={<ChartIcon size={20} />}
             />
-            <StatCard
-              label="Chuỗi ngày"
-              value={stats.data.streak_days}
-              icon={<CalendarIcon size={20} />}
-            />
+            {/*
+              Đọc từ `useStreakValue()` — ĐÚNG hook mà chip trên header dùng,
+              kể cả đường lùi khi ngoại tuyến. Hai chỗ tự chọn giá trị mặc định
+              là cách chúng trôi khỏi nhau: một bên ẩn chip, một bên hiện `0`
+              cứng, và người dùng thấy 40 cạnh 0 trên cùng một màn.
+
+              Không có số thì hiện `—`, không hiện `0`: `0` là một khẳng định
+              sai, `—` nói đúng rằng chưa biết.
+            */}
+            <Link to="/streak" className="block">
+              <StatCard
+                label="Chuỗi ngày"
+                value={streak.current ?? '—'}
+                icon={<CalendarIcon size={20} />}
+              />
+            </Link>
             <StatCard
               label="Độ nhớ"
               value={stats.data.memory_rate}

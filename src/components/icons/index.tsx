@@ -209,3 +209,19 @@ export const TextSizeIcon = (props: IconProps) => (
     <path d="M3 7V5h8v2M7 5v14M13 12v-1.5h7V12M16.5 10.5V19" />
   </Icon>
 )
+
+/**
+ * Ngọn lửa của chuỗi ngày.
+ *
+ * `filled` phân biệt "đã cháy hôm nay" với "chưa cháy" — theo đúng cách
+ * `BookmarkIcon` đã làm cho cùng bài toán hai trạng thái. Chỉ đổi màu là không
+ * đủ: người dùng màn hình đơn sắc hoặc khó phân biệt hai tông hồng sẽ không
+ * thấy khác biệt nào.
+ */
+export const FlameIcon = ({ filled = false, ...props }: IconProps & { filled?: boolean }) => (
+  <Icon fill={filled ? 'currentColor' : 'none'} {...props}>
+    <path d="M12 3c.5 2.5-1 3.5-2.2 4.8A6.4 6.4 0 0 0 8 12a4 4 0 0 0 8 0c0-1.2-.4-2-1-2.8.2 1-.4 1.8-1.1 1.8-.9 0-1.4-.8-1.2-1.9.3-1.7.3-3.4-.7-6.1Z" />
+    <path d="M12 21a7 7 0 0 0 7-7c0-3-1.6-5.4-3.2-7" />
+    <path d="M12 21a7 7 0 0 1-7-7c0-3 1.6-5.4 3.2-7" />
+  </Icon>
+)

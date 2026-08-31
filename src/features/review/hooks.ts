@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useApplyStreak } from '@/features/streak/hooks'
 import { vocabularyKeys } from '@/features/vocabulary/hooks'
 import * as reviewApi from './api'
 import * as historyApi from './history-api'
@@ -51,10 +52,13 @@ export function useSubmitAnswer() {
 
 export function useFinishSession() {
   const queryClient = useQueryClient()
+  const applyStreak = useApplyStreak()
 
   return useMutation({
     mutationFn: historyApi.finishSession,
-    onSuccess: () => {
+    onSuccess: ({ streak }) => {
+      applyStreak(streak)
+
       void queryClient.invalidateQueries({ queryKey: reviewKeys.history })
       void queryClient.invalidateQueries({ queryKey: reviewKeys.weakWords })
       void queryClient.invalidateQueries({ queryKey: ['stats'] })

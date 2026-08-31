@@ -33,4 +33,12 @@ describe('PageSkeleton — thứ tự nhánh route', () => {
   it('lưới chủ đề có nhiều ô hơn màn học', () => {
     expect(blocks('/topics')).toBeGreaterThan(blocks('/topics/tinh-yeu'))
   })
+
+  it('màn chuỗi KHÔNG mượn khung xương của Thống kê', () => {
+    // Hai màn khác hình hẳn: Thống kê là biểu đồ + hàng ba thẻ + donut, còn
+    // `/streak` là thẻ hai số + thẻ tiến độ + lưới 30 ô. Mượn nhầm tạo ra đúng
+    // cú nhảy bố cục mà khung xương theo route sinh ra để tránh.
+    expect(blocks('/streak')).toBeGreaterThan(0)
+    expect(blocks('/streak')).not.toBe(blocks('/stats'))
+  })
 })

@@ -87,3 +87,7 @@ export const TopicsPage = lazy(() =>
 export const TopicLearnPage = lazy(() =>
   import('@/features/topics/pages/TopicLearnPage').then((m) => ({ default: m.TopicLearnPage })),
 )
+
+export const StreakPage = lazy(() =>
+  import('@/features/streak/pages/StreakPage').then((m) => ({ default: m.StreakPage })),
+)

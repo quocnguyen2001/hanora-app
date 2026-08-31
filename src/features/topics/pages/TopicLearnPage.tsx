@@ -44,6 +44,14 @@ export function TopicLearnPage() {
   const [session, setSession] = useState<TopicWord[] | null>(null)
   const [index, setIndex] = useState(0)
   const [savedCount, setSavedCount] = useState(0)
+  /*
+   * Phiên này đã làm chuỗi ngày tăng chưa.
+   *
+   * Cờ do SERVER trả trong response của lượt lưu vượt mốc — client không tự suy
+   * được, và giữ nó ở đây (không ở component tổng kết) vì tổng kết chỉ mount
+   * sau khi phiên đã xong.
+   */
+  const [streak, setStreak] = useState<{ current: number; advanced: boolean } | undefined>()
   const [skippedCount, setSkippedCount] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [continuing, setContinuing] = useState(false)
@@ -51,19 +59,27 @@ export function TopicLearnPage() {
   const ready = words.isSuccess && saved.isSuccess && skipped.isSuccess
   const topic = topics.data?.find((item) => item.slug === slug) ?? null
 
-  const remaining = ready
-    ? remainingCount(words.data.words, saved.data, skipped.data)
-    : 0
+  const remaining = ready ? remainingCount(words.data.words, saved.data, skipped.data) : 0
 
   function begin(): void {
     // Chỉ bốc khi CẢ BA query đã có dữ liệu. Đây là điều kiện mà `useState`
     // khởi tạo lười không thể chờ được.
     if (!ready) return
 
-    setSession(pickSession({ words: words.data.words, savedIds: saved.data, skippedIds: skipped.data }))
+    setSession(
+      pickSession({ words: words.data.words, savedIds: saved.data, skippedIds: skipped.data }),
+    )
     setIndex(0)
     setSavedCount(0)
     setSkippedCount(0)
+    /*
+     * Reset cùng chỗ với ba bộ đếm kia, không phải chi tiết thừa: người dùng
+     * bấm "Học tiếp chủ đề này" sau khi chuỗi đã tăng ở phiên trước sẽ được
+     * chúc mừng LẦN NỮA cho một phiên không làm chuỗi nhích. Màn ôn tập miễn
+     * nhiễm vì nó đọc `finish.data` của từng mutation; màn này giữ state nên nó
+     * phải tự dọn.
+     */
+    setStreak(undefined)
     setError(null)
   }
 
@@ -75,8 +91,9 @@ export function TopicLearnPage() {
   function handleSave(word: TopicWord): void {
     setError(null)
     save.mutate(word.id, {
-      onSuccess: () => {
+      onSuccess: ({ streak }) => {
         setSavedCount((count) => count + 1)
+        if (streak?.advanced === true) setStreak({ current: streak.current, advanced: true })
         advance()
       },
       // Thẻ ĐỨNG YÊN khi lỗi. Nhảy thẻ rồi báo lỗi sau là để người dùng học hết
@@ -128,6 +145,10 @@ export function TopicLearnPage() {
     setIndex(0)
     setSavedCount(0)
     setSkippedCount(0)
+    // Cùng lý do như trong `begin()`: cờ chúc mừng là state của TRANG, và đây là
+    // đường thứ hai mở một phiên mới. Quên chỗ này thì "Học tiếp chủ đề này"
+    // chúc mừng lại cho một phiên không làm chuỗi nhích.
+    setStreak(undefined)
   }
 
   async function goReview(): Promise<void> {
@@ -199,6 +220,7 @@ export function TopicLearnPage() {
   if (index >= session.length) {
     return (
       <TopicSessionSummary
+        streak={streak}
         saved={savedCount}
         skipped={skippedCount}
         hasMore={remaining - session.length > 0}

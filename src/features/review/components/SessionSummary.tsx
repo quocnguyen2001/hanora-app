@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { StreakCelebration } from '@/features/streak/components/StreakCelebration'
 import type { SessionDetail } from '../history-api'
 import { averageDurationMs, formatDuration } from '../duration'
 import { SessionAnswerList } from './SessionAnswerList'
@@ -14,12 +15,21 @@ import { SessionScoreCard } from './SessionScoreCard'
  */
 export function SessionSummary({
   outcome,
+  streak,
   onReviewWrong,
   onGoHistory,
   onGoVocabulary,
   onSelectWord,
 }: {
   outcome: SessionDetail
+  /**
+   * Trạng thái chuỗi do SERVER trả trong response chốt phiên.
+   *
+   * `advanced` không suy được ở client: màn này chỉ mount SAU khi mutation xong,
+   * nên nó không bao giờ quan sát được trạng thái "trước". So hai lần đọc ở đây
+   * sẽ hoặc không bao giờ đúng, hoặc chúc mừng lại mỗi phiên trong cùng ngày.
+   */
+  streak?: { current: number; advanced: boolean }
   onReviewWrong: () => void
   onGoHistory: () => void
   onGoVocabulary: () => void
@@ -36,6 +46,8 @@ export function SessionSummary({
 
   return (
     <div className="animate-rise space-y-4">
+      {streak?.advanced === true && <StreakCelebration current={streak.current} />}
+
       <SessionScoreCard
         score={session.score}
         grade={session.grade}

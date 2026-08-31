@@ -231,7 +231,8 @@ function ReviewSession({
   if (outcome) {
     return (
       <SessionSummary
-        outcome={outcome}
+        outcome={outcome.detail}
+        streak={outcome.streak}
         onReviewWrong={() =>
           onRestart({ mode: session.mode, source: 'weak', limit: session.planned_count })
         }

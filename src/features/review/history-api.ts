@@ -1,3 +1,4 @@
+import { parseStreakDelta, type StreakDelta } from '@/features/streak/api'
 import { apiRequest, apiRequestWithMeta } from '@/lib/api'
 import type { WordSummary } from '@/types/dictionary'
 import type { ReviewMode, ReviewSessionMeta } from './api'
@@ -66,8 +67,23 @@ export interface WordHistory {
   recent: ReviewAnswer[]
 }
 
-export function finishSession(sessionId: number): Promise<SessionDetail> {
-  return apiRequest<SessionDetail>(`/reviews/sessions/${sessionId}/finish`, { method: 'POST' })
+/**
+ * Chốt phiên, và nhận trạng thái chuỗi kèm theo.
+ *
+ * `streak` là trường CẤP ENVELOPE, KHÔNG nằm trong `data` — `data` phải giữ
+ * đúng hình dạng của `GET /reviews/sessions/{id}`, và có một test khoá sự bằng
+ * nhau đó lại. Chuỗi là trạng thái của người dùng lúc ghi, không phải một phần
+ * của phiên ôn.
+ */
+export async function finishSession(
+  sessionId: number,
+): Promise<{ detail: SessionDetail; streak?: StreakDelta }> {
+  const envelope = await apiRequestWithMeta<SessionDetail>(
+    `/reviews/sessions/${sessionId}/finish`,
+    { method: 'POST' },
+  )
+
+  return { detail: envelope.data, streak: parseStreakDelta(envelope.streak) }
 }
 
 export async function fetchSessionHistory(

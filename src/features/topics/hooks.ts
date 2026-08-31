@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useApplyStreak } from '@/features/streak/hooks'
 import { saveWord } from '@/features/vocabulary/api'
 import { vocabularyKeys } from '@/features/vocabulary/hooks'
 import * as topicsApi from './api'
@@ -85,7 +86,17 @@ export function useSkippedWordIds() {
  * phiên, thấy "đã thêm 6 từ", rồi vào `/review` không thấy gì.
  */
 export function useSaveTopicWord() {
-  return useMutation({ mutationFn: (wordId: number) => saveWord(wordId) })
+  const applyStreak = useApplyStreak()
+
+  return useMutation({
+    mutationFn: (wordId: number) => saveWord(wordId),
+    /*
+     * Ngoại lệ DUY NHẤT của luật "không đụng cache sau mỗi thẻ": đây không phải
+     * invalidate, mà là ghi thẳng dữ liệu server VỪA trả về vào cache. Không
+     * sinh request nào nên ngân sách 60/phút không bị đụng tới.
+     */
+    onSuccess: ({ streak }) => applyStreak(streak),
+  })
 }
 
 /** Bỏ qua một từ. Cũng không optimistic, cùng lý do. */

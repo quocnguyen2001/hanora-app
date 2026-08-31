@@ -258,6 +258,50 @@ describe('màn học thẻ', () => {
     await waitFor(() => expect(location()).toBe('/review'))
   })
 
+  it('không chúc mừng chuỗi lần thứ hai ở phiên kế tiếp trong cùng ngày', async () => {
+    /*
+     * `streakAdvanced` là state của TRANG, không phải của phiên. Không reset nó
+     * trong `begin()` thì bấm "Học tiếp chủ đề này" sau khi chuỗi đã tăng sẽ
+     * chúc mừng lại cho một phiên không làm chuỗi nhích.
+     *
+     * Màn ôn tập miễn nhiễm vì nó đọc `finish.data` của từng mutation; màn này
+     * giữ state nên nó phải tự dọn.
+     */
+    // 12 từ: phiên đầu lấy 10 (SESSION_SIZE), còn dư 2 nên nút "Học tiếp" hiện.
+    const words = Array.from({ length: 12 }, (_, i) => word(i + 1, i + 1))
+    fetchTopicWords.mockResolvedValue({ words, wordCount: 12 })
+    saveWord.mockResolvedValue({
+      word: { id: 1 },
+      streak: { current: 3, met_today: true, advanced: true },
+    })
+
+    const user = userEvent.setup()
+    renderLearn()
+
+    await user.click(await screen.findByRole('button', { name: /Bắt đầu học/ }))
+
+    // Thẻ đầu lưu (chuỗi tăng), chín thẻ còn lại bỏ qua cho nhanh.
+    await user.click(screen.getByRole('button', { name: 'Thêm vào kho' }))
+    for (let i = 0; i < 9; i++) {
+      await user.click(screen.getByRole('button', { name: 'Đã biết rồi' }))
+    }
+
+    expect(await screen.findByText(/Xong phiên này/)).toBeInTheDocument()
+    expect(screen.getByText(/Chuỗi 3 ngày/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Học tiếp chủ đề này/ }))
+
+    // `fetchSavedWordIds`/`fetchSkippedWordIds` là mock tĩnh nên phiên hai lại
+    // lấy đủ 10 thẻ — bỏ qua hết để tới màn tổng kết.
+    await user.click(await screen.findByRole('button', { name: 'Đã biết rồi' }))
+    for (let i = 0; i < 9; i++) {
+      await user.click(screen.getByRole('button', { name: 'Đã biết rồi' }))
+    }
+
+    expect(await screen.findByText(/Xong phiên này/)).toBeInTheDocument()
+    expect(screen.queryByText(/Chuỗi 3 ngày/)).not.toBeInTheDocument()
+  })
+
   it('mỗi thẻ chỉ resolve ảnh của CHÍNH nó, không tải trước thẻ sau', async () => {
     const user = userEvent.setup()
     renderLearn()

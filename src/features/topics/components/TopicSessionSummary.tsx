@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { StreakCelebration } from '@/features/streak/components/StreakCelebration'
 
 /**
  * Tổng kết một phiên học.
@@ -9,6 +10,7 @@ import { Card } from '@/components/ui/Card'
  */
 export function TopicSessionSummary({
   saved,
+  streak,
   skipped,
   hasMore,
   onReview,
@@ -17,6 +19,8 @@ export function TopicSessionSummary({
   continuing,
 }: {
   saved: number
+  /** Trạng thái chuỗi từ server ở lượt lưu vượt mốc — xem `SessionSummary`. */
+  streak?: { current: number; advanced: boolean }
   skipped: number
   hasMore: boolean
   onReview: () => void
@@ -26,6 +30,8 @@ export function TopicSessionSummary({
 }) {
   return (
     <div className="space-y-4">
+      {streak?.advanced === true && <StreakCelebration current={streak.current} />}
+
       <Card size="hero" className="space-y-3 text-center">
         <h2 className="text-section">Xong phiên này 🌸</h2>
         <p className="text-body text-text-secondary">

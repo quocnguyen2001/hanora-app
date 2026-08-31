@@ -12,6 +12,11 @@ interface AuthSession {
   token: string
 }
 
+export interface StreakBrief {
+  current: number
+  met_today: boolean
+}
+
 /** Tên thiết bị ghi vào `personal_access_tokens.name` — giúp người dùng nhận ra phiên. */
 function deviceName(): string {
   if (typeof navigator === 'undefined') return 'web'
@@ -42,8 +47,18 @@ export function logout(): Promise<void> {
   return apiRequest<void>('/auth/logout', { method: 'POST' })
 }
 
-export function me(): Promise<{ user: AuthUser }> {
-  return apiRequest<{ user: AuthUser }>('/auth/me')
+/**
+ * Người dùng hiện tại, kèm chuỗi ngày.
+ *
+ * `streak` ở đây tồn tại vì response này ĐƯỢC service worker cache (bucket dữ
+ * liệu cá nhân, `NetworkFirst`) còn `/streak` thì cố ý `no-store`. Nó là đường
+ * duy nhất chip lửa có số khi mở app lúc ngoại tuyến.
+ *
+ * Optional vì hai lẽ: bản cache cũ từ trước khi API thêm trường, và
+ * `useLogin` ghi thẳng `{ user }` vào cache mà không có chuỗi.
+ */
+export function me(): Promise<{ user: AuthUser; streak?: StreakBrief }> {
+  return apiRequest<{ user: AuthUser; streak?: StreakBrief }>('/auth/me')
 }
 
 export function forgotPassword(email: string): Promise<void> {
