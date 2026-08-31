@@ -99,6 +99,7 @@ describe('router', () => {
     ['/review', 'Ôn tập'],
     ['/stats', 'Thống kê'],
     ['/account', 'Tài khoản'],
+    ['/topics', 'Học theo chủ đề'],
   ])('render %s', async (path, heading) => {
     signIn()
     renderApp(path)
@@ -119,22 +120,58 @@ describe('router', () => {
 })
 
 describe('bottom navigation', () => {
-  it('ship 5 tab kể từ P17, thứ tự cố định', async () => {
+  it('NĂM tab trên mobile, SÁU mục trên desktop, thứ tự cố định', async () => {
     /*
-     * Trong suốt vạch ship MVP đây là 4 tab: tab Thống kê chỉ được thêm khi
-     * P16/P17 xong và màn đó có nội dung thật. Test này từng khóa con số 4 và
-     * đã đỏ đúng lúc P17 thêm tab — đó là hành vi mong muốn của nó.
+     * Trong suốt vạch ship MVP đây là 4 tab; Thống kê thêm ở P17; Chủ đề thêm
+     * khi màn học theo chủ đề lên. Test này từng khóa con số 4 rồi 5, và mỗi
+     * lần đỏ đều đúng lúc thanh điều hướng thật sự đổi — đó là hành vi mong
+     * muốn của nó, không phải phiền toái.
+     *
+     * "Tài khoản" nằm CUỐI và chỉ hiện trên desktop: thanh dưới nhường chỗ cho
+     * Chủ đề (việc hàng ngày), còn Tài khoản lùi lên icon ở header. Vị trí cuối
+     * là ràng buộc thật, không phải thẩm mỹ — pill nền dựa vào việc chỉ số của
+     * năm mục đầu giống nhau ở cả hai bố cục.
      */
     signIn()
     renderApp('/search')
 
     const nav = await screen.findByRole('navigation', { name: 'Điều hướng chính' })
-    // Giới hạn trong nav: link do page render ra không được tính vào.
-    const labels = within(nav)
-      .getAllByRole('link')
-      .map((link) => link.textContent)
+    const links = within(nav).getAllByRole('link')
 
-    expect(labels).toEqual(['Tìm kiếm(đang xem)', 'Kho từ', 'Ôn tập', 'Thống kê', 'Tài khoản'])
+    expect(links.map((link) => link.textContent)).toEqual([
+      'Tìm kiếm(đang xem)',
+      'Kho từ',
+      'Ôn tập',
+      'Chủ đề',
+      'Thống kê',
+      'Tài khoản',
+    ])
+
+    // Đúng MỘT mục chỉ-có-trên-desktop, và nó phải là mục cuối.
+    const desktopOnly = links.filter((link) => link.closest('li')?.className.includes('hidden'))
+
+    expect(desktopOnly).toHaveLength(1)
+    expect(desktopOnly[0]?.textContent).toBe('Tài khoản')
+  })
+
+  it('mobile có lối vào Tài khoản ở header vì thanh dưới không còn tab đó', async () => {
+    // Bỏ tab mà không thay lối vào là khoá người dùng mobile khỏi màn Tài
+    // khoản — nơi có đăng xuất và mọi cài đặt.
+    signIn()
+    renderApp('/search')
+
+    await screen.findByRole('navigation', { name: 'Điều hướng chính' })
+
+    // Nhiều `<header>` cùng có role `banner` (mỗi trang có header riêng), nên
+    // lọc theo thứ phân biệt thật: link Tài khoản nằm NGOÀI thanh điều hướng.
+    const outsideNav = screen
+      .getAllByRole('link', { name: 'Tài khoản' })
+      .filter((link) => link.closest('nav') === null)
+
+    expect(outsideNav).toHaveLength(1)
+    expect(outsideNav[0]).toHaveAttribute('href', '/account')
+    // Ẩn trên desktop: sidebar đã có mục Tài khoản đầy đủ.
+    expect(outsideNav[0]?.className).toContain('lg:hidden')
   })
 
   it('chỉ có MỘT landmark điều hướng, không phải hai', async () => {
