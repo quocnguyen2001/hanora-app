@@ -164,13 +164,13 @@ nên dữ liệu đó không bao giờ tới. Người dùng đầu tiên mở a
 Hai lối vào theo NGỮ CẢNH vẫn giữ, vì chúng xuất hiện đúng lúc người dùng đang
 muốn học thêm chứ không phải chỉ để dẫn đường:
 
-| Lối vào | Vì sao ở đó |
-|---|---|
-| Empty state màn **Kho từ** | Hành động PHỤ — chỗ này đã có đích (`/search`), không cướp chỗ của nó |
+| Lối vào                                 | Vì sao ở đó                                                             |
+| --------------------------------------- | ----------------------------------------------------------------------- |
+| Empty state màn **Kho từ**              | Hành động PHỤ — chỗ này đã có đích (`/search`), không cướp chỗ của nó   |
 | Empty state màn **Ôn tập** (`no_words`) | Câu chữ ở đây đang hứa "lưu thêm từ mới để bắt đầu học" mà chưa có đích |
 
-Luồng một phiên: bấm **Bắt đầu học** → 10 thẻ → mỗi thẻ chọn *Thêm vào kho*
-hoặc *Đã biết rồi* → tổng kết → **Ôn ngay**. Từ vừa thêm đi thẳng vào SRS.
+Luồng một phiên: bấm **Bắt đầu học** → 10 thẻ → mỗi thẻ chọn _Thêm vào kho_
+hoặc _Đã biết rồi_ → tổng kết → **Ôn ngay**. Từ vừa thêm đi thẳng vào SRS.
 
 ### Ba điểm dễ làm sai
 
@@ -181,7 +181,7 @@ chạy ở render đầu tiên, khi cả ba query (`words`, `saved`, `skips`) c�
 còn bao nhiêu từ.
 
 **KHÔNG optimistic cho thao tác ghi.** `api.ts` chặn mọi non-GET khi ngoại tuyến
-với hợp đồng *"tuyệt đối không giả vờ đã lưu"*. Sang thẻ ngay khi bấm chính là
+với hợp đồng _"tuyệt đối không giả vờ đã lưu"_. Sang thẻ ngay khi bấm chính là
 giả vờ đã lưu: mất mạng ở thẻ 2 thì người dùng học hết phiên, thấy "đã thêm 6
 từ", rồi vào `/review` không thấy gì. Thẻ đứng yên, báo lỗi, cho thử lại.
 
@@ -202,11 +202,11 @@ không bao giờ tới là chi phí thật.
 
 Thẻ chủ đề có **ba hình dạng**, không phải một:
 
-| Trạng thái | Thẻ hiện gì |
-|---|---|
+| Trạng thái   | Thẻ hiện gì                                       |
+| ------------ | ------------------------------------------------- |
 | `generating` | "Đang tìm từ…", không phải link, không hiện `0/0` |
-| `failed` | Lý do đọc được + nút **Xoá** |
-| `ready` | Như chủ đề gốc |
+| `failed`     | Lý do đọc được + nút **Xoá**                      |
+| `ready`      | Như chủ đề gốc                                    |
 
 Tách `generating` ra là bắt buộc: gộp vào nhánh thường thì thẻ vừa tạo hiện
 `0/0`, bấm vào ra màn "đã học hết", và người dùng tưởng nó hỏng.
@@ -287,6 +287,65 @@ sửa giao diện:
 - `index.html` có một script inline áp chủ đề trước khung hình đầu tiên. Nó LẶP
   LẠI logic của `applyDisplay()` trong `src/lib/display-theme.ts` vì phải chạy
   trước module đầu tiên; sửa một bên thì sửa cả bên kia.
+
+## Ngôn ngữ thị giác
+
+Giao diện theo hướng **app học tập vui**: khối có độ dày, bấm vào thì lún xuống,
+chữ đậm, bo góc lớn. Ba thứ dưới đây là nơi hướng đó được cài đặt — sửa giao
+diện thì đọc trước, đừng dựng lại bằng giá trị thô.
+
+### Bề mặt dày (`chunky`)
+
+`src/styles/app.css` khai bốn utility. Luôn đi **cặp**: một class màu gờ +
+`chunky`.
+
+```jsx
+<button className="chunky chunky-primary rounded-control-lg">Kiểm tra</button>
+```
+
+- `chunky` vẽ gờ 4px bằng `box-shadow` và lún xuống ở `:active:not(:disabled)`.
+- `chunky-primary` / `chunky-neutral` / `chunky-success` / `chunky-error` chỉ
+  đặt màu gờ.
+
+Hai luật:
+
+- **`chunky` và `shadow-card` không bao giờ đứng cùng nhau.** Cả hai đặt
+  `box-shadow`, nên cái nào thắng phụ thuộc thứ tự trong CSS xuất ra. `Card` và
+  `VocabularyCard` chọn một trong hai bằng nhánh ba ngôi, không phải bằng quy ước.
+- **Dày = bấm được.** Thẻ tĩnh giữ `shadow-card`. Thẻ mà đích bấm nằm bên trong
+  (một `<Link>` phủ kín) truyền `interactive` cho `Card` — nó không nhìn thấy
+  `onClick` nào để tự suy ra.
+
+Gờ dùng `box-shadow` chứ không `border-bottom`: viền cộng vào chiều cao, nên nút
+`min-h-11` thành 48px và lúc bấm hộp co lại kéo theo mọi thứ bên dưới.
+
+### Chữ Hán
+
+Chữ Hán dùng **tống thể/khải thư hệ thống**, không phải hắc thể, và vẫn 0 byte —
+xem khối ghi chú dài ở `--font-hanzi` trong `tokens.css` để biết máy nào rơi vào
+font nào. Điều cần nhớ khi sửa:
+
+- **Không tăng `font-weight` cho chữ Hán.** Font khải/tống trên máy người dùng
+  gần như luôn chỉ có một nét; ép đậm thì trình duyệt bôi đậm giả và xoá mất
+  chênh lệch thanh–đậm, tức xoá đúng cái chất thư pháp. `--text-hanzi-*` đặt 400
+  có chủ đích.
+- Cỡ hero là 56px vì nét mảnh của font thư pháp cần từng đó pixel mới hiện ra.
+- `HanziPlate` là tấm nền cho chữ Hán cỡ hero (màn chi tiết từ, màn trắc
+  nghiệm). Không thêm hoa văn hay khung triện vào nó — `brand.md` cấm.
+
+### Chuyển động ăn mừng
+
+`--ease-bounce` là đường cong DUY NHẤT được phép vượt ngoài [0, 1], và nó chỉ
+dùng ở ba chỗ: `animate-pop` (dấu đúng/sai, điểm cuối phiên), `animate-nudge`
+(trả lời sai), `animate-flame` (chuỗi ngày đang cháy). `ux-rules.md` cấm
+"bouncing everything" — cách giữ đúng luật đó là đếm được số chỗ dùng nó.
+
+Nút bấm **không** dùng `--ease-bounce`: một cái nút nảy lại sau mỗi lần chạm là
+thứ gây mệt sau lần thứ mười.
+
+Cả ba đều tự tắt theo `prefers-reduced-motion` và theo lựa chọn độ mượt trong
+app, nhờ block ép `animation-duration: 0.01ms` ở `app.css` — không cần xử lý
+riêng ở component.
 
 ## Kế hoạch
 
