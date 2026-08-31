@@ -77,13 +77,19 @@ export function VocabularyCard({
   return (
     <div
       className={cn(
-        'bg-surface shadow-card flex items-center gap-4',
-        'transition duration-press ease-soft',
+        'bg-surface flex items-center gap-4',
         'rounded-card p-4',
         variant === 'featured' && 'rounded-card-lg p-5',
-        // `:active` khớp cả với tổ tiên của phần tử đang bị nhấn, nên chạm vào
-        // nút bên trong vẫn làm cả thẻ lún — đúng ý: cả thẻ là một vùng chạm.
-        onSelect && 'hover:bg-primary-pale active:bg-primary-soft cursor-pointer active:scale-[0.99]',
+        /*
+         * Thẻ mở được thì DÀY, thẻ không mở được thì phẳng — cùng luật mà `Card`
+         * dùng, và hai class không bao giờ đứng cùng nhau vì cả hai đặt
+         * `box-shadow`.
+         *
+         * `:active` khớp cả với tổ tiên của phần tử đang bị nhấn, nên chạm vào
+         * nút đánh dấu bên trong vẫn làm cả thẻ lún. Đúng ý: cả thẻ là một vùng
+         * chạm.
+         */
+        onSelect ? 'chunky chunky-neutral hover:bg-primary-pale cursor-pointer' : 'shadow-card',
       )}
     >
       <button
@@ -128,7 +134,7 @@ export function VocabularyCard({
               size={22}
               filled={saved}
               className={cn(
-                'transition-transform duration-ui ease-soft',
+                'duration-ui ease-soft transition-transform',
                 saved ? 'scale-110' : 'scale-100',
               )}
             />

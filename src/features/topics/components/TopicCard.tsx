@@ -27,8 +27,8 @@ export function TopicCard({ topic, onDelete }: { topic: Topic; onDelete?: () => 
           </span>
           <span className="text-body text-text-primary font-medium">{topic.name}</span>
           <span className="text-caption text-text-secondary mt-auto">Đang tìm từ…</span>
-          <div className="bg-border h-1.5 w-full overflow-hidden rounded-full">
-            <div className="bg-primary animate-pulse h-full w-1/3 rounded-full" />
+          <div className="bg-border h-2.5 w-full overflow-hidden rounded-full">
+            <div className="bg-primary h-full w-1/3 animate-pulse rounded-full" />
           </div>
         </div>
       </Card>
@@ -58,7 +58,6 @@ export function TopicCard({ topic, onDelete }: { topic: Topic; onDelete?: () => 
     )
   }
 
-
   const total = topic.word_count
   /*
    * `processed_count`, KHÔNG phải `learned + skipped`.
@@ -71,7 +70,7 @@ export function TopicCard({ topic, onDelete }: { topic: Topic; onDelete?: () => 
   const finished = total > 0 && done >= total
 
   return (
-    <Card className="h-full">
+    <Card interactive className="hover:bg-primary-pale h-full">
       {/* Cả thẻ bấm được, nhưng chỉ MỘT phần tử là link — trình đọc màn hình
           không nên gặp hai đích cho cùng một ô. */}
       <Link
@@ -82,7 +81,7 @@ export function TopicCard({ topic, onDelete }: { topic: Topic; onDelete?: () => 
           {topic.emoji}
         </span>
 
-        <span className="text-body text-text-primary font-medium">{topic.name}</span>
+        <span className="text-section text-text-primary">{topic.name}</span>
 
         {/* Chủ đề đã học hết VẪN bấm được — vào trong sẽ gặp màn "đã học hết"
             có lời giải thích, chứ không phải một thẻ chết im lặng. */}
@@ -94,10 +93,7 @@ export function TopicCard({ topic, onDelete }: { topic: Topic; onDelete?: () => 
           </span>
         </span>
 
-        <div
-          aria-hidden
-          className="bg-border h-1.5 w-full overflow-hidden rounded-full"
-        >
+        <div aria-hidden className="bg-border h-2.5 w-full overflow-hidden rounded-full">
           <div
             className={cn('h-full rounded-full', finished ? 'bg-success' : 'bg-primary')}
             style={{ width: `${percent}%` }}

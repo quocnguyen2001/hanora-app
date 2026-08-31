@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/Badge'
 import type { WordSummary } from '@/types/dictionary'
 import { AudioButton, type AudioState } from './AudioButton'
 import { HanViet } from './HanViet'
+import { HanziPlate } from './HanziPlate'
 import { HanziText } from './HanziText'
 import { Pinyin } from './Pinyin'
 import { WordIllustration } from './WordIllustration'
@@ -38,7 +39,7 @@ export function WordDetailHero({
 }) {
   return (
     <section className="bg-surface shadow-card rounded-hero flex flex-col items-center gap-3 p-6 text-center">
-      <HanziText size="hero">{word.simplified}</HanziText>
+      <HanziPlate>{word.simplified}</HanziPlate>
 
       {word.traditional !== word.simplified && (
         <span className="text-caption text-text-secondary">

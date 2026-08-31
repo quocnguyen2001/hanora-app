@@ -251,7 +251,10 @@ function CharacterRow({
 }) {
   return (
     <li className="flex items-center gap-3">
-      <span lang="zh-Hans" className="font-hanzi text-[1.75rem] leading-9">
+      {/* `text-hanzi-title` chứ không `text-[1.75rem] leading-9`: giá trị thô nằm
+          ngoài thang nên KHÔNG nhân với `--font-scale`, tức chọn cỡ chữ lớn thì
+          mọi thứ to lên trừ chữ Hán. Đúng lỗi mà `HanziText` đã sửa một lần. */}
+      <span lang="zh-Hans" className="font-hanzi text-hanzi-title">
         {character.char}
       </span>
       <span className="flex-1">

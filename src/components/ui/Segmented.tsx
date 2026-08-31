@@ -78,13 +78,13 @@ export function Segmented<T extends string>({
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(item.value)}
             className={cn(
-              'text-body rounded-control-lg min-h-11 px-3 py-2 font-medium',
+              'text-body rounded-control-lg min-h-11 px-3 py-2 font-bold',
               'flex flex-col items-center justify-center gap-1',
-              'duration-press ease-soft border transition active:scale-95',
+              'chunky border',
               columns === 'even' ? 'flex-1' : 'shrink-0',
               selected
-                ? 'border-primary bg-primary-soft text-primary'
-                : 'border-border bg-surface text-text-secondary hover:bg-primary-pale',
+                ? 'border-primary bg-primary-soft text-primary chunky-primary'
+                : 'border-border bg-surface text-text-secondary hover:bg-primary-pale chunky-neutral',
               item.previewClassName,
             )}
           >

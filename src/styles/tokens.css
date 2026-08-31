@@ -37,6 +37,21 @@
   --color-border: #f1e6e9;
 
   /*
+   * Gờ dưới của bề mặt "dày" (nút, thẻ bấm được, ô đáp án).
+   *
+   * Token RIÊNG chứ không tái dùng `--color-border`, và đó là cả lý do nó tồn
+   * tại. `--color-border` #f1e6e9 là đường phân tách nhìn thoáng qua không thấy
+   * — đúng vai của nó. Một gờ 3D dày 4px tô bằng màu đó thì đọc ra là lề trang
+   * bị lệch, không phải mặt bên của một khối. Gờ phải ĐẬM hơn mặt trên đủ để
+   * mắt hiểu là bóng của chính khối đó.
+   *
+   * `--color-*-deep` là cùng vai trò cho nút primary và cho phản hồi đúng/sai:
+   * mỗi bề mặt có gờ riêng theo màu của nó, vì gờ xám dưới một khối màu trông
+   * bẩn — cùng lập luận mà `--shadow-button` đã ghi khi từ chối bóng xám.
+   */
+  --color-edge: #e8d5da;
+
+  /*
    * Nền khung xương chờ dữ liệu.
    *
    * Token RIÊNG chứ không tái dùng `--color-primary-pale`, và đó là cả lý do nó
@@ -55,6 +70,37 @@
   --color-success: #63c596;
   --color-warning: #f5b95b;
   --color-error: #f47c8a;
+
+  /* Gờ dưới của khối phản hồi đúng/sai. Xem `--color-edge`. */
+  --color-success-deep: #46a97a;
+  --color-error-deep: #d95f6e;
+
+  /*
+   * Nền ĐẶC của đĩa tròn mang dấu ✓/✕ trong khối phản hồi, đi cặp với chữ màu
+   * `--color-surface`.
+   *
+   * ── Vì sao không dùng thẳng `--color-success` ──────────────────────────────
+   *
+   * Vì cặp đó KHÔNG đọc được ở chế độ sáng. Dấu trắng trên #63c596 chỉ đạt
+   * 2,11:1, dưới hẳn ngưỡng 3:1 mà WCAG đòi cho đồ hoạ mang nghĩa — và dấu này
+   * mang nghĩa thật: docstring của `AnswerFeedback` chỉ đích danh nó là lớp
+   * dành cho ~8% nam giới không phân biệt được đỏ–lục, tức đúng nhóm KHÔNG đọc
+   * được kết quả bằng màu. Một dấu check mờ đi trong nền xanh là mất luôn lớp
+   * cuối cùng đó.
+   *
+   * ── Vì sao nó ĐẢO CHIỀU giữa hai chủ đề ────────────────────────────────────
+   *
+   * Chữ trên đĩa luôn là `--color-surface`, và `--color-surface` đổi từ trắng
+   * sang gần đen theo chủ đề. Nên nền đĩa phải đi ngược lại: TỐI hơn
+   * `--color-success` ở bảng sáng, và ở bảng tối thì nó chính là
+   * `--color-success` sáng sẵn. Đây là lý do đây là token riêng chứ không phải
+   * một biến thể `/90` của màu gốc — không có một phép biến đổi nào đúng cho cả
+   * hai chiều.
+   *
+   * Cả hai cặp đã được đo và bị `scripts/check-contrast.mjs` chặn CI nếu trượt.
+   */
+  --color-success-solid: #3b9068;
+  --color-error-solid: #cc5364;
 
   /*
    * Chữ trên nền primary. Là token vì ở chế độ tối nút primary sáng hơn, và chữ
@@ -83,10 +129,28 @@
    */
   --font-scale: 1;
 
-  /* Chữ Hán luôn giữ hierarchy mạnh nhất trên mọi màn từ vựng */
-  --text-hanzi-hero: calc(3rem * var(--font-scale)); /* 48px */
-  --text-hanzi-hero--line-height: calc(3.5rem * var(--font-scale)); /* 56px */
-  --text-hanzi-hero--font-weight: 500;
+  /*
+   * Chữ Hán luôn giữ hierarchy mạnh nhất trên mọi màn từ vựng.
+   *
+   * ── Vì sao 56px chứ không phải 48px ────────────────────────────────────────
+   *
+   * Font thư pháp (xem `--font-hanzi`) có nét mảnh dần ở đầu và cuối mỗi nét —
+   * đó chính là thứ làm nó ra dáng bút lông. Ở 48px những chỗ mảnh đó rơi xuống
+   * dưới một pixel và bị làm mờ đi, nên chữ trông nhòe chứ không trông có nét.
+   * Cỡ chữ ở đây không phải để "to cho oai": nó là điều kiện để font thư pháp
+   * hiển thị đúng thứ nó vẽ.
+   *
+   * ── Vì sao trọng lượng 400 chứ không phải 500 ──────────────────────────────
+   *
+   * Kaiti/Songti trên máy người dùng gần như luôn CHỈ có một nét (400). Yêu cầu
+   * đậm hơn thì trình duyệt tự bôi đậm bằng thuật toán — nó nong đều mọi nét ra,
+   * và cái bị xóa đầu tiên là chênh lệch thanh–đậm giữa các nét, tức đúng cái
+   * chất thư pháp. "Nổi" ở đây đến từ cỡ chữ và từ nền lót phía sau, không đến
+   * từ việc ép font đậm lên.
+   */
+  --text-hanzi-hero: calc(3.5rem * var(--font-scale)); /* 56px */
+  --text-hanzi-hero--line-height: calc(4rem * var(--font-scale)); /* 64px */
+  --text-hanzi-hero--font-weight: 400;
 
   /*
    * Chữ Hán cỡ vừa — dùng ở thẻ từ và nút chọn chữ trong bảng viết tay.
@@ -97,12 +161,24 @@
    */
   --text-hanzi-title: calc(1.75rem * var(--font-scale)); /* 28px */
   --text-hanzi-title--line-height: calc(2.25rem * var(--font-scale)); /* 36px */
-  --text-hanzi-title--font-weight: 500;
+  /* 400 vì cùng lý do bôi đậm giả ở `--text-hanzi-hero`. */
+  --text-hanzi-title--font-weight: 400;
 
+  /*
+   * ── Trọng lượng chữ LATIN đã nâng một bậc (600 → 700, điểm số 800) ─────────
+   *
+   * Chỉ áp cho chữ giao diện, KHÔNG áp cho `--text-hanzi-*` — hai họ font phản
+   * ứng ngược nhau khi bôi đậm. Inter là font biến thiên có sẵn nét 700 thật,
+   * nên nó đậm lên đúng như thiết kế. Font thư pháp chỉ có một nét, nên yêu cầu
+   * đậm sẽ được trình duyệt bịa ra và làm hỏng nét bút (xem `--text-hanzi-hero`).
+   *
+   * Đây là bậc đậm mà giao diện học tập kiểu Duolingo dựa vào để tạo hierarchy:
+   * tiêu đề và con số phải đọc được từ khoảng cách cầm điện thoại một tay.
+   */
   /* Tiêu đề màn. Thay cho `text-2xl font-semibold` từng rải rác ở 8 chỗ. */
   --text-title: calc(1.5rem * var(--font-scale)); /* 24px */
   --text-title--line-height: calc(2rem * var(--font-scale)); /* 32px */
-  --text-title--font-weight: 600;
+  --text-title--font-weight: 700;
 
   /*
    * Con số nổi bật trong thẻ số liệu. Tách khỏi `--text-title` vì đây là số,
@@ -110,7 +186,7 @@
    */
   --text-stat: calc(1.75rem * var(--font-scale)); /* 28px */
   --text-stat--line-height: calc(2.25rem * var(--font-scale)); /* 36px */
-  --text-stat--font-weight: 600;
+  --text-stat--font-weight: 700;
 
   /*
    * Điểm tổng kết phiên ôn — "8 / 10" giữa thẻ hero.
@@ -122,7 +198,7 @@
    */
   --text-score: calc(2.25rem * var(--font-scale)); /* 36px */
   --text-score--line-height: calc(2.75rem * var(--font-scale)); /* 44px */
-  --text-score--font-weight: 600;
+  --text-score--font-weight: 800;
 
   --text-pinyin: calc(1.125rem * var(--font-scale)); /* 18px */
   --text-pinyin--line-height: calc(1.625rem * var(--font-scale)); /* 26px */
@@ -132,7 +208,7 @@
 
   --text-section: calc(0.9375rem * var(--font-scale)); /* 15px */
   --text-section--line-height: calc(1.375rem * var(--font-scale)); /* 22px */
-  --text-section--font-weight: 600;
+  --text-section--font-weight: 700;
 
   --text-body: calc(0.875rem * var(--font-scale)); /* 14px */
   --text-body--line-height: calc(1.375rem * var(--font-scale)); /* 22px */
@@ -148,14 +224,20 @@
    * chưa bao giờ được nhìn thấy để đánh giá. Sau khi sửa bug, nới thêm một bậc
    * để đạt cảm giác mềm mà bản thiết kế nhắm tới.
    *
+   * NỚI LẦN HAI (12/16/20/24/32 → 14/18/24/28/36) cùng lượt với gờ 3D. Bo góc
+   * và độ dày là MỘT hiệu ứng chứ không phải hai: một khối dày 4px mà góc chỉ
+   * bo 12px đọc ra là hộp bị vát mép, còn bo tròn hơn thì nó đọc ra là khối kẹo
+   * dẻo — đúng thứ giao diện học tập vui nhắm tới. Nới riêng một trong hai thì
+   * không đạt, nên hai thay đổi này không tách rời được.
+   *
    * Dùng qua utility namespace: `rounded-card`, `rounded-hero`… KHÔNG dùng
    * `rounded-[--radius-card]` — cú pháp đó không sinh `var()` và bị lint chặn.
    */
-  --radius-control: 0.75rem; /* 12px */
-  --radius-control-lg: 1rem; /* 16px */
-  --radius-card: 1.25rem; /* 20px */
-  --radius-card-lg: 1.5rem; /* 24px */
-  --radius-hero: 2rem; /* 32px */
+  --radius-control: 0.875rem; /* 14px */
+  --radius-control-lg: 1.125rem; /* 18px */
+  --radius-card: 1.5rem; /* 24px */
+  --radius-card-lg: 1.75rem; /* 28px */
+  --radius-hero: 2.25rem; /* 36px */
 
   /*
    * ── BÓNG ĐỔ KHÔNG NẰM Ở ĐÂY ────────────────────────────────────────────────
@@ -192,6 +274,20 @@
 
   /* Giảm tốc mềm ở cuối — chuyển động "đậu xuống" thay vì phanh gấp. */
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /*
+   * Vọt quá rồi lùi về. Đường cong DUY NHẤT trong hệ được phép vượt ngoài
+   * khoảng [0, 1] — đó là cả điểm của nó.
+   *
+   * Dùng cho những khoảnh khắc đáng ăn mừng, và CHỈ những khoảnh khắc đó: dấu
+   * đúng/sai hiện ra, điểm tổng kết phiên, ngọn lửa chuỗi ngày vừa cháy lên.
+   * `ux-rules.md` cấm "bouncing everything", và cách giữ đúng luật đó không
+   * phải là bỏ hẳn độ nảy mà là đếm được số chỗ dùng nó trên đầu ngón tay.
+   *
+   * KHÔNG dùng cho phản hồi chạm. Nút bấm phải trả lời ngay và dứt khoát; một
+   * cái nút nảy lại sau mỗi lần chạm là thứ gây mệt sau lần thứ mười.
+   */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /*
    * Nhịp thở cho chuyển động LẶP VÔ HẠN. Cố ý KHÔNG dùng `--ease-soft`.
@@ -241,6 +337,65 @@
     from {
       opacity: 0;
       transform: translateY(6px);
+    }
+  }
+
+  /*
+   * Bật ra từ nhỏ. Dành cho MỘT phần tử mỗi màn, ở đúng khoảnh khắc kết quả:
+   * dấu đúng/sai, con số điểm cuối phiên.
+   *
+   * Bắt đầu từ 0.6 chứ không từ 0: từ 0 thì phần tử "nở" ra và mắt đọc đó là
+   * hiệu ứng của công cụ trình chiếu. Từ 0.6 nó đọc ra là một vật được đặt
+   * xuống — vẫn thấy rõ có chuyện vui vừa xảy ra, mà không làm quá.
+   *
+   * Không cần xử lý reduced-motion ở đây: block trong `app.css` ép
+   * `animation-duration` về 0.01ms cho mọi animation CSS, và keyframe này
+   * không có `forwards` nên phần tử đứng ở trạng thái gốc — đúng cỡ, đúng độ
+   * đục.
+   */
+  --animate-pop: pop 320ms var(--ease-bounce);
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+  }
+
+  /*
+   * Lắc nhẹ khi trả lời sai. Biên độ 2px và 3 nhịp — đủ để cảm thấy "hụt", chưa
+   * tới mức bị đọc là lỗi giao diện hay là trách móc.
+   *
+   * Dịch NGANG chứ không xoay: khối phản hồi là một tấm thẻ có chữ Hán bên
+   * trong, và xoay một khối chữ dù chỉ 2 độ cũng làm nét chữ bị làm mờ đi trong
+   * suốt hiệu ứng.
+   */
+  --animate-nudge: nudge 260ms var(--ease-soft);
+
+  @keyframes nudge {
+    20% {
+      transform: translateX(-3px);
+    }
+    50% {
+      transform: translateX(3px);
+    }
+    80% {
+      transform: translateX(-2px);
+    }
+  }
+
+  /*
+   * Ngọn lửa chuỗi ngày thở. CHỈ chạy khi hôm nay đã đạt mục tiêu — một ngọn
+   * lửa đang nhấp nháy ở trạng thái "chưa đạt" thì đọc ra là cảnh báo.
+   *
+   * Dùng `--ease-breathe` chứ không `--ease-soft`, cùng lý do đã ghi ở token
+   * đó: đây là vòng lặp vô hạn, và ease-out làm lộ điểm nối mỗi chu kỳ.
+   */
+  --animate-flame: flame 2200ms var(--ease-breathe) infinite;
+
+  @keyframes flame {
+    50% {
+      transform: scale(1.12);
     }
   }
 
@@ -296,8 +451,51 @@
    *
    * Ngăn xếp này KHÔNG đổi theo lựa chọn font của người dùng — đổi font giao
    * diện không bao giờ được làm chữ Hán hiện ô vuông.
+   *
+   * ── VÌ SAO LÀ KHẢI/TỐNG CHỨ KHÔNG PHẢI HẮC THỂ ────────────────────────────
+   *
+   * Ngăn xếp cũ (`PingFang SC`, `Hiragino Sans GB`, `Microsoft YaHei`) là hắc
+   * thể — nét đều tăm tắp, không đầu không đuôi. Đó là font để đọc đoạn văn
+   * dài, và nó làm đúng việc đó. Nhưng ở đây chữ Hán không phải văn bản: nó là
+   * thứ người học phải NHỚ MẶT, và mặt chữ hắc thể thì mọi nét giống hệt nhau
+   * nên không có gì để bám vào.
+   *
+   * Khải thư (Kaiti) giữ lại vết bút lông: nét vào có nhấn, nét ra vuốt mảnh,
+   * ngang hơi chếch lên. Đó là hình dạng mà người ta thật sự viết tay, nên nó
+   * cũng là hình dạng mà bảng viết tay trong app đang dạy. Tống thể (Songti)
+   * là bậc lùi: vẫn có chân và vẫn có chênh lệch thanh–đậm, chỉ đều tay hơn.
+   *
+   * Vẫn 0 BYTE, vẫn chạy được khi ngoại tuyến — lý do gốc từ chối self-host font
+   * CJK (Google cắt Noto Sans SC thành 202 lát ~2,26 MB, từ điển 120k mục bung
+   * ra gần như mọi codepoint) không hề đổi. Chỉ chọn font hệ thống khác.
+   *
+   * ── KHẢI THƯ LÀ PHẦN THƯỞNG, TỐNG THỂ MỚI LÀ MỨC NỀN ──────────────────────
+   *
+   * ĐÃ KIỂM TRA trên máy dev (macOS 26, `fc-list | grep -i kaiti` → 0 kết quả):
+   * máy này KHÔNG có Kaiti. `/System/Library/Fonts/Supplemental/` chỉ có
+   * `Songti.ttc`. Apple đã chuyển phần lớn font CJK sang tải theo yêu cầu, nên
+   * "macOS có sẵn khải thư" là điều KHÔNG đúng và đừng viết lại vào đây.
+   *
+   * Vậy mức nền thật sự — thứ đại đa số người dùng sẽ thấy — là TỐNG THỂ:
+   *
+   *   macOS/iOS   Songti SC / STSong. Kaiti chỉ có nếu người dùng đã tải thêm.
+   *   Windows     KaiTi có kèm gói ngôn ngữ Trung; không có thì SimSun (tống).
+   *   Android     Không có khải thư. `serif` rơi vào Noto Serif CJK (tống).
+   *
+   * Tống thể vẫn đạt được điều đang cần: có chân, có chênh lệch thanh–đậm, nét
+   * ngang mảnh nét sổ đậm — khác hẳn hắc thể nét đều của ngăn xếp cũ. Nó là
+   * chữ khắc gỗ chứ không phải chữ bút lông, và đó là khoảng cách còn lại giữa
+   * kết quả này với thư pháp thật. Đóng khoảng đó cần self-host một font khải
+   * (LXGW WenKai và tương đương đều >20 MB), tức phải bỏ ràng buộc 0 byte và
+   * ràng buộc offline — một quyết định riêng, không phải phần của lần này.
+   *
+   * `serif` cuối chuỗi là chốt chặn quan trọng nhất chứ không phải phần thừa:
+   * không máy nào rơi ngược về hắc thể sau khi trượt hết chuỗi, vì `serif` của
+   * mọi hệ điều hành đều giải quyết được codepoint CJK.
    */
-  --font-hanzi: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-hanzi:
+    'Kaiti SC', 'STKaiti', 'KaiTi', 'Songti SC', 'STSong', 'Noto Serif CJK SC',
+    'Source Han Serif SC', 'Noto Serif SC', 'SimSun', serif;
 }
 
 /*
@@ -359,6 +557,14 @@
   --color-border: #352e39;
 
   /*
+   * Gờ 3D ở chế độ tối phải TỐI hơn mặt trên, ngược hẳn với bảng sáng nơi nó
+   * đậm hơn nền. Cùng một quy luật vật lý ở cả hai bảng — mặt bên của khối luôn
+   * ít sáng hơn mặt trên — chỉ là ở bảng sáng "ít sáng hơn trắng" nghĩa là hồng
+   * xám, còn ở đây nghĩa là gần đen.
+   */
+  --color-edge: #100d13;
+
+  /*
    * Cùng dải tương phản với bảng sáng (1.30:1 so với `--color-surface`), chứ
    * KHÔNG cùng công thức. Ở nền tối, skeleton phải SÁNG hơn bề mặt — cùng lý do
    * `--color-surface` sáng hơn `--color-background` ngay bên trên.
@@ -387,6 +593,13 @@
   --color-success: #74d3a6;
   --color-warning: #f7c877;
   --color-error: #ff929e;
+
+  --color-success-deep: #3f8c68;
+  --color-error-deep: #a8515e;
+
+  /* Nền đĩa ở bảng tối = chính màu sáng, vì chữ trên nó giờ là màu bề mặt tối. */
+  --color-success-solid: #74d3a6;
+  --color-error-solid: #ff929e;
 
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-raised: 0 4px 14px rgb(0 0 0 / 0.5);

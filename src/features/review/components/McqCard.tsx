@@ -1,5 +1,5 @@
 import { AudioButton } from '@/components/common/AudioButton'
-import { HanziText } from '@/components/common/HanziText'
+import { HanziPlate } from '@/components/common/HanziPlate'
 import { IllustrationPlaceholder } from '@/components/common/IllustrationPlaceholder'
 import { Pinyin } from '@/components/common/Pinyin'
 import { Card } from '@/components/ui/Card'
@@ -31,7 +31,7 @@ export function McqCard({
     <div className="space-y-4">
       <Card size="hero" className="flex flex-col items-center gap-3 text-center">
         <IllustrationPlaceholder className="w-24" />
-        <HanziText size="hero">{item.word.simplified}</HanziText>
+        <HanziPlate>{item.word.simplified}</HanziPlate>
         <div className="flex items-center gap-2">
           <Pinyin>{item.word.pinyin}</Pinyin>
           <AudioButton state={speech.state} onPlay={() => speech.play(item.word.simplified)} />
@@ -47,17 +47,19 @@ export function McqCard({
             type="button"
             onClick={() => onSelect(option.word_id)}
             className={cn(
-              'flex min-h-14 w-full items-center gap-3 rounded-card border px-4 text-left',
-              'transition duration-ui ease-soft active:scale-[0.99]',
-              'text-meaning transition-colors duration-150',
+              'rounded-card flex min-h-14 w-full items-center gap-3 border px-4 text-left',
+              // Ô đáp án là phím bấm, không phải dòng danh sách: nó dày lên và
+              // lún xuống như nút. Đây là vùng chạm người học dùng nhiều nhất
+              // trong cả app, nên nó phải trả lời rõ nhất.
+              'chunky text-meaning font-medium',
               'disabled:cursor-not-allowed',
               selectedWordId === option.word_id
-                ? 'border-primary bg-primary-soft'
-                : 'border-border bg-surface hover:bg-primary-pale',
+                ? 'border-primary bg-primary-soft chunky-primary'
+                : 'border-border bg-surface hover:bg-primary-pale chunky-neutral',
             )}
           >
             {/* Đánh số theo showcase — cũng giúp nói "chọn số 2" khi hướng dẫn. */}
-            <span className="bg-primary-pale text-caption text-text-secondary flex size-7 shrink-0 items-center justify-center rounded-full">
+            <span className="bg-primary-pale text-caption text-text-secondary flex size-8 shrink-0 items-center justify-center rounded-full font-bold">
               {index + 1}
             </span>
             <span lang="vi">{option.text}</span>

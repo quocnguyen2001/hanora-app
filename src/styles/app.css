@@ -45,6 +45,84 @@
   box-shadow: var(--shadow-button);
 }
 
+/*
+ * ═════════════════════════════════════════════════════════════════════════════
+ * BỀ MẶT DÀY — gờ 3D bấm lún xuống
+ *
+ * Đây là chi tiết làm nên cảm giác "ngộ nghĩnh kiểu app học tập": khối có mặt
+ * bên, và bấm vào thì nó thật sự lún xuống chạm mặt bàn.
+ *
+ * ── Vì sao là `box-shadow` chứ không phải `border-bottom` ────────────────────
+ *
+ * `border-bottom` cộng vào chiều cao hộp, nên một nút `min-h-11` (44px, ngưỡng
+ * vùng chạm) sẽ thành 48px và mọi khoảng cách quanh nó lệch đi 4px. Tệ hơn: lúc
+ * bấm, gờ biến mất nên hộp co lại 4px và KÉO THEO mọi thứ bên dưới — đúng loại
+ * layout shift mà `ux-rules.md` cấm. `box-shadow` nằm ngoài luồng bố cục nên
+ * chiều cao không đổi ở cả hai trạng thái, và cái duy nhất di chuyển là chính
+ * khối đó.
+ *
+ * ── Vì sao KHÔNG khai `--shadow-chunky` trong `@theme` ───────────────────────
+ *
+ * Cùng lý do đã ghi dài ở khối `shadow-card` bên trên: Tailwind v4 tách màu ra
+ * khỏi giá trị shadow rồi nướng cứng nó vào utility lúc build, nên ghi đè biến
+ * ở `[data-theme='dark']` là chữ chết. Ở đây `@utility` đọc `var()` lúc chạy
+ * nên bảng tối đè được. Đã kiểm chứng bằng probe biên dịch trước khi viết.
+ *
+ * ── Cách dùng ────────────────────────────────────────────────────────────────
+ *
+ * LUÔN đi cặp: một class màu gờ (`chunky-primary`…) + `chunky`. Class màu chỉ
+ * đặt `--chunky-edge`, `chunky` mới là phần vẽ và phần bấm.
+ *
+ *     <button class="chunky chunky-primary rounded-control-lg">…</button>
+ *
+ * Không tách được `chunky` thành hai utility "vẽ" và "bấm": một khối trông dày
+ * mà bấm không lún là nói dối người dùng rằng nó bấm được theo cách khác — cùng
+ * lập luận mà `Card` đã ghi khi từ chối cho thẻ tĩnh phản hồi chạm.
+ * ═════════════════════════════════════════════════════════════════════════════
+ */
+@utility chunky {
+  /*
+   * 4px là ngưỡng đã cân: 2px đọc ra là viền vẽ hỏng, 6px trở lên thì trên một
+   * danh sách dài mỗi hàng trông như một cái hộp rời và trang mất nhịp.
+   */
+  --chunky-depth: 4px;
+
+  box-shadow: 0 var(--chunky-depth) 0 0 var(--chunky-edge, var(--color-edge));
+  transition:
+    box-shadow var(--transition-duration-press) var(--ease-soft),
+    transform var(--transition-duration-press) var(--ease-soft);
+
+  /*
+   * `:not(:disabled)` — nút đã tắt không được lún. Nó không phản hồi thì cũng
+   * không được giả vờ là có.
+   *
+   * `:active` khớp cả với tổ tiên của phần tử đang bị nhấn, nên chạm vào một
+   * nút nhỏ bên trong thẻ vẫn làm cả thẻ lún. Đúng ý, và đó cũng là hành vi mà
+   * `VocabularyCard` đã dựa vào từ trước.
+   */
+  &:active:not(:disabled) {
+    box-shadow: 0 0 0 0 var(--chunky-edge, var(--color-edge));
+    transform: translateY(var(--chunky-depth));
+  }
+}
+
+/* Chỉ đặt màu gờ. Phần vẽ và phần bấm nằm ở `chunky`. */
+@utility chunky-primary {
+  --chunky-edge: var(--color-primary-deep);
+}
+
+@utility chunky-neutral {
+  --chunky-edge: var(--color-edge);
+}
+
+@utility chunky-success {
+  --chunky-edge: var(--color-success-deep);
+}
+
+@utility chunky-error {
+  --chunky-edge: var(--color-error-deep);
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;

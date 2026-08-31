@@ -103,7 +103,7 @@ export function ModePicker({ onStart }: { onStart: (config: SessionConfig) => vo
           onClick={() => start(item.value)}
           className="w-full text-left"
         >
-          <Card className="hover:bg-primary-pale transition-colors duration-150">
+          <Card interactive className="hover:bg-primary-pale">
             <div className="flex items-baseline justify-between gap-2">
               <p className="text-section text-text-primary">{item.title}</p>
               {/* Gợi ý chế độ lần trước, không phải trạng thái chọn — bấm mới là chọn. */}

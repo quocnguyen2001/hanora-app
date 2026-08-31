@@ -46,8 +46,21 @@ export function StreakChip() {
         metToday ? 'text-primary' : 'text-text-secondary',
       )}
     >
-      <FlameIcon size={20} filled={metToday} />
-      <span className="text-body font-medium tabular-nums">{current}</span>
+      {/*
+        Ngọn lửa thở CHỈ khi hôm nay đã đạt mục tiêu.
+
+        Chuyển động ở đây là phần thưởng, không phải cảnh báo. Cho nó nhấp nháy
+        ở trạng thái "chưa đạt" thì người dùng đọc ra là "sắp mất chuỗi rồi" —
+        ngược hẳn ý, và cũng ngược với luật đã ghi trong component này rằng
+        trạng thái chưa cháy phải đọc được là "chuỗi vẫn còn".
+
+        Người đã tắt hiệu ứng vẫn thấy ngọn lửa ĐẶC — `filled` mới là lớp mang
+        nghĩa, chuyển động chỉ là lớp thứ ba sau hình dạng và màu.
+      */}
+      <span className={cn('flex', metToday && 'animate-flame')}>
+        <FlameIcon size={20} filled={metToday} />
+      </span>
+      <span className="text-body font-bold tabular-nums">{current}</span>
     </Link>
   )
 }

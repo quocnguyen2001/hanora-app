@@ -55,7 +55,11 @@ export function SessionScoreCard({
     <Card size="hero" className={cn('text-center', className)}>
       <p className="text-section text-text-secondary">Xong phiên ôn</p>
 
-      <p className="text-primary text-score mt-2">{score ?? 0}</p>
+      {/*
+        Con số DUY NHẤT của cả màn, nên nó là phần tử duy nhất ở đây được nảy
+        vào. `tabular-nums` để 100 và 99 không làm số nhảy ngang giữa hai phiên.
+      */}
+      <p className="text-primary text-score animate-pop mt-2 tabular-nums">{score ?? 0}</p>
 
       {/* Xếp loại ẩn HẲN khi phiên không có lượt nào tính điểm — nó không có
           xếp loại, chứ không phải xếp loại kém. */}

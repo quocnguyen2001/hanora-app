@@ -82,6 +82,9 @@ function ratio(foreground, background) {
  * HAI TẦNG, và sự phân biệt này quan trọng:
  *
  *   `tone`  — do tính năng tông chữ sinh ra. Thuộc phạm vi, PHẢI đạt, chặn CI.
+ *   `ui`    — cặp màu do một quyết định giao diện sinh ra sau này (đĩa dấu
+ *             đúng/sai). Cũng PHẢI đạt và cũng chặn CI, tách khỏi `tone` chỉ vì
+ *             nó không đổi theo tông chữ nên không cần đọc lại bốn lần.
  *   `brand` — màu thương hiệu chốt ở `.prompts/hanora-design-context/brand.md`.
  *             Hồng #ff6f91 trên nền trắng chỉ đạt 2,65:1, và nó đã như thế từ
  *             trước lần thay đổi này. Sửa nghĩa là đổi màu thương hiệu — quyết
@@ -154,23 +157,54 @@ const CHECKS = [
     bg: '--color-surface',
     min: 3,
   },
+  /*
+   * Đĩa tròn mang dấu ✓/✕ trong khối phản hồi ôn tập.
+   *
+   * 3:1 chứ không 4.5:1 vì đây là ĐỒ HOẠ mang nghĩa, không phải chữ — WCAG
+   * 1.4.11. Và nó thật sự mang nghĩa: với người không phân biệt được đỏ–lục thì
+   * hình dạng check/x là thứ duy nhất nói kết quả đúng hay sai.
+   *
+   * Xếp `ui` chứ không `brand`: hai màu này KHÔNG nằm trong `brand.md`, chúng
+   * do lần dựng giao diện này sinh ra. Nợ có sẵn thì cảnh báo, nợ mình vừa tạo
+   * thì phải trả.
+   */
+  {
+    scope: 'ui',
+    label: 'dấu ✓ / đĩa success',
+    fg: '--color-surface',
+    bg: '--color-success-solid',
+    min: 3,
+  },
+  {
+    scope: 'ui',
+    label: 'dấu ✕ / đĩa error',
+    fg: '--color-surface',
+    bg: '--color-error-solid',
+    min: 3,
+  },
 ]
 
-let toneFailures = 0
+let blockingFailures = 0
 const brandFailures = new Map()
 
+/*
+ * Kiểm tra `ui` không phụ thuộc tông chữ, nên nó chỉ chạy ở vòng tông ĐẦU TIÊN
+ * của mỗi chủ đề. Chạy cả bốn vòng thì bảng in ra bốn dòng y hệt và một cặp
+ * trượt sẽ bị đếm bốn lần, khiến con số cuối bảng nói sai mức độ.
+ */
 for (const theme of ['light', 'dark']) {
   for (const tone of TONES) {
     const colors = toneColors(tone, theme)
     const rows = []
+    const firstTone = tone === TONES[0]
 
-    for (const check of CHECKS) {
+    for (const check of CHECKS.filter((c) => c.scope !== 'ui' || firstTone)) {
       const value = ratio(colors[check.fg], colors[check.bg])
       const pass = value >= check.min
       let mark = 'PASS'
 
-      if (!pass && check.scope === 'tone') {
-        toneFailures += 1
+      if (!pass && check.scope !== 'brand') {
+        blockingFailures += 1
         mark = 'FAIL'
       } else if (!pass) {
         // Màu thương hiệu không đổi theo tông, nên gộp lại theo chủ đề để bảng
@@ -196,10 +230,15 @@ if (brandFailures.size > 0) {
   console.log('Đổi những màu này là đổi nhận diện thương hiệu — cần người dùng quyết.')
 }
 
+const required = CHECKS.filter((check) => check.scope !== 'brand')
+const toneChecks = required.filter((check) => check.scope === 'tone').length
+const uiChecks = required.length - toneChecks
+const total = (toneChecks * TONES.length + uiChecks) * 2
+
 console.log(
-  toneFailures === 0
-    ? `\n✓ Tông chữ: ${TONES.length * 2 * 4} phép đo, tất cả đạt ngưỡng.`
-    : `\n✗ Tông chữ: ${toneFailures} cặp trượt ngưỡng.`,
+  blockingFailures === 0
+    ? `\n✓ Cặp bắt buộc: ${total} phép đo, tất cả đạt ngưỡng.`
+    : `\n✗ Cặp bắt buộc: ${blockingFailures} cặp trượt ngưỡng.`,
 )
 
-process.exit(toneFailures === 0 ? 0 : 1)
+process.exit(blockingFailures === 0 ? 0 : 1)

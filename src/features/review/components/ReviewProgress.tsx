@@ -32,7 +32,7 @@ export function ReviewProgress({
 
   return (
     <div className="space-y-1.5">
-      <div className="text-caption text-text-secondary flex items-center justify-between">
+      <div className="text-caption text-text-secondary flex items-center justify-between font-bold">
         {/* Nói rõ đang ở vòng nào: thẻ lặp lại mà không giải thích thì trông
             như màn hình bị kẹt. */}
         <span>{retrying ? 'Làm lại thẻ đã sai' : 'Tiến độ'}</span>
@@ -50,10 +50,15 @@ export function ReviewProgress({
             ? `Còn ${total - safeCurrent} thẻ sai cần làm lại`
             : `Đã xong ${safeCurrent} trên ${total} thẻ`
         }
-        className="bg-primary-pale h-2 overflow-hidden rounded-full"
+        // h-3 chứ không h-2: thanh này là thứ người học liếc lên giữa các thẻ
+        // để biết còn bao xa, và ở 8px nó mảnh tới mức phải nhìn kỹ mới thấy
+        // đã nhích hay chưa. Rãnh dùng `bg-border` chứ không `bg-primary-pale`
+        // — hồng cực nhạt trên nền trắng gần như vô hình, nên phần CHƯA xong
+        // không đọc ra được và thanh chỉ còn một nửa ý nghĩa.
+        className="bg-border h-3 overflow-hidden rounded-full"
       >
         <div
-          className="bg-primary h-full rounded-full transition-[width] duration-progress ease-soft"
+          className="bg-primary duration-progress ease-soft h-full rounded-full transition-[width]"
           style={{ width: `${percent}%` }}
         />
       </div>

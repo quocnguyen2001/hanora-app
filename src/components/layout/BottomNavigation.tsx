@@ -1,6 +1,13 @@
 import type { CSSProperties } from 'react'
 import { NavLink, useLocation } from 'react-router'
-import { BookmarkIcon, ChartIcon, ReviewIcon, SearchIcon, TopicIcon, UserIcon } from '@/components/icons'
+import {
+  BookmarkIcon,
+  ChartIcon,
+  ReviewIcon,
+  SearchIcon,
+  TopicIcon,
+  UserIcon,
+} from '@/components/icons'
 import { cn } from '@/lib/cn'
 
 /**
@@ -81,7 +88,8 @@ export function BottomNavigation() {
             // thứ sáu mà quên sửa chiều rộng thì pill sẽ lệch mà không báo gì.
             style={{ '--tab-index': activeIndex, '--tab-count': MOBILE_TAB_COUNT } as CSSProperties}
             className={cn(
-              'bg-primary-soft rounded-control-lg duration-ui ease-soft absolute -z-10 transition-transform',
+              'bg-primary-soft border-primary/25 rounded-control-lg border',
+              'duration-ui ease-soft absolute -z-10 transition-transform',
               'inset-y-1 left-0 w-[calc(100%/var(--tab-count))] translate-x-[calc(var(--tab-index)*100%)]',
               'lg:inset-x-0 lg:top-0 lg:h-11 lg:w-full lg:translate-x-0 lg:translate-y-[calc(var(--tab-index)*3rem)]',
               // Đang ở một mục chỉ-có-trên-desktop (`/account`): trên mobile
@@ -108,16 +116,22 @@ export function BottomNavigation() {
                 cn(
                   'text-caption flex min-h-14 flex-col items-center justify-center gap-1',
                   'duration-ui ease-soft transition-colors',
-                  'lg:text-body lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:rounded-control-lg lg:px-3',
+                  'lg:text-body lg:rounded-control-lg lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3',
                   // Active dùng primary; inactive giữ quiet — hồng là accent,
                   // không phủ nền lớn.
-                  isActive ? 'text-primary lg:font-medium' : 'text-text-secondary',
+                  // `font-bold` ở CẢ hai bố cục, không chỉ desktop. Trên thanh
+                  // dưới, nhãn 12px tô hồng nhạt là khác biệt duy nhất giữa tab
+                  // đang xem và bốn tab kia — quá mảnh để đọc được liếc qua, và
+                  // vô nghĩa với người không phân biệt được sắc hồng đó.
+                  isActive ? 'text-primary font-bold' : 'text-text-secondary',
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon size={22} />
+                  {/* Icon nhích to ở tab đang xem — lớp thứ ba sau màu và độ
+                      đậm, cùng cách mà nút đánh dấu ở `VocabularyCard` làm. */}
+                  <Icon size={isActive ? 24 : 22} />
                   <span>{label}</span>
                   {isActive && <span className="sr-only">(đang xem)</span>}
                 </>

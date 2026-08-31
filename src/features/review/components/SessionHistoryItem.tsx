@@ -51,7 +51,7 @@ export function SessionHistoryItem({
 
   return (
     <button type="button" onClick={onSelect} className="w-full text-left">
-      <Card className="hover:bg-primary-pale transition-colors duration-150">
+      <Card interactive className="hover:bg-primary-pale">
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-caption text-text-secondary">
