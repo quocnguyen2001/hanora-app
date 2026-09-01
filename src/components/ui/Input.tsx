@@ -42,8 +42,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           // aria thì screen reader không bao giờ đọc được nó.
           aria-invalid={error ? true : undefined}
           aria-describedby={message ? messageId : undefined}
+          // KHÔNG đặt utility `text-body` ở đây. Cỡ chữ ô nhập do `@layer base`
+          // trong `app.css` quyết định, vì nó phải có sàn 16px trên thiết bị
+          // cảm ứng để iOS không phóng to cả trang lúc focus. Utility nằm ở
+          // layer sau base nên sẽ đè mất cái sàn đó; kế thừa từ `body` cho ra
+          // đúng 14px trên desktop mà vẫn để quy tắc cảm ứng thắng.
           className={cn(
-            'text-body text-text-primary min-h-11 w-full bg-transparent outline-none',
+            'text-text-primary min-h-11 w-full bg-transparent outline-none',
             'placeholder:text-text-secondary',
             className,
           )}

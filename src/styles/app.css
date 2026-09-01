@@ -145,6 +145,44 @@
     appearance: none;
   }
 
+  /*
+   * Ô nhập kế thừa chữ của app thay vì dùng font hệ thống của trình duyệt.
+   *
+   * Không có dòng này, `<input>` bỏ qua `font-family`/`font-size` của `body` và
+   * tự lấy mặc định của UA (13.33px, font hệ thống) — nên quy tắc chống zoom
+   * ngay dưới đây sẽ không có gì để đứng lên trên.
+   */
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  /*
+   * Cỡ chữ ô nhập KHÔNG bao giờ dưới 16px trên thiết bị cảm ứng.
+   *
+   * Safari trên iOS tự phóng to cả trang khi focus vào ô nhập có cỡ chữ nhỏ hơn
+   * 16px, và sau khi bàn phím đóng nó KHÔNG thu về — người dùng bị bỏ lại trong
+   * một trang bị cắt ngang, phải tự pinch-zoom ra. `--text-body` là 14px nên
+   * mọi ô nhập của app đều dính, rõ nhất ở `SearchBar` của màn Tìm kiếm.
+   *
+   * KHÔNG chặn bằng `maximum-scale=1` / `user-scalable=no` ở thẻ viewport: cách
+   * đó tắt luôn phóng to hai ngón của người dùng — một lỗi tiếp cận, không phải
+   * bản sửa. Sàn cỡ chữ chỉ đổi ô nhập, và chỉ trên cảm ứng; desktop giữ nguyên
+   * thang chữ 14px.
+   *
+   * `max()` chứ không phải `16px` cứng: người dùng tăng `--font-scale` vẫn phải
+   * được chữ to hơn, chỉ có SÀN là không đổi. `[type='range']` đứng ngoài vì
+   * thanh trượt không có chữ và không kích hoạt zoom.
+   */
+  @media (pointer: coarse) {
+    input:not([type='range']),
+    select,
+    textarea {
+      font-size: max(16px, var(--text-body));
+    }
+  }
+
   body {
     margin: 0;
     background-color: var(--color-background);
