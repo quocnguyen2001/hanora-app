@@ -29,6 +29,7 @@ npm run format:check  # Prettier, chỉ kiểm tra
 npm run test          # Vitest
 npm run test:watch    # Vitest watch
 npm run test:coverage # Vitest + báo cáo độ phủ
+npm run docker:publish # build ảnh và đẩy lên GHCR — xem "Ảnh Docker & GHCR"
 
 node scripts/check-contrast.mjs  # đo tương phản WCAG mọi tông chữ × chủ đề
 node scripts/export-icons.mjs    # xuất icon PWA từ src/assets/icon-source.svg
@@ -56,6 +57,7 @@ src/
 
 public/fonts/       woff2 self-host (Inter, Lora) — xem src/styles/fonts.css
 scripts/            tiện ích chạy tay, không nằm trong build
+docker/             script chạy BÊN TRONG ảnh phát hành
 ```
 
 ## Quy tắc phân tầng
@@ -120,6 +122,53 @@ ra thay vì báo "lỗi máy chủ".
 origin_ với API (quyết định D12), nên đường dẫn tương đối `/api/...` là đúng và
 bài toán CORS không tồn tại. Ở dev, Vite chạy cổng 5173 còn API ở 8080 nên cần
 URL tuyệt đối.
+
+## Ảnh Docker & GHCR
+
+```bash
+npm version patch            # 0.1.0 → 0.1.1, tạo cả commit và git tag
+npm run docker:publish       # build linux/amd64 rồi đẩy lên GHCR
+```
+
+Ảnh đẩy lên ba tag: `:0.1.1`, `:0.1.1-<sha>`, `:latest`.
+
+**Ảnh này không phục vụ HTTP.** nginx sống ở stack `hanora-api` và phục vụ FE
+_cùng origin_ với `/api` (D12); đóng thêm một nginx vào đây là tạo ra nơi thứ
+hai giữ SPA fallback, cache-control và CSP — mà CSP ở nginx là thứ **duy nhất**
+thực thi được điều kiện P9 dựa vào để chấp nhận lưu token trong `localStorage`.
+Nên ảnh chỉ _mang_ bản build: chạy một lần, đổ file vào volume `frontend-dist`
+mà nginx đang mount, rồi thoát.
+
+Trên VPS — thay cho bước `docker cp` thủ công ở mục 5 runbook của `hanora-api`,
+và **vẫn giữ nguyên điều kiện thứ tự**: chỉ deploy FE sau khi `cvdict:status`
+và `topics:status` PASS.
+
+```bash
+docker run --rm -v hanora-api_frontend-dist:/target \
+  ghcr.io/quocnguyen2001/hanora-app:0.1.1
+```
+
+Rollback = chạy lại đúng lệnh đó với tag cũ. Không phải dựng lại gì, và VPS
+không cần Node — đây là thứ cách build-trên-VPS không cho được.
+
+Tên volume có tiền tố là tên project của Compose, mặc định lấy theo tên thư mục
+chứa file compose. Kiểm bằng `docker volume ls | grep frontend-dist` thay vì tin
+vào `hanora-api_` — sai tên thì `docker run` tạo ra một volume rỗng MỚI, lệnh
+báo thành công, và nginx vẫn phục vụ bản cũ.
+
+| Điều                                                | Vì sao                                                                                                                                                                                                                          |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Version ở `package.json`, không phải file `VERSION` | Ngược với `hanora-api`, nơi composer.json không giữ version nên phải có file riêng. Ở đây package.json đã giữ sẵn và `npm version` đã bảo trì nó — thêm file thứ hai chỉ tạo ra hai nguồn để lệch nhau                          |
+| Mặc định `linux/amd64`                              | Máy dev là Apple Silicon, VPS là amd64. Để buildx tự chọn nghĩa là đẩy lên một ảnh máy đích không chạy được, và lỗi chỉ lộ lúc deploy. Đổi bằng `--platform`                                                                    |
+| Chặn khi cây git bẩn / tag đã tồn tại               | Ảnh phát hành bất biến là toàn bộ cơ sở của rollback. `--force` bỏ qua, nhưng build từ cây bẩn **chỉ** được tag `:<version>-<sha>-dirty` — không `:<version>`, không `:latest`, để không tag nào im lặng trỏ vào mã chưa commit |
+| `.dockerignore` là danh sách **cho phép**           | `.env` không bao giờ vào build context, nên `VITE_API_URL` chỉ đến được từ `--build-arg`. Dòng đầu phải là `*` chứ không phải `**` — xem comment trong file                                                                     |
+| Chép trước, dọn sau                                 | `docker/install-dist.sh` chép đè rồi mới xoá file thừa, nên không có khoảng nào nginx phục vụ thư mục rỗng                                                                                                                      |
+
+Đăng nhập registry (token cần scope `write:packages`):
+
+```bash
+echo "$GHCR_TOKEN" | docker login ghcr.io -u quocnguyen2001 --password-stdin
+```
 
 ## Điều hướng
 

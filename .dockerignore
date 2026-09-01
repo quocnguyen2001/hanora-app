@@ -1,0 +1,29 @@
+# Danh sách CHO PHÉP, không phải danh sách CHẶN — và đó là chủ đích.
+#
+# Repo này chứa `.env`, `plans/`, `.prompts/`, `.claude/`: thứ không được nằm
+# trong một ảnh sẽ đẩy lên registry. Với danh sách chặn, thêm một thư mục nhạy
+# cảm mới nghĩa là ÂM THẦM đóng gói nó. Với danh sách này, quên khai báo một
+# đầu vào build sẽ làm build ĐỔ ngay tại `tsc -b` — kiểu hỏng ồn ào và sửa
+# trong ba mươi giây.
+#
+# Hệ quả cụ thể: `.env` không bao giờ vào build context, nên `VITE_API_URL` chỉ
+# có thể đến từ `--build-arg`. Không có ngõ nào để URL API của máy dev lọt vào
+# một bundle production.
+#
+# Dòng đầu PHẢI là `*`, không phải `**`. Docker khớp pattern theo từng cấp và
+# truyền kết quả của thư mục cha xuống con: `*` khớp `node_modules` nên mọi thứ
+# bên trong bị loại theo, còn `!src` khôi phục cả cây `src/`. Với `**` thì
+# không thư mục nào bị loại và cả repo — kể cả `.env` — chui vào ảnh. Đã đo:
+# `**` cho 21.433 file trong context, `*` cho 186.
+*
+
+!package.json
+!package-lock.json
+!index.html
+!vite.config.ts
+!tsconfig.json
+!tsconfig.app.json
+!tsconfig.node.json
+!src
+!public
+!docker/install-dist.sh
