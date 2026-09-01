@@ -6,6 +6,20 @@
  * điển được cache dài hạn (red team C2). Trạng thái đã lưu lấy riêng qua
  * `GET /api/vocabulary/ids`.
  */
+
+/**
+ * Một lượng từ (loại từ) đi với mục từ này.
+ *
+ * CC-CEDICT mã hoá chúng bằng `CL:` ngay trong phần nghĩa; API tách ra lúc
+ * import. Trước đó chuỗi `CL:家[jia1],個|个[ge4]` hiện nguyên dạng mã trên màn
+ * hình — xem mục "Lượng từ" ở README của `hanora-api`.
+ */
+export interface MeasureWord {
+  simplified: string
+  traditional: string
+  pinyin: string
+}
+
 export interface WordSummary {
   id: number
   simplified: string
@@ -25,6 +39,14 @@ export interface WordSummary {
    * cơ chế đối chiếu duy nhất người học có. Bỏ nó đi là gỡ mất chốt đó.
    */
   definitions_vi: string[] | null
+  /**
+   * MẢNG, không nullable — khác `definitions_vi` ngay bên trên.
+   *
+   * API chuẩn hoá `NULL` trong cột thành `[]` ở tầng resource, vì app không cần
+   * phân biệt "từ này không có lượng từ" với "danh sách rỗng": cả hai render
+   * thành không có gì. Một nhánh thay vì hai.
+   */
+  measure_words: MeasureWord[]
   hsk_level: number | null
 }
 
@@ -83,6 +105,65 @@ export interface WordDetail extends WordSummary {
   /** Rỗng là trạng thái HỢP LỆ — FE ẩn hẳn section, không hiện khung trống. */
   examples: ExampleSentence[]
 }
+
+/**
+ * Một nghĩa đã phân loại theo từ loại.
+ *
+ * `pos` là tiếng Việt và do model đặt ("danh từ", "động từ", "tính từ"…), nên
+ * nó là chuỗi tự do chứ không phải union — ràng nó vào một danh sách cố định sẽ
+ * làm rơi mất nghĩa hợp lệ đầu tiên mà model diễn đạt hơi khác.
+ */
+export interface WordSense {
+  pos: string
+  vi: string
+  /** Ghi chú cách dùng của riêng nghĩa này; `null` khi model không trả về. */
+  note: string | null
+}
+
+/**
+ * Một từ ghép hoặc thành ngữ liên quan.
+ *
+ * `word_id` là lối đi vào trang chi tiết, và `null` là trạng thái HỢP LỆ ở hai
+ * ca: bản làm giàu sinh trước khi API biết tra ngược, và từ mà model đưa ra
+ * nhưng không có trong từ điển. Mục có id thì bấm được, không có thì hiện tĩnh
+ * — cùng luật mà `SentenceToken.word_id` đang giữ.
+ */
+export interface RelatedWord {
+  simplified: string
+  pinyin: string
+  vi: string
+  word_id: number | null
+}
+
+/**
+ * Nội dung làm giàu do AI sinh cho một mục từ.
+ *
+ * KHÔNG có `characters` ở đây dù API trả về nó. Bộ thủ và số nét trong payload
+ * đó do model sinh; nguồn tất định cho hai trường ấy nằm ở `dictionary_characters`
+ * và đi kèm `WordDetail.characters`. Đọc bản của model là tự dựng một nguồn thứ
+ * hai để hai bên lệch nhau.
+ *
+ * KHÔNG có `examples` ở đây, cũng có chủ đích: màn chi tiết đã có khối "Ví dụ"
+ * từ Tatoeba kèm bản dịch riêng. Thêm một khối ví dụ thứ hai do AI sinh là hai
+ * khối cạnh nhau nói cùng một việc.
+ */
+export interface WordEnrichment {
+  senses: WordSense[]
+  related_words: RelatedWord[]
+  idioms: RelatedWord[]
+  usage_note: string | null
+  /** Tên model, cho dòng ghi nhãn nguồn. `null` với bản ghi cũ. */
+  model: string | null
+}
+
+/**
+ * Trạng thái lớp làm giàu, đọc từ `meta.status`.
+ *
+ * `unavailable` KHÔNG phải lỗi — nó là "cạn lượt thử, sẽ không thử nữa" hoặc
+ * "lớp AI đang tắt". Màn chi tiết khi đó trông đúng như trước khi có tính năng
+ * này, cùng quy ước mà `WordIllustrationStatus` đang giữ.
+ */
+export type WordEnrichmentStatus = 'ready' | 'pending' | 'unavailable'
 
 /**
  * Bản dịch tiếng Trung của TOÀN BỘ truy vấn, cho truy vấn dạng CÂU.

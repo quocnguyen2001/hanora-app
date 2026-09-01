@@ -3,12 +3,17 @@ import type { SearchModeChoice } from '@/stores/search-mode'
 import type {
   ExampleTranslation,
   ExampleTranslationStatus,
+  MeasureWord,
+  RelatedWord,
   SearchMeta,
   SearchTranslation,
   SentenceDetail,
   WordDetail,
+  WordEnrichment,
+  WordEnrichmentStatus,
   WordIllustration,
   WordIllustrationStatus,
+  WordSense,
   WordSummary,
 } from '@/types/dictionary'
 
@@ -88,14 +93,31 @@ export async function searchWords(
   })
 
   return {
-    words: envelope.data,
+    // Chuẩn hoá `measure_words` vì cùng lý do `fetchWord` làm vậy: bucket
+    // service worker của tìm kiếm sống 24 giờ và có thể trả bản trước khi
+    // trường này tồn tại.
+    words: envelope.data.map((word) => ({
+      ...word,
+      measure_words: parseMeasureWords(word.measure_words),
+    })),
     meta: envelope.meta as SearchMeta,
     translation: parseTranslation(envelope.translation),
   }
 }
 
-export function fetchWord(id: number): Promise<WordDetail> {
-  return apiRequest<WordDetail>(`/dictionary/words/${id}`)
+/**
+ * Chi tiết một từ.
+ *
+ * `measure_words` được CHUẨN HOÁ chứ không tin thẳng, và đây không phải phòng
+ * xa thừa: `/words/{id}` nằm trong bucket service worker sống 30 ngày, nên mọi
+ * người dùng đã mở một từ trước khi trường này tồn tại sẽ nhận lại bản cũ KHÔNG
+ * có nó. Kiểu khai là `MeasureWord[]`, nên `undefined` lọt qua sẽ làm
+ * `.length` ném ngay giữa hero.
+ */
+export async function fetchWord(id: number): Promise<WordDetail> {
+  const word = await apiRequest<WordDetail>(`/dictionary/words/${id}`)
+
+  return { ...word, measure_words: parseMeasureWords(word.measure_words) }
 }
 
 /**
@@ -166,6 +188,136 @@ export async function fetchExampleTranslations(
     : []
 
   return { translations, status }
+}
+
+/** Chuỗi đã trim, hoặc `null` khi trường vắng / rỗng / sai kiểu. */
+function text(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
+}
+
+/**
+ * Lượng từ của một mục từ.
+ *
+ * Bỏ mục thiếu `simplified` thay vì ném — cùng tinh thần phòng vệ mà
+ * `parseIllustration` đang giữ. `traditional` vắng thì rơi về `simplified`, đúng
+ * quy ước mà chính CC-CEDICT dùng khi hai dạng trùng nhau.
+ */
+export function parseMeasureWords(raw: unknown): MeasureWord[] {
+  if (!Array.isArray(raw)) return []
+
+  return raw.flatMap((item): MeasureWord[] => {
+    if (item === null || typeof item !== 'object') return []
+
+    const value = item as Record<string, unknown>
+    const simplified = text(value.simplified)
+
+    if (simplified === null) return []
+
+    return [
+      {
+        simplified,
+        traditional: text(value.traditional) ?? simplified,
+        pinyin: text(value.pinyin) ?? '',
+      },
+    ]
+  })
+}
+
+/**
+ * Nghĩa đã phân loại theo từ loại.
+ *
+ * Bỏ mục thiếu `pos` hoặc `vi` thay vì ném: cùng tinh thần phòng vệ mà
+ * `parseIllustration` và lô dịch câu ví dụ đang giữ — một mục hỏng chỉ được làm
+ * mất chính nó, không kéo theo cả khối.
+ */
+function parseSenses(raw: unknown): WordSense[] {
+  if (!Array.isArray(raw)) return []
+
+  return raw.flatMap((item): WordSense[] => {
+    if (item === null || typeof item !== 'object') return []
+
+    const value = item as Record<string, unknown>
+    const pos = text(value.pos)
+    const vi = text(value.vi)
+
+    if (pos === null || vi === null) return []
+
+    return [{ pos, vi, note: text(value.note) }]
+  })
+}
+
+/**
+ * Từ ghép / thành ngữ.
+ *
+ * `word_id` chỉ được nhận khi nó là số dương thật. API trả `null` cho mục không
+ * tra ngược được, và bản ghi làm giàu cũ không có trường này chút nào — cả hai
+ * đều rơi về `null`, và UI hiện mục đó tĩnh.
+ */
+function parseRelatedWords(raw: unknown): RelatedWord[] {
+  if (!Array.isArray(raw)) return []
+
+  return raw.flatMap((item): RelatedWord[] => {
+    if (item === null || typeof item !== 'object') return []
+
+    const value = item as Record<string, unknown>
+    const simplified = text(value.simplified)
+
+    if (simplified === null) return []
+
+    const id = value.word_id
+
+    return [
+      {
+        simplified,
+        pinyin: text(value.pinyin) ?? '',
+        vi: text(value.vi) ?? '',
+        word_id: typeof id === 'number' && Number.isInteger(id) && id > 0 ? id : null,
+      },
+    ]
+  })
+}
+
+/**
+ * Nội dung làm giàu của một từ.
+ *
+ * KHÔNG ném khi `data === null` — giống `fetchWordIllustration`, khác
+ * `fetchSentence`. `unavailable` nghĩa là "sẽ không có", một câu trả lời THÀNH
+ * CÔNG mà màn hình xử lý bằng cách ẩn khối, không phải bằng một nhánh catch.
+ *
+ * Trạng thái đọc từ `meta.status`, KHÔNG từ mã HTTP: `apiRequestWithMeta` không
+ * phơi ra `response.status` khi thành công, nên 200 và 202 đi vào cùng một đường.
+ */
+export async function fetchWordEnrichment(
+  wordId: number,
+): Promise<{ enrichment: WordEnrichment | null; status: WordEnrichmentStatus }> {
+  const envelope = await apiRequestWithMeta<unknown>(`/dictionary/words/${wordId}/enrichment`)
+
+  const meta = envelope.meta as { status?: unknown } | undefined
+  const raw = typeof meta?.status === 'string' ? meta.status : 'unavailable'
+  const status: WordEnrichmentStatus = (['ready', 'pending', 'unavailable'] as const).includes(
+    raw as WordEnrichmentStatus,
+  )
+    ? (raw as WordEnrichmentStatus)
+    : 'unavailable'
+
+  const data = envelope.data
+
+  if (data === null || typeof data !== 'object') {
+    return { enrichment: null, status }
+  }
+
+  const value = data as Record<string, unknown>
+
+  return {
+    enrichment: {
+      senses: parseSenses(value.senses),
+      related_words: parseRelatedWords(value.related_words),
+      idioms: parseRelatedWords(value.idioms),
+      usage_note: text(value.usage_note),
+      model: text(value.model),
+    },
+    status,
+  }
 }
 
 /**

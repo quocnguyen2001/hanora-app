@@ -104,6 +104,7 @@ describe('WordIllustration', () => {
           han_viet: 'học tập',
           definitions_en: ['to learn'],
           definitions_vi: ['học'],
+          measure_words: [],
           hsk_level: 1,
         }}
         illustration={<div data-testid="illustration-thay-the" />}

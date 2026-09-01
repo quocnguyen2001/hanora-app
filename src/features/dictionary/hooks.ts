@@ -5,6 +5,7 @@ import {
   fetchExampleTranslations,
   fetchSentence,
   fetchWord,
+  fetchWordEnrichment,
   fetchWordIllustration,
   searchWords,
 } from './api'
@@ -33,6 +34,7 @@ export const dictionaryKeys = {
   sentence: (zh: string) => ['dictionary', 'sentence', zh] as const,
   illustration: (id: number) => ['dictionary', 'illustration', id] as const,
   exampleTranslations: (id: number) => ['dictionary', 'example-translations', id] as const,
+  enrichment: (id: number) => ['dictionary', 'enrichment', id] as const,
 }
 
 /*
@@ -204,6 +206,33 @@ export function useWordIllustration(id: number, options: { maxPolls?: number } =
  * đã ghi: API tự đếm và dừng sau 3 lần hỏng, còn một job kẹt ở `pending` không
  * được phép để lại một vòng poll chạy mãi.
  */
+/**
+ * Nội dung làm giàu của một từ — nghĩa theo từ loại, từ ghép, thành ngữ.
+ *
+ * Lớp lười THỨ BA trên màn chi tiết, sau ảnh minh hoạ và dịch câu ví dụ, và nó
+ * bám cùng một khuôn: `retry: false` vì API đã tự đếm và dừng hẳn sau 3 lần
+ * hỏng, cộng một vòng poll CÓ TRẦN vì một job kẹt ở `pending` không được phép
+ * để lại một request mỗi 3 giây suốt thời gian người dùng còn mở trang.
+ *
+ * Ba lớp × trần 10 lượt = 30 request cho một lần mở trang ở ca xấu nhất, so với
+ * trần 60/phút theo user. Chấp nhận được cho MỘT màn mà người dùng mở có chủ
+ * đích; màn nào mở từ hàng loạt phải hạ trần xuống như `useWordIllustration` đã
+ * làm cho màn học chủ đề.
+ */
+export function useWordEnrichment(id: number) {
+  return useQuery({
+    queryKey: dictionaryKeys.enrichment(id),
+    queryFn: () => fetchWordEnrichment(id),
+    enabled: Number.isFinite(id) && id > 0,
+    retry: false,
+    refetchInterval: (query) => {
+      if (query.state.data?.status !== 'pending') return false
+
+      return query.state.dataUpdateCount >= LAZY_MAX_POLLS ? false : LAZY_POLL_MS
+    },
+  })
+}
+
 export function useExampleTranslations(id: number, options: { enabled: boolean }) {
   return useQuery({
     queryKey: dictionaryKeys.exampleTranslations(id),

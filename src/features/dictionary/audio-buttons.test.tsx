@@ -10,6 +10,16 @@ import { WordDetailPage } from './pages/WordDetailPage'
 
 const fetchMock = vi.fn<typeof fetch>()
 
+/** Sáu thuộc tính Hán tự để `null` — hình dạng của response cũ trong cache. */
+const noAttributes = {
+  radical: null,
+  radical_han_viet: null,
+  stroke_count: null,
+  decomposition: null,
+  etymology_type: null,
+  stroke_names: null,
+}
+
 const word: WordDetail = {
   id: 7,
   simplified: '狐狸',
@@ -18,10 +28,13 @@ const word: WordDetail = {
   han_viet: 'hồ ly',
   definitions_en: ['fox'],
   definitions_vi: ['con cáo'],
+  measure_words: [],
   hsk_level: 4,
   characters: [
-    { char: '狐', pinyin: 'hú', han_viet: 'hồ' },
-    { char: '狸', pinyin: 'li', han_viet: 'ly' },
+    // Mọi thuộc tính Hán tự để `null`: test này đo nút audio, và một fixture
+    // đầy đủ ở đây chỉ làm loãng thứ nó thật sự khoá.
+    { char: '狐', pinyin: 'hú', han_viet: 'hồ', ...noAttributes },
+    { char: '狸', pinyin: 'li', han_viet: 'ly', ...noAttributes },
   ],
   examples: [
     {

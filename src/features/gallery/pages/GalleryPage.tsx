@@ -32,6 +32,9 @@ const SAMPLE: WordSummary = {
   han_viet: 'học tập',
   definitions_en: ['to learn', 'to study'],
   definitions_vi: ['học', 'tìm hiểu'],
+  // Có giá trị thật chứ không `[]`: gallery tồn tại để đối chiếu bằng MẮT, và
+  // một mẫu rỗng thì dòng lượng từ không bao giờ xuất hiện để mà xem.
+  measure_words: [{ simplified: '门', traditional: '門', pinyin: 'mén' }],
   hsk_level: 1,
 }
 

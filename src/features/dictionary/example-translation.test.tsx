@@ -16,6 +16,7 @@ const word: WordDetail = {
   han_viet: 'học tập',
   definitions_en: ['to learn', 'to study'],
   definitions_vi: ['học tập'],
+  measure_words: [],
   hsk_level: 1,
   characters: [],
   examples: [

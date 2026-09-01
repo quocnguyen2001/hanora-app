@@ -22,11 +22,26 @@ export function WordDetailHero({
   onPlayAudio,
   actions,
   illustration,
+  suppressVietnameseDefinitions = false,
 }: {
   word: WordSummary
   audioState?: AudioState
   onPlayAudio?: () => void
   actions?: React.ReactNode
+  /**
+   * Ẩn danh sách nghĩa tiếng Việt của hero.
+   *
+   * Tồn tại cho đúng một ca: màn chi tiết đã có `senses` — cùng nghĩa đó nhưng
+   * đã nhóm theo từ loại — và hai danh sách nghĩa Việt cạnh nhau nói gần như
+   * cùng một việc. Ẩn ở đây thay vì bỏ hẳn khối `senses` xuống dưới, vì `senses`
+   * là bản ĐỌC ĐƯỢC HƠN của cùng thông tin.
+   *
+   * Mặc định `false`, nên `GalleryPage` và mọi chỗ dùng khác không đổi.
+   *
+   * KHÔNG ảnh hưởng `definitions_en`: nó luôn ở lại (luật R1), và càng phải ở
+   * lại khi thứ thay chỗ nghĩa Việt là nội dung do AI sinh chưa ai rà.
+   */
+  suppressVietnameseDefinitions?: boolean
   /**
    * Ghi đè khối ảnh minh hoạ.
    *
@@ -57,6 +72,33 @@ export function WordDetailHero({
       {word.hsk_level !== null && <Badge tone="primary">HSK {word.hsk_level}</Badge>}
 
       {/*
+        Lượng từ đứng SAU badge HSK và TRƯỚC ảnh minh hoạ.
+
+        Nó thuộc hero chứ không phải một `Card` riêng vì nó là thuộc tính NGỮ
+        PHÁP của chính từ đang tra, không phải nội dung mở rộng — cùng loại với
+        pinyin và âm Hán-Việt phía trên. Sau HSK vì cả hai đều là nhãn phân loại
+        ngắn; trước ảnh vì ảnh mở đầu phần "nội dung" của hero.
+
+        Ẩn HẲN khi rỗng — quy ước `han_viet: null` đang giữ. Đây là ca THƯỜNG
+        GẶP: đo trên nguồn thật chỉ 1.554 / 123.646 mục có lượng từ.
+      */}
+      {word.measure_words.length > 0 && (
+        <p className="text-body text-text-secondary">
+          Lượng từ:{' '}
+          {word.measure_words.map((measure, index) => (
+            <span key={measure.simplified}>
+              {index > 0 && ' · '}
+              {/* `HanziText size="inline"` chứ không chữ thô: cùng lý do dòng
+                  "Phồn thể" ngay trên đang dùng nó — chữ Hán lẫn trong dòng chữ
+                  latin cần font Hán, không phải font giao diện. */}
+              <HanziText size="inline">{measure.simplified}</HanziText>
+              {measure.pinyin !== '' && ` ${measure.pinyin}`}
+            </span>
+          ))}
+        </p>
+      )}
+
+      {/*
         Ảnh minh hoạ giữ NGUYÊN vị trí và kích thước mà placeholder đang giữ.
         `WordIllustration` tự rơi về chính placeholder đó khi từ này không có
         ảnh — chuyện thường gặp, vì cổng chặn phía API cố tình từ chối hư từ và
@@ -72,7 +114,7 @@ export function WordDetailHero({
         không dòng "chưa có nghĩa": từ đó vẫn dùng được bình thường bằng tiếng
         Anh, đúng như trước phase này.
       */}
-      {word.definitions_vi && word.definitions_vi.length > 0 && (
+      {!suppressVietnameseDefinitions && word.definitions_vi && word.definitions_vi.length > 0 && (
         <ul className="text-meaning text-text-primary mt-1 w-full space-y-1 text-left">
           {word.definitions_vi.map((meaning) => (
             <li key={meaning}>{meaning}</li>

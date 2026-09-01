@@ -19,6 +19,7 @@ const word: WordSummary = {
   han_viet: 'học tập',
   definitions_en: ['to learn', 'to study'],
   definitions_vi: ['học', 'tìm hiểu'],
+  measure_words: [],
   hsk_level: 1,
 }
 

@@ -12,8 +12,11 @@ import { WordReviewHistory } from '@/features/review/components/WordReviewHistor
 import { useSavedWordIds, useToggleSaveWord } from '@/features/vocabulary/hooks'
 import { useSpeech } from '@/hooks/use-speech'
 import { ApiError } from '@/lib/api'
+import { cn } from '@/lib/cn'
 import type { CharacterBreakdown, ExampleSentence } from '@/types/dictionary'
-import { useExampleTranslations, useWord } from '../hooks'
+import { RelatedWordList } from '../components/RelatedWordList'
+import { WordSenses } from '../components/WordSenses'
+import { useExampleTranslations, useWord, useWordEnrichment } from '../hooks'
 
 export function WordDetailPage() {
   const params = useParams<{ id: string }>()
@@ -29,6 +32,12 @@ export function WordDetailPage() {
   const translations = useExampleTranslations(wordId, {
     enabled: (word?.examples.length ?? 0) > 0,
   })
+  /*
+   * Lớp làm giàu. Gọi vô điều kiện, khác `useExampleTranslations`: ở đó
+   * `enabled` phụ thuộc số câu ví dụ vì ~15% từ chắc chắn không có câu nào, còn
+   * ở đây không có tín hiệu nào biết trước từ này có bản làm giàu hay không.
+   */
+  const enrichmentQuery = useWordEnrichment(wordId)
   const toggleSave = useToggleSaveWord()
   const speech = useSpeech()
 
@@ -69,6 +78,15 @@ export function WordDetailPage() {
 
   const hasAnyTranslation = translationById.size > 0
 
+  const enrichment = enrichmentQuery.data?.enrichment ?? null
+  /*
+   * Còn đang sinh nội dung. Cùng hình dạng điều kiện mà `translating` dùng, và
+   * vì cùng lý do: `unavailable` phải rơi vào vế "không hiện gì", không phải vế
+   * "chờ tí nữa có".
+   */
+  const enriching = enrichmentQuery.isPending || enrichmentQuery.data?.status === 'pending'
+  const senses = enrichment?.senses ?? []
+
   return (
     // `animate-rise`: nhánh này mount mới khi `isPending` lật, nên nội dung tan
     // vào đúng chỗ khung xương vừa đứng thay vì bị cắt cứng.
@@ -98,6 +116,11 @@ export function WordDetailPage() {
         word={word}
         audioState={speech.stateFor('word')}
         onPlayAudio={() => speech.play(word.simplified, 'word')}
+        /* Có `senses` thì nghĩa Việt của hero nhường chỗ cho bản đã nhóm theo
+           từ loại ngay bên dưới. Lớp làm giàu tải lười, nên phần lớn lần mở sẽ
+           hiện `definitions_vi` trước rồi đổi — MỘT lần đổi, và tốt hơn hẳn hai
+           danh sách nghĩa Việt nằm cạnh nhau vĩnh viễn. */
+        suppressVietnameseDefinitions={senses.length > 0}
         actions={
           <Button
             variant={saved ? 'secondary' : 'primary'}
@@ -116,6 +139,40 @@ export function WordDetailPage() {
         }
       />
 
+      {/*
+        Nghĩa theo từ loại — đứng NGAY sau hero vì nó thay chỗ danh sách nghĩa
+        Việt vừa bị ẩn ở đó. Đặt nó xuống dưới khối Hán tự sẽ để lại một khoảng
+        trống đúng chỗ mắt vừa đọc xong.
+      */}
+      {senses.length > 0 && (
+        <Card>
+          <h2 className="text-section">Nghĩa theo từ loại</h2>
+          <AiSourceNote />
+          <WordSenses senses={senses} />
+        </Card>
+      )}
+
+      {/*
+        Khung xương cho lớp làm giàu: MỘT khối duy nhất, không phải bốn.
+        Bốn khung trống xếp chồng cho một từ hoá ra không có bản làm giàu là
+        hứa hẹn bốn thứ rồi rút lại cả bốn.
+      */}
+      {senses.length === 0 && enriching && (
+        <Card>
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="mt-3 h-6 w-full" />
+          <Skeleton className="mt-2 h-6 w-4/5" />
+        </Card>
+      )}
+
+      {enrichment?.usage_note != null && (
+        <Card>
+          <h2 className="text-section">Ghi chú dùng từ</h2>
+          <AiSourceNote />
+          <p className="text-meaning text-text-primary mt-3">{enrichment.usage_note}</p>
+        </Card>
+      )}
+
       {word.characters.length > 0 && (
         <Card>
           <h2 className="text-section">Hán tự</h2>
@@ -131,6 +188,24 @@ export function WordDetailPage() {
               />
             ))}
           </ul>
+        </Card>
+      )}
+
+      {/*
+        Từ ghép và thành ngữ đứng SAU khối Hán tự: chúng là bước mở rộng ra
+        NGOÀI từ đang tra, còn Hán tự là mổ vào bên trong nó.
+      */}
+      {enrichment !== null && enrichment.related_words.length > 0 && (
+        <Card>
+          <RelatedWordList title="Từ ghép" items={enrichment.related_words} />
+          <AiSourceNote className="mt-3" />
+        </Card>
+      )}
+
+      {enrichment !== null && enrichment.idioms.length > 0 && (
+        <Card>
+          <RelatedWordList title="Thành ngữ" items={enrichment.idioms} />
+          <AiSourceNote className="mt-3" />
         </Card>
       )}
 
@@ -173,6 +248,25 @@ export function WordDetailPage() {
           component tự bỏ qua lời gọi API trong trường hợp đó. */}
       <WordReviewHistory wordId={word.id} saved={saved} />
     </div>
+  )
+}
+
+/**
+ * Nhãn nguồn cho nội dung do AI sinh.
+ *
+ * MỘT lần cho mỗi khối, không phải mỗi mục — cùng quy ước mà khối "Ví dụ" đang
+ * giữ, và vì cùng lý do: ba nhãn giống hệt nhau trong một thẻ là nhiễu, và
+ * người đọc bỏ qua cả ba.
+ *
+ * Nhưng nó phải có mặt ở TỪNG khối chứ không một lần cho cả trang: bốn khối này
+ * nằm xen giữa nội dung có nguồn thật (Tatoeba, CC-CEDICT), nên một nhãn duy
+ * nhất ở đầu trang sẽ đọc ra như thể cả trang do AI sinh.
+ */
+function AiSourceNote({ className }: { className?: string }) {
+  return (
+    <p className={cn('text-caption text-text-secondary mt-1', className)}>
+      Nội dung do AI sinh, chưa có người rà.
+    </p>
   )
 }
 
