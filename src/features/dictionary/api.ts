@@ -1,6 +1,8 @@
 import { ApiError, apiRequestWithMeta, apiRequest } from '@/lib/api'
 import type { SearchModeChoice } from '@/stores/search-mode'
 import type {
+  CharacterBreakdown,
+  CharacterStrokes,
   ExampleTranslation,
   ExampleTranslationStatus,
   MeasureWord,
@@ -117,7 +119,58 @@ export async function searchWords(
 export async function fetchWord(id: number): Promise<WordDetail> {
   const word = await apiRequest<WordDetail>(`/dictionary/words/${id}`)
 
-  return { ...word, measure_words: parseMeasureWords(word.measure_words) }
+  return {
+    ...word,
+    measure_words: parseMeasureWords(word.measure_words),
+    characters: parseCharacters(word.characters),
+  }
+}
+
+/**
+ * Hán tự của một từ.
+ *
+ * Điền `null` cho MỌI thuộc tính vắng thay vì để trường không tồn tại: response
+ * cũ trong cache service worker (30 ngày) chỉ có `char`/`pinyin`/`han_viet`, và
+ * component đọc `character.stroke_count` trên một object thiếu khoá sẽ nhận
+ * `undefined` — thứ mà `!== null` cho là có giá trị và render ra "undefined".
+ */
+function parseCharacters(raw: unknown): CharacterBreakdown[] {
+  if (!Array.isArray(raw)) return []
+
+  return raw.flatMap((item): CharacterBreakdown[] => {
+    if (item === null || typeof item !== 'object') return []
+
+    const value = item as Record<string, unknown>
+    const char = text(value.char)
+    const pinyin = text(value.pinyin)
+
+    if (char === null || pinyin === null) return []
+
+    const strokeNames = Array.isArray(value.stroke_names)
+      ? value.stroke_names.filter((s): s is string => typeof s === 'string' && s !== '')
+      : null
+
+    const strokeCount = value.stroke_count
+
+    return [
+      {
+        char,
+        pinyin,
+        han_viet: text(value.han_viet),
+        radical: text(value.radical),
+        radical_han_viet: text(value.radical_han_viet),
+        stroke_count:
+          typeof strokeCount === 'number' && Number.isFinite(strokeCount) && strokeCount > 0
+            ? strokeCount
+            : null,
+        decomposition: text(value.decomposition),
+        etymology_type: text(value.etymology_type),
+        // Mảng rỗng về `null`: "0 nét" là một khẳng định sai, còn `null` là
+        // "không biết" và UI ẩn dòng.
+        stroke_names: strokeNames !== null && strokeNames.length > 0 ? strokeNames : null,
+      },
+    ]
+  })
 }
 
 /**
@@ -317,6 +370,30 @@ export async function fetchWordEnrichment(
       model: text(value.model),
     },
     status,
+  }
+}
+
+/**
+ * Hình học nét của một chữ.
+ *
+ * Trả `null` cho 404 thay vì ném: "chữ này không có dữ liệu nét" là một câu trả
+ * lời — 2.763/9.574 chữ rơi vào đó, phần lớn là phồn thể — chứ không phải lỗi.
+ * Sheet tập viết hiện thông báo và cho đóng, thay vì màn hình lỗi.
+ *
+ * Mọi mã lỗi KHÁC vẫn ném: mất mạng hay 500 là chuyện khác hẳn, và nuốt chúng
+ * thành "chữ này không có nét" là nói dối người dùng.
+ */
+export async function fetchCharacterStrokes(char: string): Promise<CharacterStrokes | null> {
+  try {
+    const data = await apiRequest<CharacterStrokes>(
+      `/dictionary/characters/${encodeURIComponent(char)}/strokes`,
+    )
+
+    return Array.isArray(data.strokes) && data.strokes.length > 0 ? data : null
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null
+
+    throw error
   }
 }
 

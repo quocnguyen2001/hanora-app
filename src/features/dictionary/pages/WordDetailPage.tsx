@@ -13,7 +13,8 @@ import { useSavedWordIds, useToggleSaveWord } from '@/features/vocabulary/hooks'
 import { useSpeech } from '@/hooks/use-speech'
 import { ApiError } from '@/lib/api'
 import { cn } from '@/lib/cn'
-import type { CharacterBreakdown, ExampleSentence } from '@/types/dictionary'
+import type { ExampleSentence } from '@/types/dictionary'
+import { CharacterCard } from '../components/CharacterCard'
 import { RelatedWordList } from '../components/RelatedWordList'
 import { WordSenses } from '../components/WordSenses'
 import { useExampleTranslations, useWord, useWordEnrichment } from '../hooks'
@@ -176,10 +177,10 @@ export function WordDetailPage() {
       {word.characters.length > 0 && (
         <Card>
           <h2 className="text-section">Hán tự</h2>
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-3 space-y-4">
             {word.characters.map((character, index) => (
-              <CharacterRow
-                key={`${character.char}-${character.pinyin}`}
+              <CharacterCard
+                key={`${character.char}-${index}`}
                 character={character}
                 /* Khoá theo VỊ TRÍ: từ láy (谢谢) có hai Hán tự giống hệt nhau,
                    khoá theo chữ sẽ làm cả hai nút cùng sáng. */
@@ -330,38 +331,6 @@ function ExampleRow({
           Tatoeba · {example.contributor} · {example.license}
         </p>
       )}
-    </li>
-  )
-}
-
-function CharacterRow({
-  character,
-  audioState,
-  onPlay,
-}: {
-  character: CharacterBreakdown
-  audioState: ReturnType<typeof useSpeech>['state']
-  onPlay: () => void
-}) {
-  return (
-    <li className="flex items-center gap-3">
-      {/* `text-hanzi-title` chứ không `text-[1.75rem] leading-9`: giá trị thô nằm
-          ngoài thang nên KHÔNG nhân với `--font-scale`, tức chọn cỡ chữ lớn thì
-          mọi thứ to lên trừ chữ Hán. Đúng lỗi mà `HanziText` đã sửa một lần. */}
-      <span lang="zh-Hans" className="font-hanzi text-hanzi-title">
-        {character.char}
-      </span>
-      <span className="flex-1">
-        {/*
-          Âm đọc ĐÚNG NGỮ CẢNH của từ, do P6 chọn theo âm tiết pinyin — 银行 cho
-          `行 háng`, không phải `xíng`.
-        */}
-        <span className="text-body text-text-secondary">{character.pinyin}</span>
-        {character.han_viet && (
-          <span className="text-body text-text-primary ml-2">{character.han_viet}</span>
-        )}
-      </span>
-      <AudioButton state={audioState} onPlay={onPlay} size="sm" />
     </li>
   )
 }

@@ -50,10 +50,37 @@ export interface WordSummary {
   hsk_level: number | null
 }
 
+/**
+ * Một Hán tự trong từ, kèm sáu thuộc tính học tập.
+ *
+ * `char` và `pinyin` luôn có. **Mọi trường còn lại đều nullable**, vì hai lý do
+ * KHÁC NHAU và cả hai đều thường gặp:
+ *
+ * 1. Chữ nằm ngoài bộ dữ liệu 9.574 chữ của `dictionary_characters`, hoặc nằm
+ *    trong nhưng thiếu trường đó (chỉ 71% chữ có nét bút, 82% có âm bộ thủ).
+ * 2. **Response cũ trong cache service worker.** `/words/{id}` sống 30 ngày ở
+ *    bucket `hanora-dictionary-words`, nên mọi người dùng đã mở một từ trước
+ *    khi các trường này tồn tại sẽ nhận lại bản KHÔNG có chúng. Đây là trạng
+ *    thái chắc chắn xảy ra, không phải phòng xa.
+ *
+ * `pinyin` là âm ĐÚNG NGỮ CẢNH của từ — 银行 cho `行 háng`, không phải `xíng`.
+ * API chọn nó bằng cách khớp âm tiết (red team H11); FE không được tra lại từ
+ * nguồn nào khác.
+ */
 export interface CharacterBreakdown {
   char: string
   pinyin: string
   han_viet: string | null
+  /** Giữ nguyên biến thể: `剑` có bộ `刂`, không quy về `刀`. */
+  radical: string | null
+  radical_han_viet: string | null
+  stroke_count: number | null
+  /** Hình thái dạng IDS: `⿰佥刂`. Có thể chứa `？` cho thành phần chưa xác định. */
+  decomposition: string | null
+  /** Một trong ba giá trị của {@link ETYMOLOGY_LABELS}; nguồn không có sáu loại. */
+  etymology_type: string | null
+  /** Dãy hình nét theo thứ tự viết: `["丿","丶","一",…]`. */
+  stroke_names: string[] | null
 }
 
 /**
@@ -248,6 +275,22 @@ export interface SentenceDetail {
   tokens: SentenceToken[]
   grammar_notes: string[]
   source: 'ai'
+}
+
+/**
+ * Hình học nét của một chữ, cho bảng tập viết.
+ *
+ * Tách khỏi {@link CharacterBreakdown} có chủ đích: metadata sáu thuộc tính nhẹ
+ * vài trăm byte và đi kèm chi tiết từ, còn `strokes` + `medians` nặng ~4 KB mỗi
+ * chữ và chỉ tải khi người dùng bấm "Tập viết Hán tự".
+ *
+ * `strokes` là đường dẫn SVG; `medians` là toạ độ đường trung bình từng nét, thứ
+ * `hanzi-writer` dùng để chấm nét người dùng vẽ.
+ */
+export interface CharacterStrokes {
+  char: string
+  strokes: string[]
+  medians: number[][][]
 }
 
 /**

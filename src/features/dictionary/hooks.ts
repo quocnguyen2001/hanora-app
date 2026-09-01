@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import type { SearchModeChoice } from '@/stores/search-mode'
 import {
+  fetchCharacterStrokes,
   fetchExampleTranslations,
   fetchSentence,
   fetchWord,
@@ -35,6 +36,11 @@ export const dictionaryKeys = {
   illustration: (id: number) => ['dictionary', 'illustration', id] as const,
   exampleTranslations: (id: number) => ['dictionary', 'example-translations', id] as const,
   enrichment: (id: number) => ['dictionary', 'enrichment', id] as const,
+  /*
+   * Khoá theo CHỮ, không theo id từ: cùng một chữ ở hai từ khác nhau là cùng
+   * một câu trả lời, nên chữ hay gặp (的, 一) chỉ tải một lần mỗi phiên.
+   */
+  strokes: (char: string) => ['dictionary', 'strokes', char] as const,
 }
 
 /*
@@ -206,6 +212,32 @@ export function useWordIllustration(id: number, options: { maxPolls?: number } =
  * đã ghi: API tự đếm và dừng sau 3 lần hỏng, còn một job kẹt ở `pending` không
  * được phép để lại một vòng poll chạy mãi.
  */
+/**
+ * Hình học nét của một chữ, cho bảng tập viết.
+ *
+ * KHÁC HẲN ba lớp lười quanh nó, và khác ở đúng chỗ quan trọng:
+ *
+ * - **Không `refetchInterval`.** Endpoint tất định, không job nền, không trạng
+ *   thái `pending`. Thêm một vòng poll ở đây là chờ một câu trả lời đã có sẵn.
+ * - **`staleTime: Infinity`.** API đặt `immutable` một năm; dữ liệu này không
+ *   bao giờ đổi.
+ * - **`enabled` do chỗ gọi quyết định**, và nó phải là "sheet đang mở". Thiếu
+ *   ràng buộc đó thì mọi thẻ chữ trên màn tải ~4 KB hình học ngay khi render —
+ *   đúng cái mà việc tách endpoint này vừa loại bỏ.
+ *
+ * `retry: false`: 404 nghĩa là chữ nằm ngoài bộ dữ liệu 9.574 chữ, một câu trả
+ * lời chứ không phải lỗi mạng. `fetchCharacterStrokes` đã đổi nó thành `null`.
+ */
+export function useCharacterStrokes(char: string, options: { enabled: boolean }) {
+  return useQuery({
+    queryKey: dictionaryKeys.strokes(char),
+    queryFn: () => fetchCharacterStrokes(char),
+    enabled: options.enabled && char !== '',
+    retry: false,
+    staleTime: Infinity,
+  })
+}
+
 /**
  * Nội dung làm giàu của một từ — nghĩa theo từ loại, từ ghép, thành ngữ.
  *
