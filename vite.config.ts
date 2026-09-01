@@ -103,6 +103,32 @@ export default defineConfig({
             },
           },
           {
+            /*
+             * Hình học nét cho bảng tập viết.
+             *
+             * `CacheFirst`, KHÔNG `StaleWhileRevalidate` như chi tiết từ: API
+             * đặt `immutable` một năm vì dữ liệu này tất định và không bao giờ
+             * đổi. Chi tiết từ thì khác — nó còn được làm giàu thêm — nên ở đó
+             * revalidate là đúng.
+             *
+             * Bucket thuộc nhóm DICTIONARY, không phải PRIVATE: không trường
+             * nào theo user, nên nó KHÔNG nằm trong trình tự xóa của
+             * `clearSession()`.
+             *
+             * Hệ quả có chủ đích: chữ đã xem một lần thì tập viết được khi
+             * ngoại tuyến. Chữ chưa xem thì không, và sheet nói thẳng điều đó.
+             */
+            urlPattern: /\/api\/dictionary\/characters\/.+\/strokes$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: `${DICTIONARY_CACHE}-strokes`,
+              // 200 chữ là vài trăm KB — thoải mái cho một người học, và đủ nhỏ
+              // để không nuốt hạn mức lưu trữ của trình duyệt.
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
             urlPattern: /\/api\/dictionary\/search/,
             handler: 'NetworkFirst',
             options: {
