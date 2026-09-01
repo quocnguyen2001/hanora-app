@@ -40,8 +40,8 @@ Tuỳ chọn:
 
 Biến môi trường:
   GHCR_TOKEN     PAT có scope `write:packages`. Có thì script tự đăng nhập.
-  VITE_API_URL   Base URL của API nướng vào bundle. MẶC ĐỊNH RỖNG — đó là hình
-                 dạng production (D12), đừng điền trừ khi bạn biết vì sao.
+  VITE_API_URL   Base URL của API nướng vào bundle. Bỏ trống thì lấy từ
+                 `.env.production`; đặt biến này chỉ để ghi đè tạm khi thử.
 EOF
 }
 
@@ -139,9 +139,34 @@ fi
 
 # ---- Build ----
 
-vite_api_url="${VITE_API_URL-}"
-[[ -n "$vite_api_url" ]] &&
-  echo "⚠ VITE_API_URL='$vite_api_url' sẽ được nướng vào bundle. Production dùng chuỗi RỖNG (D12)."
+# `.dockerignore` chặn `.env*` khỏi build context, nên `--build-arg` là đường
+# DUY NHẤT giá trị này đi vào bundle. Nguồn của nó là `.env.production` — cùng
+# một file mà `vite build --mode production` sẽ đọc nếu chạy ngoài Docker, nên
+# build trong ảnh và build trên máy cho ra cùng một base URL.
+#
+# Đọc bằng sed chứ không `source`: file này là dữ liệu, không phải mã, và
+# `source` cho phép mọi dòng trong đó chạy với quyền của script.
+env_file=".env.production"
+env_file_api_url=""
+if [[ -f "$env_file" ]]; then
+  env_file_api_url=$(sed -n 's/^[[:space:]]*VITE_API_URL[[:space:]]*=[[:space:]]*//p' "$env_file" | tail -n 1)
+  env_file_api_url="${env_file_api_url%$'\r'}"          # file soạn trên Windows
+  env_file_api_url="${env_file_api_url%\"}"; env_file_api_url="${env_file_api_url#\"}"
+  env_file_api_url="${env_file_api_url%\'}"; env_file_api_url="${env_file_api_url#\'}"
+fi
+
+# Biến môi trường thắng file, để thử một base URL khác mà không phải sửa file
+# đang được commit.
+if [[ -n "${VITE_API_URL+x}" ]]; then
+  vite_api_url="$VITE_API_URL"
+  echo "⚠ VITE_API_URL='$vite_api_url' từ môi trường, ghi đè $env_file."
+else
+  vite_api_url="$env_file_api_url"
+  [[ -f "$env_file" ]] ||
+    echo "⚠ không thấy $env_file — bundle sẽ dùng đường dẫn tương đối."
+  [[ -n "$vite_api_url" ]] &&
+    echo "→ VITE_API_URL='$vite_api_url' (từ $env_file)"
+fi
 
 echo "→ $deploy_tag  ($platform)"
 
