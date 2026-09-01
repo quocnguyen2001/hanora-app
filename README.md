@@ -87,6 +87,8 @@ chính feature đó, không tập trung vào một file dùng chung.
 ['streak', 'summary']
 ['streak', 'summary', 'calendar']
 ['dictionary', 'word', id]
+['dictionary', 'enrichment', id]
+['dictionary', 'strokes', char]
 ['vocabulary', 'list', filters]
 ['vocabulary', 'ids']
 ['reviews', 'session', mode]
@@ -182,6 +184,165 @@ Nút này chỉ cần bấm MỘT lần cho mỗi truy vấn, kể cả trên m�
 dùng khác: API đọc lại dòng diễn giải đã có cho cả đường tra thường, nên lần tra
 sau đã trả `source: 'ai'` và luật 1 tự ẩn nút. Không có gì phải làm ở FE cho
 chuyện đó — nó đã đúng sẵn.
+
+## Thẻ Hán tự
+
+Mỗi chữ trong từ có một thẻ: ô chữ mẫu (`HanziPlate`) bên trái, sáu thuộc tính
+bên phải — bính âm · hình thái · lục thư · bộ · số nét · nét bút.
+
+**Không gọi API nào.** Metadata đi kèm `characters[]` của `GET /words/{id}`, nên
+số request khi mở màn chi tiết KHÔNG tăng so với trước. Một endpoint riêng cho
+mỗi chữ sẽ là 4 request thêm cho một từ 4 chữ, trên trần 60/phút theo user.
+
+### Bốn điểm dễ làm sai
+
+**Bính âm KHÔNG tra lại ở FE.** `characters[].pinyin` là âm ĐÚNG NGỮ CẢNH của
+từ — 银行 cho `行 háng`, không phải `xíng`. API chọn nó bằng cách khớp âm tiết
+(red team H11). Tra từ bảng chữ sẽ ra âm phổ biến nhất, tức dạy sai đúng thứ
+người học đang học.
+
+**Mọi thuộc tính đều nullable, và ca "thiếu hết" CHẮC CHẮN xảy ra.**
+`/words/{id}` sống 30 ngày trong bucket service worker, nên người dùng đã mở một
+từ trước khi các trường này tồn tại sẽ nhận lại bản chỉ có `char`/`pinyin`/
+`han_viet`. `parseCharacters` điền `null` cho mọi trường vắng — thiếu bước đó
+thì `character.stroke_count` là `undefined`, và `undefined !== null` nên UI
+render ra chữ "undefined". Có test khoá ca này.
+
+**Lục thư chỉ có BA giá trị.** Bảng ánh xạ nằm MỘT chỗ trong
+`CharacterAttributes`; giá trị lạ thì ẩn dòng, không hiện chuỗi tiếng Anh thô.
+Nguồn không có hội ý, chuyển chú, giả tá — xem README của `hanora-api`.
+
+**Bộ thủ giữ nguyên biến thể.** `剑` hiện bộ `刂`, không phải `刀`. Đó là hình
+dạng thật xuất hiện trong chữ. Âm Hán-Việt của bộ hiển thị viết hoa bằng CSS
+(`uppercase`), không phải viết hoa trong dữ liệu.
+
+## Tập viết Hán tự
+
+Nút **"Tập viết Hán tự"** trên mỗi thẻ chữ mở `BottomSheet`: xem hoạt hình thứ
+tự nét → tô từng nét → sai 3 lần thì hiện gợi ý → xong thì `animate-pop` +
+"Hoàn thành".
+
+Dùng `hanzi-writer` (MIT) chế độ quiz. **Không dùng lại `HandwritingPad`** của
+P19 — cái đó là NHẬN DẠNG chữ vẽ tự do, nó không biết thứ tự nét chuẩn nên
+không dạy được thứ tự nét, đúng thứ người đang tập viết cần nhất.
+
+### Năm điểm dễ làm sai
+
+**Gói chính không được tăng.** `HanziWritingPad` là chunk lười qua `React.lazy`.
+Đo trước/sau: gói chính 343,02 → 343,41 kB (gzip 108,05 → 108,15) — phần tăng là
+code UI mới, `hanzi-writer` đóng góp **0 byte**. Chunk lười riêng: 37,3 kB
+(11,5 kB gzip).
+
+**`enabled: open` là BẮT BUỘC.** Thiếu nó thì mọi thẻ chữ trên màn tải ~4 KB
+hình học ngay khi render — đúng cái mà việc tách endpoint `strokes` khỏi metadata
+vừa loại bỏ. Có test khoá điều đó.
+
+**`charDataLoader` tuỳ biến, không dùng CDN mặc định.** Mặc định `hanzi-writer`
+tự tải JSON theo chữ từ CDN của nó: một lời gọi mạng nằm ngoài tầm `api.ts` và
+không đi qua service worker. Dữ liệu ở đây đến từ `useCharacterStrokes`.
+
+**Giảm chuyển động phải xử lý TAY, và đọc HAI nguồn.** `hanzi-writer` vẽ bằng JS
+nên block `animation-duration: 0.01ms` của `app.css` — thứ tự tắt mọi hoạt hình
+khác trong app — KHÔNG chạm tới nó. Sheet đọc cả `useDisplay(s => s.motion)`
+(lựa chọn trong app) lẫn `useReducedMotion()` của `motion/react` (cài đặt hệ
+điều hành). Đây là chốt không test nào hiện có bắt được nếu nó biến mất, nên nó
+có test riêng.
+
+**Ca hỏng thật là CHUNK tải lỗi, không phải `create()` ném.** Nó xảy ra ở ranh
+giới `lazy()` và một `try/catch` bên trong pad không với tới. `FeatureErrorBoundary`
+bọc NGOÀI `Suspense` mới bắt được cả hai.
+
+### Ba câu trả lời khác nhau cho ba tình huống
+
+| Tình huống                 | Sheet nói gì                               |
+| -------------------------- | ------------------------------------------ |
+| 404 — chữ ngoài bộ dữ liệu | "Chữ này chưa có dữ liệu nét để tập viết." |
+| Lỗi mạng / 500             | "Cần kết nối để tải nét của chữ này…"      |
+| Chunk hỏng hoặc pad ném    | "Không mở được bảng tập viết…"             |
+
+Ba câu tách bạch có chủ đích: nói "chữ này không có nét" khi thật ra mất mạng là
+nói dối người dùng. 2.763/9.574 chữ thật sự không có nét (phần lớn là phồn thể).
+
+### Ngoại tuyến
+
+Rule `runtimeCaching` `CacheFirst`, bucket `hanora-dictionary-strokes`, một năm.
+`CacheFirst` chứ không `StaleWhileRevalidate` như chi tiết từ: API đặt
+`immutable` vì dữ liệu tất định. Bucket thuộc nhóm DICTIONARY nên KHÔNG bị xoá
+khi đăng xuất — không trường nào theo user.
+
+Hệ quả có chủ đích: **chữ đã xem một lần thì tập viết được khi ngoại tuyến**,
+chữ chưa xem thì không, và sheet nói thẳng điều đó.
+
+### Ghi công
+
+Dữ liệu nét từ Make Me a Hanzi theo **Arphic Public License** — dòng ghi công ở
+chân sheet là nghĩa vụ, không phải chi tiết trang trí. Cùng khuôn mà dòng
+Tatoeba và Pixabay đang giữ, và đặt đúng nơi dữ liệu được dùng.
+
+## Lượng từ
+
+Hero màn chi tiết có dòng "Lượng từ: 家 jiā · 个 gè", đứng sau badge HSK và
+trước ảnh minh hoạ. Nó thuộc hero chứ không phải một `Card` riêng vì nó là thuộc
+tính NGỮ PHÁP của chính từ đang tra — cùng loại với pinyin và âm Hán-Việt.
+
+Trước đây CC-CEDICT để lượng từ ngay trong phần nghĩa dưới dạng
+`CL:家[jia1],個|个[ge4]`, và chuỗi đó **hiện nguyên dạng mã** cho người dùng. API
+tách ra lúc import; xem mục "Lượng từ" ở README của `hanora-api`.
+
+Ẩn hẳn khi rỗng, và đó là ca THƯỜNG GẶP: đo trên nguồn thật chỉ **1.554 /
+123.646** mục có lượng từ.
+
+`measure_words` khai kiểu là MẢNG, không nullable — API chuẩn hoá `NULL` thành
+`[]` ở tầng resource. Nhưng `api.ts` vẫn chạy `parseMeasureWords` trên response,
+và đó **không phải phòng xa thừa**: `/words/{id}` nằm trong bucket service worker
+sống 30 ngày, nên người dùng đã mở một từ trước khi trường này tồn tại sẽ nhận
+lại bản cũ không có nó, và `.length` trên `undefined` sẽ ném ngay giữa hero.
+Cùng lý do đó áp cho `searchWords`.
+
+## Lớp làm giàu từ vựng
+
+`GET /api/dictionary/words/{id}/enrichment` cấp nghĩa nhóm theo **từ loại**, **từ
+ghép**, **thành ngữ** và **ghi chú dùng từ**. Toàn bộ do AI sinh, nên mỗi khối
+mang một dòng nhãn nguồn — MỘT lần cho cả khối, không phải mỗi mục.
+
+Nhãn phải ở TỪNG khối chứ không một lần cho cả trang: bốn khối này nằm xen giữa
+nội dung có nguồn thật (Tatoeba, CC-CEDICT), nên một nhãn duy nhất ở đầu trang
+sẽ đọc ra như thể cả trang do AI sinh.
+
+Đây là lớp lười thứ BA trên màn chi tiết, sau ảnh minh hoạ và dịch câu ví dụ, và
+nó bám cùng khuôn `useWordIllustration`: `retry: false`, vòng poll dừng khi khác
+`pending`, trần `LAZY_MAX_POLLS`. Ba lớp × trần 10 lượt = 30 request cho một lần
+mở trang ở ca xấu nhất, so với trần 60/phút theo user — chấp nhận được cho một
+màn người dùng mở có chủ đích, nhưng màn nào mở từ hàng loạt phải hạ trần xuống.
+
+### Ba điểm dễ làm sai
+
+**`senses` thay chỗ `definitions_vi`, không đứng cạnh nó.** Không có luật này
+thì màn hình có ba danh sách nghĩa: `senses` (AI, nhóm theo từ loại),
+`definitions_vi` (CVDICT), `definitions_en` (CC-CEDICT) — và hai danh sách nghĩa
+Việt cạnh nhau nói gần như cùng một việc. `WordDetailHero` nhận
+`suppressVietnameseDefinitions` (mặc định `false`, nên `GalleryPage` không đổi).
+
+`definitions_en` **luôn ở lại** — luật R1, và càng đúng ở đây: thứ vừa thay chỗ
+nghĩa Việt là nội dung AI chưa ai rà, nên dòng tiếng Anh là cơ chế đối chiếu duy
+nhất người học có.
+
+Hệ quả đã biết: lớp làm giàu tải lười, nên phần lớn lần mở hiện
+`definitions_vi` trước rồi ĐỔI sang `senses`. Một lần đổi, chấp nhận được.
+
+**Nhóm `senses` ở FE, không ở API.** Model trả danh sách PHẲNG và lặp lại cùng
+một `pos` ở hai mục rời nhau. Gom lại là việc trình bày, và làm ở FE thì response
+giữ nguyên thứ tự model chọn — thứ tự đó mang thông tin (nghĩa phổ biến trước).
+
+**Từ ghép có `word_id` thì bấm được, không có thì tĩnh.** `null` là trạng thái
+hợp lệ ở hai ca: bản làm giàu sinh trước khi API biết tra ngược, và từ model đưa
+ra nhưng không có trong từ điển. Cho tất cả trông bấm được rồi để một nửa bấm
+không ra gì tệ hơn hẳn — cùng luật mà `SentenceToken.word_id: null` đang giữ.
+
+**KHÔNG đọc `characters` và `examples` của payload làm giàu.** `characters` mang
+bộ thủ và số nét do model sinh, trong khi nguồn tất định cho hai trường đó đi
+kèm `WordDetail.characters`; đọc bản của model là dựng nguồn thứ hai để hai bên
+lệch nhau. `examples` thì trùng với khối "Ví dụ" Tatoeba vốn đã có bản dịch riêng.
 
 ## Học theo chủ đề
 
