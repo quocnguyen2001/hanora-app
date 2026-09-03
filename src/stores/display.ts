@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import {
   DEFAULT_DISPLAY,
   STORAGE_KEY,
+  type AccentChoice,
   type DisplaySettings,
   type FontChoice,
   type MotionChoice,
@@ -24,6 +25,7 @@ import {
  */
 interface DisplayState extends DisplaySettings {
   setTheme: (theme: Theme) => void
+  setAccent: (accent: AccentChoice) => void
   setFont: (font: FontChoice) => void
   setFontScale: (fontScale: number) => void
   setTextTone: (textTone: TextTone) => void
@@ -36,6 +38,7 @@ export const useDisplay = create<DisplayState>()(
     (set) => ({
       ...DEFAULT_DISPLAY,
       setTheme: (theme) => set({ theme }),
+      setAccent: (accent) => set({ accent }),
       setFont: (font) => set({ font }),
       setFontScale: (fontScale) => set({ fontScale }),
       setTextTone: (textTone) => set({ textTone }),
@@ -59,6 +62,7 @@ export const useDisplay = create<DisplayState>()(
 export function selectDisplaySettings(state: DisplayState): DisplaySettings {
   return {
     theme: state.theme,
+    accent: state.accent,
     font: state.font,
     fontScale: state.fontScale,
     textTone: state.textTone,

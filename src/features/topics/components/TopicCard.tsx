@@ -8,7 +8,7 @@ import type { Topic } from '../api'
  * Một thẻ chủ đề trên lưới.
  *
  * Thanh tiến độ dựng bằng HAI div và một `%`, không thư viện — cùng lập luận
- * chi phí mà `BottomNavigation` đã ghi khi từ chối kéo `motion` vào bundle
+ * chi phí mà `MainNavigation` đã ghi khi từ chối kéo `motion` vào bundle
  * chính cho một hiệu ứng trượt.
  */
 export function TopicCard({ topic, onDelete }: { topic: Topic; onDelete?: () => void }) {

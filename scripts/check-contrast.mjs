@@ -38,12 +38,25 @@ const dark = { ...light, ...readBlock(":root[data-theme='dark']") }
 
 const TONES = ['ink', 'soft', 'warm', 'high']
 
+/** Phải khớp `ACCENTS` trong `src/lib/display-theme.ts`. */
+const ACCENTS = ['rose', 'tangerine', 'honey', 'mint', 'sky', 'violet']
+
 function toneColors(tone, theme) {
   const base = theme === 'dark' ? dark : light
   const selector =
     theme === 'dark'
       ? `:root[data-theme='dark'][data-text-tone='${tone}']`
       : `:root[data-text-tone='${tone}']`
+
+  return { ...base, ...readBlock(selector) }
+}
+
+function accentColors(accent, theme) {
+  const base = theme === 'dark' ? dark : light
+  const selector =
+    theme === 'dark'
+      ? `:root[data-theme='dark'][data-accent='${accent}']`
+      : `:root[data-accent='${accent}']`
 
   return { ...base, ...readBlock(selector) }
 }
@@ -82,13 +95,18 @@ function ratio(foreground, background) {
  * HAI TẦNG, và sự phân biệt này quan trọng:
  *
  *   `tone`  — do tính năng tông chữ sinh ra. Thuộc phạm vi, PHẢI đạt, chặn CI.
+ *   `semantic` — đúng/sai/cảnh báo. Không đổi theo tông cũng không đổi theo màu
+ *             chủ đạo, nên đo một lần mỗi chủ đề. BÁO, không chặn, cùng lý do
+ *             với `brand`: chúng chốt trong bảng màu thương hiệu.
  *   `ui`    — cặp màu do một quyết định giao diện sinh ra sau này (đĩa dấu
  *             đúng/sai). Cũng PHẢI đạt và cũng chặn CI, tách khỏi `tone` chỉ vì
  *             nó không đổi theo tông chữ nên không cần đọc lại bốn lần.
- *   `brand` — màu thương hiệu chốt ở `.prompts/hanora-design-context/brand.md`.
+ *   `brand` — họ màu primary, đo lại cho TỪNG màu chủ đạo × chủ đề.
  *             Hồng #ff6f91 trên nền trắng chỉ đạt 2,65:1, và nó đã như thế từ
- *             trước lần thay đổi này. Sửa nghĩa là đổi màu thương hiệu — quyết
- *             định của người dùng, không phải của script. Nên: BÁO, không chặn.
+ *             trước khi có trục màu chủ đạo. Sửa nghĩa là đổi màu thương hiệu —
+ *             quyết định của người dùng, không phải của script. Nên: BÁO, không
+ *             chặn. Năm màu thêm vào sau được cân để đạt HOẶC vượt mức của hồng
+ *             mặc định; bảng dưới là chỗ kiểm chứng điều đó, không phải chỗ giấu.
  *
  * Đừng "sửa" bằng cách hạ ngưỡng nhóm `brand` xuống cho xanh. Con số phải nói
  * thật, và ai đó cần nhìn thấy nó để quyết định.
@@ -144,14 +162,14 @@ const CHECKS = [
     min: 4.5,
   },
   {
-    scope: 'brand',
+    scope: 'semantic',
     label: 'error / surface',
     fg: '--color-error',
     bg: '--color-surface',
     min: 4.5,
   },
   {
-    scope: 'brand',
+    scope: 'semantic',
     label: 'success / surface',
     fg: '--color-success',
     bg: '--color-surface',
@@ -187,37 +205,71 @@ const CHECKS = [
 let blockingFailures = 0
 const brandFailures = new Map()
 
-/*
- * Kiểm tra `ui` không phụ thuộc tông chữ, nên nó chỉ chạy ở vòng tông ĐẦU TIÊN
- * của mỗi chủ đề. Chạy cả bốn vòng thì bảng in ra bốn dòng y hệt và một cặp
- * trượt sẽ bị đếm bốn lần, khiến con số cuối bảng nói sai mức độ.
+/**
+ * Một vòng đo. `mark` quyết định theo scope: `brand` chỉ cảnh báo, còn lại chặn.
+ *
+ * Trả về các dòng đã định dạng thay vì tự in, để chỗ gọi đặt tiêu đề khối.
  */
-for (const theme of ['light', 'dark']) {
-  for (const tone of TONES) {
-    const colors = toneColors(tone, theme)
-    const rows = []
-    const firstTone = tone === TONES[0]
+function measure(colors, checks, heading) {
+  const rows = []
 
-    for (const check of CHECKS.filter((c) => c.scope !== 'ui' || firstTone)) {
-      const value = ratio(colors[check.fg], colors[check.bg])
-      const pass = value >= check.min
-      let mark = 'PASS'
+  for (const check of checks) {
+    const value = ratio(colors[check.fg], colors[check.bg])
+    const pass = value >= check.min
+    let mark = 'PASS'
 
-      if (!pass && check.scope !== 'brand') {
-        blockingFailures += 1
-        mark = 'FAIL'
-      } else if (!pass) {
-        // Màu thương hiệu không đổi theo tông, nên gộp lại theo chủ đề để bảng
-        // đọc được thay vì lặp cùng một dòng bốn lần.
-        brandFailures.set(`${theme} · ${check.label}`, value)
-        mark = 'WARN'
-      }
-
-      rows.push(`  ${mark}  ${value.toFixed(2).padStart(5)}:1  (cần ${check.min})  ${check.label}`)
+    if (!pass && check.scope !== 'brand' && check.scope !== 'semantic') {
+      blockingFailures += 1
+      mark = 'FAIL'
+    } else if (!pass) {
+      brandFailures.set(`${heading} · ${check.label}`, value)
+      mark = 'WARN'
     }
 
-    console.log(`\n${theme === 'dark' ? 'TỐI ' : 'SÁNG'} · tông ${tone}`)
-    console.log(rows.join('\n'))
+    rows.push(`  ${mark}  ${value.toFixed(2).padStart(5)}:1  (cần ${check.min})  ${check.label}`)
+  }
+
+  console.log(`\n${heading}`)
+  console.log(rows.join('\n'))
+}
+
+const TONE_CHECKS = CHECKS.filter((check) => check.scope === 'tone')
+const UI_CHECKS = CHECKS.filter((check) => check.scope === 'ui')
+const BRAND_CHECKS = CHECKS.filter((check) => check.scope === 'brand')
+const SEMANTIC_CHECKS = CHECKS.filter((check) => check.scope === 'semantic')
+
+/*
+ * BA vòng tách rời, không phải một vòng lồng nhau.
+ *
+ * Trước đây cả ba scope chạy chung trong vòng tông, và `ui` phải tự lọc bằng
+ * `firstTone` để khỏi in bốn dòng y hệt. Trục màu chủ đạo làm cách đó sập hẳn:
+ * `brand` giờ đổi theo MÀU chứ không theo tông, nên chạy nó trong vòng tông sẽ
+ * đo đúng một màu (màu đang active của `@theme`) và bỏ sót năm màu còn lại —
+ * một bảng xanh nói dối.
+ *
+ * Mỗi scope chạy đúng trục mà nó phụ thuộc:
+ *   tone  × theme  — chữ đổi theo tông
+ *   theme          — đĩa phản hồi không đổi theo trục nào khác
+ *   accent × theme — họ primary đổi theo màu chủ đạo
+ */
+for (const theme of ['light', 'dark']) {
+  const label = theme === 'dark' ? 'TỐI ' : 'SÁNG'
+
+  for (const tone of TONES) {
+    measure(toneColors(tone, theme), TONE_CHECKS, `${label} · tông ${tone}`)
+  }
+
+  measure(theme === 'dark' ? dark : light, UI_CHECKS, `${label} · đĩa phản hồi`)
+
+  /*
+   * Đúng/sai KHÔNG đổi theo màu chủ đạo — người dùng chọn xanh biển thì phản
+   * hồi sai vẫn phải đỏ. Đo ở đây, ngoài vòng màu, nếu không bảng cảnh báo lặp
+   * cùng hai dòng đó sáu lần và những cặp thật sự đổi bị chìm đi.
+   */
+  measure(theme === 'dark' ? dark : light, SEMANTIC_CHECKS, `${label} · màu ngữ nghĩa`)
+
+  for (const accent of ACCENTS) {
+    measure(accentColors(accent, theme), BRAND_CHECKS, `${label} · màu ${accent}`)
   }
 }
 
@@ -230,10 +282,7 @@ if (brandFailures.size > 0) {
   console.log('Đổi những màu này là đổi nhận diện thương hiệu — cần người dùng quyết.')
 }
 
-const required = CHECKS.filter((check) => check.scope !== 'brand')
-const toneChecks = required.filter((check) => check.scope === 'tone').length
-const uiChecks = required.length - toneChecks
-const total = (toneChecks * TONES.length + uiChecks) * 2
+const total = (TONE_CHECKS.length * TONES.length + UI_CHECKS.length) * 2
 
 console.log(
   blockingFailures === 0

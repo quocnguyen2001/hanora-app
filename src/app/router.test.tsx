@@ -107,7 +107,7 @@ describe('router', () => {
     expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
   })
 
-  it('điều hướng được bằng bottom navigation', async () => {
+  it('điều hướng được bằng menu chính', async () => {
     signIn()
     const user = userEvent.setup()
     const router = renderApp('/search')
@@ -119,18 +119,18 @@ describe('router', () => {
   })
 })
 
-describe('bottom navigation', () => {
-  it('NĂM tab trên mobile, SÁU mục trên desktop, thứ tự cố định', async () => {
+describe('điều hướng chính', () => {
+  it('NĂM mục, cùng một danh sách ở mọi cỡ màn, thứ tự cố định', async () => {
     /*
      * Trong suốt vạch ship MVP đây là 4 tab; Thống kê thêm ở P17; Chủ đề thêm
      * khi màn học theo chủ đề lên. Test này từng khóa con số 4 rồi 5, và mỗi
      * lần đỏ đều đúng lúc thanh điều hướng thật sự đổi — đó là hành vi mong
      * muốn của nó, không phải phiền toái.
      *
-     * "Tài khoản" nằm CUỐI và chỉ hiện trên desktop: thanh dưới nhường chỗ cho
-     * Chủ đề (việc hàng ngày), còn Tài khoản lùi lên icon ở header. Vị trí cuối
-     * là ràng buộc thật, không phải thẩm mỹ — pill nền dựa vào việc chỉ số của
-     * năm mục đầu giống nhau ở cả hai bố cục.
+     * Từng có mục thứ SÁU ("Tài khoản") chỉ hiện trên desktop, vì sidebar dọc
+     * có chỗ còn thanh dưới thì không. Bỏ sidebar là bỏ luôn lý do đó: menu
+     * ngang chịu cùng ràng buộc bề ngang như thanh dưới, nên hai bố cục mang
+     * ĐÚNG một danh sách và không còn mục nào ẩn theo cỡ màn.
      */
     signIn()
     renderApp('/search')
@@ -144,19 +144,15 @@ describe('bottom navigation', () => {
       'Ôn tập',
       'Chủ đề',
       'Thống kê',
-      'Tài khoản',
     ])
 
-    // Đúng MỘT mục chỉ-có-trên-desktop, và nó phải là mục cuối.
-    const desktopOnly = links.filter((link) => link.closest('li')?.className.includes('hidden'))
-
-    expect(desktopOnly).toHaveLength(1)
-    expect(desktopOnly[0]?.textContent).toBe('Tài khoản')
+    // Không mục nào bị ẩn theo cỡ màn — đó là cả điểm của việc gộp hai danh sách.
+    expect(links.filter((link) => link.closest('li')?.className.includes('hidden'))).toHaveLength(0)
   })
 
-  it('mobile có lối vào Tài khoản ở header vì thanh dưới không còn tab đó', async () => {
-    // Bỏ tab mà không thay lối vào là khoá người dùng mobile khỏi màn Tài
-    // khoản — nơi có đăng xuất và mọi cài đặt.
+  it('Tài khoản có lối vào ở header ở MỌI cỡ màn', async () => {
+    // Nó rời khỏi menu chính, nên nếu lối vào ở header cũng mất thì người dùng
+    // bị khoá khỏi màn có đăng xuất và mọi cài đặt.
     signIn()
     renderApp('/search')
 
@@ -170,13 +166,19 @@ describe('bottom navigation', () => {
 
     expect(outsideNav).toHaveLength(1)
     expect(outsideNav[0]).toHaveAttribute('href', '/account')
-    // Ẩn trên desktop: sidebar đã có mục Tài khoản đầy đủ.
-    expect(outsideNav[0]?.className).toContain('lg:hidden')
+    // KHÔNG còn `lg:hidden`: sidebar từng có mục Tài khoản riêng, giờ thì không.
+    expect(outsideNav[0]?.className).not.toContain('lg:hidden')
   })
 
   it('chỉ có MỘT landmark điều hướng, không phải hai', async () => {
-    // Hai `<nav>` trùng tên (bản mobile + bản desktop cùng nằm trong DOM) khiến
-    // screen reader thấy hai vùng điều hướng và không biết cái nào đang thật.
+    /*
+     * Hai `<nav>` trùng tên khiến screen reader thấy hai vùng điều hướng và
+     * không biết cái nào đang thật.
+     *
+     * Ràng buộc này SIẾT LẠI sau khi bỏ sidebar, không nới ra. Menu giờ nằm
+     * trong `<header>` và phải phục vụ cả hai bố cục từ một chỗ, nên cám dỗ
+     * "render thêm một bản cho mobile" lớn hơn hẳn lúc nó là component riêng.
+     */
     signIn()
     renderApp('/search')
 

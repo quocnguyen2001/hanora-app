@@ -31,7 +31,7 @@ npm run test:watch    # Vitest watch
 npm run test:coverage # Vitest + báo cáo độ phủ
 npm run docker:publish # build ảnh và đẩy lên GHCR — xem "Ảnh Docker & GHCR"
 
-node scripts/check-contrast.mjs  # đo tương phản WCAG mọi tông chữ × chủ đề
+node scripts/check-contrast.mjs  # đo tương phản WCAG mọi tông chữ / màu chủ đạo × chủ đề
 node scripts/export-icons.mjs    # xuất icon PWA từ src/assets/icon-source.svg
 ```
 
@@ -46,7 +46,7 @@ src/
 ├── app/            router.tsx, providers.tsx
 ├── components/
 │   ├── ui/         component dùng chung, KHÔNG biết gì về API
-│   ├── layout/     AppShell, BottomNavigation
+│   ├── layout/     AppShell, AppHeader, MainNavigation
 │   └── common/     component ghép, dùng ở nhiều feature
 ├── features/       dictionary/ vocabulary/ review/ stats/ auth/ settings/
 ├── hooks/          hook dùng chung, không thuộc feature nào
@@ -172,30 +172,51 @@ echo "$GHCR_TOKEN" | docker login ghcr.io -u quocnguyen2001 --password-stdin
 
 ## Điều hướng
 
-**Mobile — 5 tab**: Tìm kiếm · Kho từ · Ôn tập · Chủ đề · Thống kê.
+**NĂM mục, giống nhau ở mọi cỡ màn**: Tìm kiếm · Kho từ · Ôn tập · Chủ đề ·
+Thống kê. Chỉ HÌNH DẠNG đổi — thanh cố định dưới đáy màn ở mobile, menu ngang
+giữa header từ `lg`.
+
 Header mang thêm **chip chuỗi ngày** (`/streak`) — nó tự ẩn khi người dùng chưa
-có chuỗi nào, nên không vi phạm luật "không ship nút chết".
-**Desktop — 6 mục**: cùng năm mục trên, cộng Tài khoản.
+có chuỗi nào, nên không vi phạm luật "không ship nút chết" — cùng nút đổi chủ
+đề, lối tắt Cài đặt (chỉ từ `lg`) và Tài khoản.
 
 Route `/stats` tồn tại từ P2 để deep link không gãy, nhưng tab Thống kê chỉ xuất
 hiện cùng P17 — không ship tab dẫn tới màn trống. Tab Chủ đề thêm theo cùng
 nguyên tắc, khi màn học theo chủ đề đã có nội dung thật.
 
-### Vì sao "Tài khoản" rời thanh dưới trên mobile
+### Desktop không còn sidebar
 
-Thanh dưới 360px chia SÁU là 60px mỗi tab, và ở cỡ chữ 130% (mức lớn nhất người
-dùng chọn được ở màn Hiển thị & chữ) nhãn dài như "Thống kê", "Tài khoản" bắt
-đầu chật. Nên thay vì nhồi tab thứ sáu, Tài khoản lùi lên **icon ở header**
-(`lg:hidden`) và nhường chỗ cho Chủ đề.
+Điều hướng desktop từng là một cột 224px bên trái, và nó tính phí hai lần: mất
+hẳn 224px bề ngang, cộng một trục đối xứng thứ hai khiến nội dung không bao giờ
+nằm giữa cửa sổ. Với một app chỉ có năm màn cấp một, cột đó chứa năm dòng chữ và
+một khoảng trắng dài — dáng admin dashboard mà `AppShell` vốn đặt ra để tránh.
 
-Đó là đánh đổi theo TẦN SUẤT: học từ mới là việc hàng ngày, Tài khoản là màn mở
-vài lần rồi thôi. Sidebar desktop xếp dọc nên không có ràng buộc bề ngang đó và
-vẫn giữ đủ sáu mục.
+Bỏ nó kéo theo hai thay đổi có thật:
 
-`BottomNavigation` vẫn là **một `<nav>` duy nhất** cho mọi cỡ màn — mục
-`desktopOnly` ẩn bằng CSS chứ không bị bỏ khỏi DOM, nên screen reader vẫn chỉ
-thấy một landmark điều hướng. Mục đó phải nằm CUỐI mảng `TABS`: pill nền dựa
-vào việc chỉ số của năm mục đầu giống nhau ở cả hai bố cục.
+- **"Tài khoản" rời hẳn khỏi menu.** Trước đây nó là mục thứ sáu chỉ-có-trên-
+  desktop, vì sidebar dọc có chỗ còn thanh dưới 360px chia sáu thì mỗi tab còn
+  60px (và ở cỡ chữ 130% thì nhãn dài bắt đầu chật). Menu ngang chịu ĐÚNG ràng
+  buộc bề ngang đó, nên lý do giữ hai danh sách khác nhau biến mất. Nó thành
+  icon ở header, ở mọi cỡ màn — đánh đổi theo TẦN SUẤT vẫn nguyên: học từ là
+  việc hàng ngày, Tài khoản là màn mở vài lần rồi thôi.
+- **Cột nội dung là 1024px chứ không phải 1200px.** Giữ 1200 là âm thầm nới cột
+  ra rộng hơn cả lúc còn sidebar — xem docstring `AppShell` để biết vì sao bốn
+  trong sáu màn (danh sách một cột) không muốn điều đó.
+
+### Một `<nav>`, hai hình dạng
+
+`MainNavigation` là **một `<nav>` duy nhất** cho mọi cỡ màn, đổi bố cục bằng CSS.
+Hai `<nav>` trùng tên trong DOM là hai landmark điều hướng và screen reader
+không biết cái nào đang thật.
+
+Ràng buộc kéo theo, dễ phá mà không báo lỗi: component render BÊN TRONG
+`<header>` (vì trên desktop menu nằm cùng hàng với wordmark), còn ở mobile nó
+`position: fixed` để rơi xuống đáy màn. Nên **`<header>` không được có
+`backdrop-filter`, `filter` hay `transform`** — bốn thuộc tính đó biến phần tử
+thành containing block của mọi con `fixed`, và thanh điều hướng sẽ dính vào đáy
+header thay vì đáy màn hình. Nền mờ của header vì thế vẽ bằng một lớp phủ
+`absolute` tách rời. `AppShell` cũng phải tự đệm đáy cho `<main>`: `fixed` không
+tự chừa chỗ.
 
 `/account/settings` là trang con, cố ý KHÔNG có mục riêng.
 
@@ -369,8 +390,10 @@ màn người dùng mở có chủ đích, nhưng màn nào mở từ hàng lo�
 **`senses` thay chỗ `definitions_vi`, không đứng cạnh nó.** Không có luật này
 thì màn hình có ba danh sách nghĩa: `senses` (AI, nhóm theo từ loại),
 `definitions_vi` (CVDICT), `definitions_en` (CC-CEDICT) — và hai danh sách nghĩa
-Việt cạnh nhau nói gần như cùng một việc. `WordDetailHero` nhận
-`suppressVietnameseDefinitions` (mặc định `false`, nên `GalleryPage` không đổi).
+Việt cạnh nhau nói gần như cùng một việc.
+
+`WordDetailHero` nhận `suppressVietnameseDefinitions` (mặc định `false`, nên
+`GalleryPage` không đổi).
 
 `definitions_en` **luôn ở lại** — luật R1, và càng đúng ở đây: thứ vừa thay chỗ
 nghĩa Việt là nội dung AI chưa ai rà, nên dòng tiếng Anh là cơ chế đối chiếu duy
@@ -513,19 +536,28 @@ lệch nhau trên hai màn.
 
 ## Tùy chỉnh hiển thị
 
-Màn `/account/settings` đổi được ba trục — chủ đề sáng/tối, tông chữ, cỡ chữ —
-cộng font giao diện và độ mượt hiệu ứng. Lưu `localStorage` dưới khóa
-`hanora.display`, không đồng bộ server: đây là tùy chọn của THIẾT BỊ.
+Màn `/account/settings` đổi được bốn trục — chủ đề sáng/tối, **màu chủ đạo**,
+tông chữ, cỡ chữ — cộng font giao diện và độ mượt hiệu ứng. Lưu `localStorage`
+dưới khóa `hanora.display`, không đồng bộ server: đây là tùy chọn của THIẾT BỊ.
 
-Cả ba trục đổi **giá trị token**, không đổi tên class. Hệ quả cần biết trước khi
+Cả bốn trục đổi **giá trị token**, không đổi tên class. Hệ quả cần biết trước khi
 sửa giao diện:
 
 - **KHÔNG có class `dark:` nào trong codebase, và đừng thêm.** `bg-surface` viết
   từ trước dark mode vẫn tự đúng ở chế độ tối.
-- Bảng màu tối và bốn tông chữ nằm cuối `src/styles/tokens.css`, cố ý đặt NGOÀI
-  `@layer` để đè được `@theme`.
-- Thêm hay sửa một mã màu chữ thì phải chạy `node scripts/check-contrast.mjs`.
-  Script parse thẳng `tokens.css` và thoát khác 0 khi có tông trượt WCAG AA.
+- Bảng màu tối, sáu màu chủ đạo và bốn tông chữ nằm cuối `src/styles/tokens.css`,
+  cố ý đặt NGOÀI `@layer` để đè được `@theme`.
+- **Màu chủ đạo là PRESET, không phải ô chọn màu tự do.** Mỗi màu phải cho ra
+  năm giá trị dùng ở năm vai khác nhau (`primary`, `-deep`, `-soft`, `-pale`,
+  `on-primary`) × hai chủ đề, và không phép biến đổi tự động nào giữ được tương
+  phản cho cả mười. Thêm một màu là thêm HAI khối: `:root[data-accent='x']` và
+  `:root[data-theme='dark'][data-accent='x']`. Khối tối phải khai LẠI ĐỦ mọi
+  thuộc tính khối sáng đặt (kể cả `--color-edge`), vì hai selector cùng trọng số
+  (0,2,0) với khối `[data-theme='dark']` — thiếu một dòng là bảng sáng rò sang
+  chế độ tối, im lặng.
+- Thêm hay sửa một mã màu thì phải chạy `node scripts/check-contrast.mjs`.
+  Script parse thẳng `tokens.css`, đo mọi tông chữ × chủ đề và mọi màu chủ đạo ×
+  chủ đề, và thoát khác 0 khi có tông trượt WCAG AA.
 - Mọi token chữ nhân với `--font-scale`. Viết cỡ chữ bằng giá trị thô
   (`text-2xl`, `text-[1.75rem]`) là tạo ra chỗ không co giãn theo lựa chọn của
   người dùng — dùng token.

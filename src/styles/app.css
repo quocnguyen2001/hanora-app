@@ -16,6 +16,34 @@
 @source '../../index.html';
 
 /*
+ * ═════════════════════════════════════════════════════════════════════════════
+ * NỀN ỨNG DỤNG — quầng sáng màu chủ đạo ở đỉnh trang
+ *
+ * Thay cho `bg-linear-to-b from-primary-pale via-background to-background` mà
+ * `AppShell` dùng trước đây. Gradient đó có một lỗi im lặng: nó kéo theo CHIỀU
+ * CAO TRANG. Trên màn Tìm kiếm cao một màn hình thì nó tan sau ~400px đúng như
+ * thiết kế; trên màn Kho từ có 200 từ thì cùng một gradient tan sau 1500px, tức
+ * là nửa trang trên nhuốm màu — đúng thứ mà luật "màu chủ đạo là accent, không
+ * phủ nền lớn" cấm.
+ *
+ * `background-size: 100% 32rem` + `no-repeat` khoá vệt màu vào 512px đầu tiên
+ * bất kể trang dài bao nhiêu. Phần còn lại là `--color-background` của `body`.
+ *
+ * Lớp radial phía trên lớp linear: một quầng rộng, tâm nằm NGOÀI khung (-8rem)
+ * nên người dùng chỉ thấy phần chân của nó toả xuống. Đây là thứ làm đỉnh trang
+ * có chiều sâu thay vì là một mảng phẳng — và vì nó đọc `--color-primary-soft`,
+ * nó tự đổi theo màu chủ đạo mà không cần biết trục đó tồn tại.
+ * ═════════════════════════════════════════════════════════════════════════════
+ */
+@utility app-canvas {
+  background-image:
+    radial-gradient(60rem 26rem at 50% -8rem, var(--color-primary-soft), transparent 70%),
+    linear-gradient(to bottom, var(--color-primary-pale), transparent);
+  background-repeat: no-repeat;
+  background-size: 100% 32rem;
+}
+
+/*
  * Utility bóng đổ — khai tay để ĐỌC biến lúc chạy.
  *
  * KHÔNG khai `--shadow-*` trong `@theme` của `tokens.css`. Tailwind v4 tách màu

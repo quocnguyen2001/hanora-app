@@ -8,12 +8,14 @@ import { Card } from '@/components/ui/Card'
 import { Segmented, type SegmentedItem } from '@/components/ui/Segmented'
 import {
   FONT_SCALES,
+  resolveTheme,
   type FontChoice,
   type MotionChoice,
   type TextTone,
   type Theme,
 } from '@/lib/display-theme'
 import { useDisplay } from '@/stores/display'
+import { AccentPicker } from '../components/AccentPicker'
 
 const THEME_ITEMS: readonly SegmentedItem<Theme>[] = [
   { value: 'light', label: 'Sáng', icon: <SunIcon size={20} /> },
@@ -106,6 +108,25 @@ export function DisplaySettingsPage() {
           onChange={display.setTheme}
           label="Chủ đề"
           columns="even"
+        />
+      </Section>
+
+      {/*
+        Màu chủ đạo đứng NGAY SAU Chủ đề, trước Font chữ.
+
+        Hai mục đầu là hai nửa của cùng một câu hỏi ("app trông như thế nào"),
+        và chúng ăn chung một khối xem trước ở trên. Đẩy màu xuống cuối thì
+        người dùng phải cuộn qua ba mục về chữ mới tới thứ đổi nhiều nhất về
+        mặt thị giác.
+      */}
+      <Section
+        title="Màu chủ đạo"
+        note="Đổi màu nút, tab đang chọn, viền và mọi điểm nhấn trong app. Chữ và nền giữ nguyên."
+      >
+        <AccentPicker
+          value={display.accent}
+          onChange={display.setAccent}
+          theme={resolveTheme(display.theme)}
         />
       </Section>
 

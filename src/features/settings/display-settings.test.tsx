@@ -3,11 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  ACCENT_META,
   applyDisplay,
   DEFAULT_DISPLAY,
   resolveTheme,
   STORAGE_KEY,
-  THEME_COLOR,
+  themeColor,
 } from '@/lib/display-theme'
 import { useDisplay } from '@/stores/display'
 import { DisplaySettingsPage } from './pages/DisplaySettingsPage'
@@ -38,7 +39,7 @@ beforeEach(() => {
   useDisplay.setState({ ...DEFAULT_DISPLAY })
   window.localStorage.removeItem(STORAGE_KEY)
 
-  for (const key of ['theme', 'font', 'textTone', 'motion']) {
+  for (const key of ['theme', 'accent', 'font', 'textTone', 'motion']) {
     delete document.documentElement.dataset[key]
   }
 
@@ -70,9 +71,10 @@ describe('resolveTheme', () => {
 })
 
 describe('applyDisplay', () => {
-  it('đặt đủ bốn thuộc tính data và biến cỡ chữ lên <html>', () => {
+  it('đặt đủ năm thuộc tính data và biến cỡ chữ lên <html>', () => {
     applyDisplay({
       theme: 'dark',
+      accent: 'violet',
       font: 'lora',
       fontScale: 1.2,
       textTone: 'warm',
@@ -82,6 +84,7 @@ describe('applyDisplay', () => {
     const root = document.documentElement
 
     expect(root.dataset.theme).toBe('dark')
+    expect(root.dataset.accent).toBe('violet')
     expect(root.dataset.font).toBe('lora')
     expect(root.dataset.textTone).toBe('warm')
     expect(root.dataset.motion).toBe('reduced')
@@ -98,13 +101,32 @@ describe('applyDisplay', () => {
   it('đổi cả màu thanh trạng thái theo chủ đề', () => {
     applyDisplay({ ...DEFAULT_DISPLAY, theme: 'dark' })
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
-      THEME_COLOR.dark,
+      themeColor('dark', DEFAULT_DISPLAY.accent),
     )
 
     applyDisplay({ ...DEFAULT_DISPLAY, theme: 'light' })
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
-      THEME_COLOR.light,
+      themeColor('light', DEFAULT_DISPLAY.accent),
     )
+  })
+
+  /*
+   * Thanh trạng thái là phần app tràn ra ngoài khung cửa sổ. Nó giữ hồng trong
+   * khi cả app đã sang xanh thì người dùng thấy đúng chỗ nối — và đây là lỗi
+   * KHÔNG tự lộ ra khi test trên trình duyệt desktop, chỉ thấy trên Android khi
+   * cài PWA.
+   */
+  it('màu thanh trạng thái theo màu chủ đạo ở chế độ sáng', () => {
+    applyDisplay({ ...DEFAULT_DISPLAY, theme: 'light', accent: 'mint' })
+
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
+      ACCENT_META.mint.swatch,
+    )
+  })
+
+  // Nền tối là một màu duy nhất cho mọi màu chủ đạo — trục này không đụng nền.
+  it('chế độ tối giữ nguyên màu thanh trạng thái bất kể màu chủ đạo', () => {
+    expect(themeColor('dark', 'mint')).toBe(themeColor('dark', 'rose'))
   })
 })
 
@@ -133,15 +155,26 @@ describe('store hiển thị', () => {
     const store = useDisplay.getState()
 
     store.setTheme('dark')
+    store.setAccent('sky')
     store.setFont('lora')
     store.setTextTone('high')
     store.setMotion('reduced')
     store.reset()
 
     expect(useDisplay.getState().theme).toBe(DEFAULT_DISPLAY.theme)
+    expect(useDisplay.getState().accent).toBe(DEFAULT_DISPLAY.accent)
     expect(useDisplay.getState().font).toBe(DEFAULT_DISPLAY.font)
     expect(useDisplay.getState().textTone).toBe(DEFAULT_DISPLAY.textTone)
     expect(useDisplay.getState().motion).toBe(DEFAULT_DISPLAY.motion)
+  })
+
+  /*
+   * Mặc định PHẢI là màu thương hiệu. Người dùng đang chạy bản cũ không có trục
+   * này, và bản mới không được đổi màu app của họ chỉ vì cập nhật.
+   */
+  it('mặc định là màu thương hiệu, không phải một màu bất kỳ trong danh sách', () => {
+    expect(DEFAULT_DISPLAY.accent).toBe('rose')
+    expect(ACCENT_META.rose.swatch).toBe('#ff6f91')
   })
 })
 
@@ -163,6 +196,7 @@ describe('màn Hiển thị & chữ', () => {
      * panel nội dung để chuyển qua lại, và một nhóm cài đặt thì không.
      */
     expect(screen.getByRole('radiogroup', { name: 'Chủ đề' })).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: 'Màu chủ đạo' })).toBeInTheDocument()
     expect(screen.getByRole('radiogroup', { name: 'Font chữ' })).toBeInTheDocument()
     expect(screen.getByRole('radiogroup', { name: 'Tông chữ' })).toBeInTheDocument()
     expect(screen.queryAllByRole('tablist')).toHaveLength(0)
@@ -201,6 +235,39 @@ describe('màn Hiển thị & chữ', () => {
     await user.keyboard('{ArrowRight}')
 
     expect(useDisplay.getState().theme).toBe('light')
+  })
+
+  it('chọn màu chủ đạo ghi thẳng vào store', async () => {
+    const user = userEvent.setup()
+
+    renderPage()
+    const group = screen.getByRole('radiogroup', { name: 'Màu chủ đạo' })
+
+    await user.click(within(group).getByRole('radio', { name: ACCENT_META.violet.label }))
+
+    expect(useDisplay.getState().accent).toBe('violet')
+  })
+
+  /*
+   * Ô chọn màu KHÔNG được chỉ khác nhau ở màu. Người không phân biệt được sắc
+   * màu vẫn phải biết mình đang chọn ô nào — `aria-checked` là lớp cho screen
+   * reader, dấu ✓ và viền là lớp cho mắt.
+   */
+  it('ô màu đang chọn phân biệt được mà không cần nhìn ra màu', async () => {
+    const user = userEvent.setup()
+
+    renderPage()
+    const group = screen.getByRole('radiogroup', { name: 'Màu chủ đạo' })
+    const mint = within(group).getByRole('radio', { name: ACCENT_META.mint.label })
+
+    await user.click(mint)
+
+    expect(mint).toHaveAttribute('aria-checked', 'true')
+    expect(
+      within(group)
+        .getAllByRole('radio')
+        .filter((radio) => radio.getAttribute('aria-checked') === 'true'),
+    ).toHaveLength(1)
   })
 
   it('thanh cỡ chữ nói ra chữ chứ không đọc số thứ tự', () => {

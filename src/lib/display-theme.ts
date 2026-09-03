@@ -15,6 +15,19 @@ export const STORAGE_KEY = 'hanora.display'
 
 export const THEMES = ['light', 'dark', 'system'] as const
 export const FONTS = ['inter', 'lora', 'system'] as const
+
+/**
+ * Màu chủ đạo. Thứ tự ở đây là thứ tự hiện trên màn cài đặt.
+ *
+ * `rose` đứng đầu vì nó là màu thương hiệu và là mặc định — không sắp theo
+ * vòng màu, vì cột đầu tiên là chỗ mắt dừng lại và chỗ đó thuộc về mặc định.
+ *
+ * PRESET, không phải ô chọn màu tự do. Lý do đầy đủ nằm ở khối `TRỤC 4` trong
+ * `tokens.css`; tóm tắt: mỗi màu phải cho ra năm giá trị dùng ở năm vai khác
+ * nhau × hai chủ đề, và không phép biến đổi tự động nào giữ được tương phản
+ * cho cả mười. `scripts/check-contrast.mjs` đo từng preset một.
+ */
+export const ACCENTS = ['rose', 'tangerine', 'honey', 'mint', 'sky', 'violet'] as const
 export const TEXT_TONES = ['ink', 'soft', 'warm', 'high'] as const
 export const MOTIONS = ['full', 'reduced'] as const
 
@@ -26,11 +39,13 @@ export const FONT_SCALES: readonly number[] = [0.9, 1, 1.1, 1.2, 1.3]
 
 export type Theme = (typeof THEMES)[number]
 export type FontChoice = (typeof FONTS)[number]
+export type AccentChoice = (typeof ACCENTS)[number]
 export type TextTone = (typeof TEXT_TONES)[number]
 export type MotionChoice = (typeof MOTIONS)[number]
 
 export interface DisplaySettings {
   theme: Theme
+  accent: AccentChoice
   font: FontChoice
   fontScale: number
   textTone: TextTone
@@ -39,6 +54,7 @@ export interface DisplaySettings {
 
 export const DEFAULT_DISPLAY: DisplaySettings = {
   theme: 'system',
+  accent: 'rose',
   font: 'inter',
   fontScale: 1,
   textTone: 'ink',
@@ -46,15 +62,47 @@ export const DEFAULT_DISPLAY: DisplaySettings = {
 }
 
 /**
+ * Nhãn tiếng Việt + mã màu để VẼ chính ô chọn màu.
+ *
+ * Ô chọn phải tô bằng màu nó đại diện, và màu đó KHÔNG lấy được từ token: token
+ * `--color-primary` luôn là màu đang bật, nên sáu ô sẽ cùng một màu. Đây là
+ * ngoại lệ có lý do với luật "không hex trong component" — cùng ngoại lệ mà nút
+ * chọn font đang dùng khi tự render bằng chính font nó đại diện.
+ *
+ * `swatch` là giá trị BẢNG SÁNG, `swatchDark` là bảng tối. Ô chọn hiển thị theo
+ * chủ đề đang bật, nếu không thì ở chế độ tối người dùng chọn một chấm hồng đậm
+ * rồi nhận về một app hồng nhạt.
+ *
+ * ⚠ Phải khớp với khối `TRỤC 4` trong `tokens.css`. Lệch thì ô chọn nói dối.
+ */
+export const ACCENT_META: Record<
+  AccentChoice,
+  { label: string; swatch: string; swatchDark: string }
+> = {
+  rose: { label: 'Hồng anh đào', swatch: '#ff6f91', swatchDark: '#ff92ac' },
+  tangerine: { label: 'Cam nắng', swatch: '#f97a3d', swatchDark: '#ffa877' },
+  honey: { label: 'Vàng mật', swatch: '#c9880e', swatchDark: '#f6c463' },
+  mint: { label: 'Xanh bạc hà', swatch: '#14a06e', swatchDark: '#63dcaa' },
+  sky: { label: 'Xanh biển', swatch: '#2f83e0', swatchDark: '#7cc0ff' },
+  violet: { label: 'Tím oải hương', swatch: '#8257e6', swatchDark: '#bda0ff' },
+}
+
+/**
  * Màu thanh trạng thái của PWA.
  *
- * Phải đổi theo chủ đề. Giữ hồng khi app đang ở chế độ tối thì trên Android
- * thanh trạng thái sáng rực nằm ngay trên một màn hình tối — trông như app
- * chưa tải xong.
+ * Phải đổi theo chủ đề. Giữ màu chủ đạo khi app đang ở chế độ tối thì trên
+ * Android thanh trạng thái sáng rực nằm ngay trên một màn hình tối — trông như
+ * app chưa tải xong.
+ *
+ * Ở chế độ SÁNG thì nó theo màu chủ đạo: thanh trạng thái là phần app tràn ra
+ * ngoài khung, để nó hồng trong khi cả app đang xanh là để lộ đúng chỗ nối.
+ * Chế độ tối dùng một màu nền duy nhất cho mọi màu chủ đạo — nền tối không đổi
+ * theo trục này.
  */
-export const THEME_COLOR: Record<'light' | 'dark', string> = {
-  light: '#FF6F91',
-  dark: '#16131A',
+const DARK_THEME_COLOR = '#16131A'
+
+export function themeColor(resolved: 'light' | 'dark', accent: AccentChoice): string {
+  return resolved === 'dark' ? DARK_THEME_COLOR : ACCENT_META[accent].swatch
 }
 
 const DARK_QUERY = '(prefers-color-scheme: dark)'
@@ -90,10 +138,13 @@ export function applyDisplay(settings: DisplaySettings): void {
   const resolved = resolveTheme(settings.theme)
 
   root.dataset.theme = resolved
+  root.dataset.accent = settings.accent
   root.dataset.font = settings.font
   root.dataset.textTone = settings.textTone
   root.dataset.motion = settings.motion
   root.style.setProperty('--font-scale', String(settings.fontScale))
 
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLOR[resolved])
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', themeColor(resolved, settings.accent))
 }

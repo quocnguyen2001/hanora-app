@@ -33,7 +33,21 @@ export function StatCard({
      * với icon.
      */
     <Card className="flex flex-col gap-1">
-      {icon && <span className="text-primary">{icon}</span>}
+      {/*
+        Icon ngồi trên một đĩa tint, cùng mô-típ với mark thương hiệu ở header
+        và hàng cài đặt ở màn Tài khoản.
+
+        Một icon nét mảnh tô màu chủ đạo, đứng trần trên nền trắng, gần như biến
+        mất giữa hai dòng chữ — nó không đủ diện tích để đọc ra là màu gì. Đĩa
+        `primary-soft` nâng diện tích màu lên mà không phải phóng to icon, và vì
+        nó lặp lại ở ba chỗ nên nó đọc thành một mô-típ chứ không phải trang trí
+        rời rạc.
+      */}
+      {icon && (
+        <span className="bg-primary-soft text-primary flex size-9 items-center justify-center rounded-full">
+          {icon}
+        </span>
+      )}
       <p className="text-caption text-text-secondary">{label}</p>
       <p className="text-section text-text-primary">
         {value}

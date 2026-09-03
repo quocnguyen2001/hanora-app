@@ -18,8 +18,8 @@ function formatDay(date: string): string {
  */
 export function StreakCalendar({ days }: { days: StreakDay[] }) {
   return (
-    // Chặn bề ngang: `grid-cols-7` + `aspect-square` trong `main` rộng 1200px
-    // trên desktop cho ra 30 ô vuông ~155px, mỗi ô chứa một con số 15px.
+    // Chặn bề ngang: `grid-cols-7` + `aspect-square` trong `main` rộng 1024px
+    // trên desktop cho ra 30 ô vuông ~130px, mỗi ô chứa một con số 15px.
     <div className="max-w-sm">
       <div className="text-caption text-text-secondary mb-2 grid grid-cols-7 gap-1.5 text-center">
         {WEEKDAYS.map((weekday) => (

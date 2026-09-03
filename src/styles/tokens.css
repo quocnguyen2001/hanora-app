@@ -9,10 +9,10 @@
  * đã được nới một bậc so với file đó — xem lý do ở khối `--radius-*` bên dưới.
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * BA TRỤC TÙY CHỈNH
+ * BỐN TRỤC TÙY CHỈNH
  *
- * Màn Hiển thị & chữ đổi được ba thứ cùng lúc: chủ đề sáng/tối, tông chữ, và cỡ
- * chữ. Cả ba đều đổi GIÁ TRỊ của token, không đổi tên class.
+ * Màn Hiển thị & chữ đổi được bốn thứ cùng lúc: chủ đề sáng/tối, màu chủ đạo,
+ * tông chữ, và cỡ chữ. Cả bốn đều đổi GIÁ TRỊ của token, không đổi tên class.
  *
  * Hệ quả quan trọng: component không cần biết trục nào đang bật. `bg-surface`
  * viết từ trước dark mode vẫn đúng ở chế độ tối, và không có một class `dark:`
@@ -513,6 +513,17 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 :root {
+  /*
+   * Sắc bóng dưới nút primary, dạng ba số RGB để `rgb(... / alpha)` dùng lại.
+   *
+   * Là biến RIÊNG chứ không đọc `--color-primary`: `rgb()` không nhận một mã
+   * hex làm tham số, nên `rgb(var(--color-primary) / 0.18)` là cú pháp hỏng —
+   * nó không lỗi, nó chỉ im lặng không sinh ra bóng nào. Trục màu chủ đạo ghi
+   * đè biến này song song với `--color-primary`, nên bóng luôn cùng sắc với nút
+   * mà không cần một khối `--shadow-button` cho từng màu.
+   */
+  --primary-glow: 255 111 145;
+
   --shadow-card: 0 1px 2px rgb(41 37 42 / 0.04);
   --shadow-raised: 0 4px 12px rgb(41 37 42 / 0.06);
 
@@ -525,7 +536,7 @@
    * ("avoid aggressive gradients") và với nguyên tắc calm của `ux-rules.md`.
    * Sắc hồng giữ nguyên vì lý do gốc ở trên vẫn đúng; chỉ cường độ đổi.
    */
-  --shadow-button: 0 2px 8px rgb(255 111 145 / 0.18);
+  --shadow-button: 0 2px 8px rgb(var(--primary-glow) / 0.18);
 }
 
 /*
@@ -601,9 +612,12 @@
   --color-success-solid: #74d3a6;
   --color-error-solid: #ff929e;
 
+  /* Bóng ở bảng tối nhuốm theo `--color-primary` SÁNG của bảng tối, không phải màu sáng. */
+  --primary-glow: 255 146 172;
+
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-raised: 0 4px 14px rgb(0 0 0 / 0.5);
-  --shadow-button: 0 2px 8px rgb(255 146 172 / 0.16);
+  --shadow-button: 0 2px 8px rgb(var(--primary-glow) / 0.16);
 }
 
 /*
@@ -689,4 +703,170 @@
 }
 :root[data-font='system'] {
   --font-active: var(--font-system);
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TRỤC 4 — MÀU CHỦ ĐẠO
+ *
+ * Sáu preset. Mỗi preset đổi TOÀN BỘ họ primary (`primary`, `-deep`, `-soft`,
+ * `-pale`, `on-primary`), màu gờ 3D trung tính, và sắc bóng nút.
+ *
+ * ── Vì sao là preset chứ không phải ô chọn màu tự do ────────────────────────
+ *
+ * Cùng lý do đã ghi ở trục tông chữ: sinh các sắc độ từ một màu gốc bằng
+ * `color-mix()` thì KHÔNG kiểm soát được tương phản. Ở đây còn nặng hơn — mỗi
+ * màu phải cho ra năm giá trị dùng ở năm vai khác nhau (chữ trên nền, nền tint
+ * lớn, gờ khối, chữ TRÊN nút), và không có một phép biến đổi nào đúng cho cả
+ * năm ở cả hai chủ đề. Bảng viết tay là cách duy nhất đảm bảo mọi tổ hợp
+ * màu × chủ đề đều đọc được.
+ *
+ * ── `rose` khai tường minh dù trùng mặc định ────────────────────────────────
+ *
+ * Giống hệt tông `ink`, và vì cùng một lý do: nếu `data-accent` vắng mặt thì
+ * `@theme` đã có sẵn giá trị hồng; nhưng khi nó CÓ mặt, khối này phải tồn tại
+ * để trục hoạt động hai chiều — người dùng đổi sang tím rồi quay lại hồng thì
+ * phải có một khối để quay về.
+ *
+ * ── Bẫy specificity, đã tính ────────────────────────────────────────────────
+ *
+ * `:root[data-accent='x']` là (0,2,0) — BẰNG với `:root[data-theme='dark']`.
+ * Hai khối cùng trọng số thì thứ tự trong file quyết định, và khối màu nằm SAU
+ * khối tối. Nghĩa là ở chế độ tối, bảng SÁNG của màu sẽ thắng nếu không có gì
+ * chặn.
+ *
+ * Chặn bằng cách mỗi màu có một khối `[data-theme='dark'][data-accent='x']`
+ * (0,3,0) khai LẠI ĐỦ mọi thuộc tính mà khối sáng đặt — kể cả `--color-edge`,
+ * thứ không đổi theo màu ở bảng tối nhưng vẫn phải viết ra, nếu không gờ hồng
+ * nhạt của bảng sáng sẽ rò sang chế độ tối. Thiếu MỘT dòng ở khối tối là một
+ * lỗi im lặng.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/* ── Hồng anh đào — mặc định, trùng giá trị gốc của hệ thống ── */
+:root[data-accent='rose'] {
+  --color-primary: #ff6f91;
+  --color-primary-deep: #f4527a;
+  --color-primary-soft: #fff0f4;
+  --color-primary-pale: #fff7f9;
+  --color-on-primary: #ffffff;
+  --color-edge: #e8d5da;
+  --primary-glow: 255 111 145;
+}
+:root[data-theme='dark'][data-accent='rose'] {
+  --color-primary: #ff92ac;
+  --color-primary-deep: #ff6f91;
+  --color-primary-soft: #3a2732;
+  --color-primary-pale: #2a2029;
+  --color-on-primary: #2a1119;
+  --color-edge: #100d13;
+  --primary-glow: 255 146 172;
+}
+
+/* ── Cam nắng ── */
+:root[data-accent='tangerine'] {
+  --color-primary: #f97a3d;
+  --color-primary-deep: #e35f21;
+  --color-primary-soft: #fff1e8;
+  --color-primary-pale: #fff8f3;
+  --color-on-primary: #ffffff;
+  --color-edge: #ecdacd;
+  --primary-glow: 249 122 61;
+}
+:root[data-theme='dark'][data-accent='tangerine'] {
+  --color-primary: #ffa877;
+  --color-primary-deep: #f97a3d;
+  --color-primary-soft: #3a2a20;
+  --color-primary-pale: #2a2119;
+  --color-on-primary: #331603;
+  --color-edge: #100d13;
+  --primary-glow: 255 168 119;
+}
+
+/*
+ * ── Vàng mật ──
+ *
+ * Màu DUY NHẤT trong sáu preset dùng chữ TỐI trên nút ở chế độ sáng. Vàng là
+ * màu sáng nhất của bảng: chữ trắng trên #e0a012 chỉ đạt ~2,2:1, tức nhãn nút
+ * chính gần như không đọc được. Đây đúng là ca mà `--color-on-primary` sinh ra
+ * để xử — nó là token chứ không phải hằng số "trắng" chính vì có những màu nền
+ * không nhận được chữ trắng.
+ */
+:root[data-accent='honey'] {
+  --color-primary: #c9880e;
+  --color-primary-deep: #b07308;
+  --color-primary-soft: #fff4dd;
+  --color-primary-pale: #fffaef;
+  --color-on-primary: #2e1f00;
+  --color-edge: #e8dcc2;
+  --primary-glow: 201 136 14;
+}
+:root[data-theme='dark'][data-accent='honey'] {
+  --color-primary: #f6c463;
+  --color-primary-deep: #c9880e;
+  --color-primary-soft: #38301c;
+  --color-primary-pale: #292418;
+  --color-on-primary: #2e2200;
+  --color-edge: #100d13;
+  --primary-glow: 246 196 99;
+}
+
+/* ── Xanh bạc hà ── */
+:root[data-accent='mint'] {
+  --color-primary: #14a06e;
+  --color-primary-deep: #0d8259;
+  --color-primary-soft: #e6f8f0;
+  --color-primary-pale: #f3fdf8;
+  --color-on-primary: #ffffff;
+  --color-edge: #d2e7dd;
+  --primary-glow: 20 160 110;
+}
+:root[data-theme='dark'][data-accent='mint'] {
+  --color-primary: #63dcaa;
+  --color-primary-deep: #14a06e;
+  --color-primary-soft: #1f342b;
+  --color-primary-pale: #1b2a24;
+  --color-on-primary: #052a1c;
+  --color-edge: #100d13;
+  --primary-glow: 99 220 170;
+}
+
+/* ── Xanh biển ── */
+:root[data-accent='sky'] {
+  --color-primary: #2f83e0;
+  --color-primary-deep: #1c66bb;
+  --color-primary-soft: #e9f3fe;
+  --color-primary-pale: #f4f9ff;
+  --color-on-primary: #ffffff;
+  --color-edge: #d4dfee;
+  --primary-glow: 47 131 224;
+}
+:root[data-theme='dark'][data-accent='sky'] {
+  --color-primary: #7cc0ff;
+  --color-primary-deep: #2f83e0;
+  --color-primary-soft: #1e2c3c;
+  --color-primary-pale: #1a2430;
+  --color-on-primary: #05243d;
+  --color-edge: #100d13;
+  --primary-glow: 124 192 255;
+}
+
+/* ── Tím oải hương ── */
+:root[data-accent='violet'] {
+  --color-primary: #8257e6;
+  --color-primary-deep: #6a3fd0;
+  --color-primary-soft: #f1ecfe;
+  --color-primary-pale: #f8f5ff;
+  --color-on-primary: #ffffff;
+  --color-edge: #ddd6ee;
+  --primary-glow: 130 87 230;
+}
+:root[data-theme='dark'][data-accent='violet'] {
+  --color-primary: #bda0ff;
+  --color-primary-deep: #8257e6;
+  --color-primary-soft: #2c2440;
+  --color-primary-pale: #241f33;
+  --color-on-primary: #1c0c3a;
+  --color-edge: #100d13;
+  --primary-glow: 189 160 255;
 }

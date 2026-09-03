@@ -41,7 +41,7 @@ export function AccountPage() {
           to="/account/settings"
           icon={<SettingsIcon size={22} />}
           title="Hiển thị & chữ"
-          hint="Chủ đề, font, cỡ chữ, tông chữ"
+          hint="Chủ đề, màu chủ đạo, font, cỡ chữ"
         />
         <SettingsLink
           to="/account/settings/voice"
@@ -173,7 +173,10 @@ function SettingsLink({
         'hover:bg-primary-pale active:bg-primary-soft',
       )}
     >
-      <span className="text-primary">{icon}</span>
+      {/* Đĩa tint — cùng mô-típ với mark ở header và icon ở `StatCard`. */}
+      <span className="bg-primary-soft text-primary flex size-11 shrink-0 items-center justify-center rounded-full">
+        {icon}
+      </span>
       <span className="min-w-0 flex-1">
         <span className="text-section text-text-primary block">{title}</span>
         <span className="text-caption text-text-secondary block">{hint}</span>
