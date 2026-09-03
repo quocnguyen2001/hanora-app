@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import { useState } from 'react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { SearchIcon } from '@/components/icons'
@@ -10,6 +11,7 @@ import { Button } from './Button'
 import { IconButton } from './IconButton'
 import { SearchBar } from './SearchBar'
 import { Tabs } from './Tabs'
+import { TabView } from './TabView'
 
 const word: WordSummary = {
   id: 1,
@@ -223,5 +225,88 @@ describe('Tabs', () => {
       'aria-selected',
       'false',
     )
+  })
+})
+
+describe('TabView', () => {
+  const ITEMS = [
+    { value: 'a', label: 'Nghĩa', panel: <p>nội dung nghĩa</p> },
+    { value: 'b', label: 'Hán tự', panel: <p>nội dung hán tự</p> },
+    { value: 'c', label: 'Ví dụ', panel: <p>nội dung ví dụ</p> },
+  ]
+
+  /** Bọc state thật: `TabView` là controlled, test nào giữ `value` cứng là test rỗng. */
+  function Harness({ initial = 'a' }: { initial?: string }) {
+    const [value, setValue] = useState(initial)
+
+    return <TabView items={ITEMS} value={value} onChange={setValue} label="Nội dung từ" />
+  }
+
+  it('nối tab với panel bằng aria-controls và aria-labelledby', () => {
+    // Nửa thường bị quên của mẫu tab. Thiếu nó thì screen reader đọc ra một hàng
+    // nút và một khối chữ, không nói được khối đó THUỘC nút nào.
+    render(<Harness />)
+
+    const tab = screen.getByRole('tab', { name: 'Nghĩa' })
+    const panel = screen.getByRole('tabpanel')
+
+    expect(tab).toHaveAttribute('aria-controls', panel.id)
+    expect(panel).toHaveAttribute('aria-labelledby', tab.id)
+  })
+
+  it('chỉ MỘT điểm dừng Tab trong cả nhóm — roving tabindex', () => {
+    /*
+     * Để cả ba tab cùng nhận Tab thì người dùng bàn phím phải Tab qua hết thanh
+     * tab mới tới được nội dung, ở MỌI lần đổi tab. Cùng luật mà `Segmented`
+     * đang giữ cho nhóm radio.
+     */
+    render(<Harness />)
+
+    const tabs = screen.getAllByRole('tab')
+
+    expect(tabs.map((tab) => tab.getAttribute('tabindex'))).toEqual(['0', '-1', '-1'])
+  })
+
+  it('mũi tên đổi tab, dời focus theo, và vòng lại ở hai đầu', async () => {
+    const user = userEvent.setup()
+
+    render(<Harness />)
+
+    await user.click(screen.getByRole('tab', { name: 'Nghĩa' }))
+    await user.keyboard('{ArrowRight}')
+
+    expect(screen.getByRole('tab', { name: 'Hán tự' })).toHaveFocus()
+    expect(screen.getByText('nội dung hán tự')).toBeInTheDocument()
+
+    // Vòng lại: mũi tên trong tablist không được đi vào ngõ cụt.
+    await user.keyboard('{ArrowLeft}{ArrowLeft}')
+    expect(screen.getByRole('tab', { name: 'Ví dụ' })).toHaveFocus()
+    expect(screen.getByText('nội dung ví dụ')).toBeInTheDocument()
+  })
+
+  it('Home và End nhảy về hai đầu', async () => {
+    const user = userEvent.setup()
+
+    render(<Harness initial="b" />)
+
+    await user.click(screen.getByRole('tab', { name: 'Hán tự' }))
+    await user.keyboard('{End}')
+    expect(screen.getByRole('tab', { name: 'Ví dụ' })).toHaveFocus()
+
+    await user.keyboard('{Home}')
+    expect(screen.getByRole('tab', { name: 'Nghĩa' })).toHaveFocus()
+  })
+
+  it('panel không hoạt động bị UNMOUNT, không phải ẩn bằng CSS', () => {
+    /*
+     * Ẩn bằng CSS để lại nội dung trong cây a11y và trong truy vấn của test —
+     * một khối chữ mà người dùng screen reader vẫn đọc được dù tab của nó đang
+     * đóng. Đây là bất biến mà `WordDetailPage` dựa vào để hai panel nặng
+     * (bảng Hán tự, danh sách câu) không cùng tồn tại.
+     */
+    render(<Harness />)
+
+    expect(screen.getAllByRole('tabpanel')).toHaveLength(1)
+    expect(screen.queryByText('nội dung hán tự')).not.toBeInTheDocument()
   })
 })

@@ -27,7 +27,18 @@ export function CharacterCard({
   const [writing, setWriting] = useState(false)
 
   return (
-    <li className="border-border/60 space-y-3 border-b pb-4 last:border-0 last:pb-0">
+    /*
+      `flex flex-col` để nút tập viết đẩy được xuống đáy bằng `mt-auto`.
+
+      Bắt buộc từ khi panel xếp các thẻ này thành LƯỚI hai cột: ô lưới cùng hàng
+      cao bằng nhau, nhưng nội dung bên trên nút thì không — chữ 8 nét có dòng
+      "Nét bút" dài gấp đôi chữ 3 nét. Không có `mt-auto` thì hai nút nằm ở hai
+      độ cao khác nhau và cả hàng đọc ra là gãy.
+
+      Viền ngăn cách CHỈ ở bố cục một cột. Ở lưới, `gap` đã tách các ô rồi, và
+      viền dưới của ô trái biến thành một vạch cụt lơ lửng giữa thẻ.
+    */
+    <li className="border-border/60 flex flex-col gap-3 max-md:border-b max-md:pb-4 max-md:last:border-0 max-md:last:pb-0">
       <div className="flex items-start gap-3">
         {/* `shrink-0`: chữ nhiều nét không được co lại nhường chỗ cho cột chữ. */}
         <HanziPlate className="shrink-0 px-4 py-2">{character.char}</HanziPlate>
@@ -49,7 +60,7 @@ export function CharacterCard({
       <button
         type="button"
         onClick={() => setWriting(true)}
-        className="chunky chunky-primary rounded-control-lg bg-primary text-on-primary text-body duration-press ease-soft min-h-11 w-full font-bold transition"
+        className="chunky chunky-primary rounded-control-lg bg-primary text-on-primary text-body duration-press ease-soft mt-auto min-h-11 w-full font-bold transition"
       >
         Tập viết Hán tự
       </button>

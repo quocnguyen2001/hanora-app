@@ -68,12 +68,22 @@ function json(body: unknown): Response {
  */
 const VOICES = [voice('Kangkang', 'zh-CN'), voice('Tingting', 'zh-CN')]
 
-function Harness() {
+/**
+ * `tab` đi qua URL chứ không qua một cú click.
+ *
+ * Ngắn hơn thì đúng, nhưng lý do chính là nó kiểm luôn hợp đồng deep-link: mỗi
+ * tab của màn chi tiết phải mở thẳng được bằng `?tab=`, vì đó là thứ giữ đúng
+ * chỗ người dùng đang đứng khi họ bấm Back từ một từ ghép.
+ *
+ * Tương tác tab (bấm, mũi tên, roving tabindex) test ở `TabView` — không lặp
+ * lại ở đây.
+ */
+function Harness({ tab }: { tab?: string } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return (
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[`/words/${word.id}`]}>
+      <MemoryRouter initialEntries={[`/words/${word.id}${tab ? `?tab=${tab}` : ''}`]}>
         <Routes>
           <Route path="/words/:id" element={<WordDetailPage />} />
         </Routes>
@@ -111,7 +121,14 @@ describe('nút phát âm ở trang chi tiết từ', () => {
   it('chỉ nút vừa bấm chuyển sang đang phát, các nút còn lại giữ nguyên', async () => {
     // Cả trang dùng chung một `useSpeech`. Nếu trạng thái chỉ là một cờ boolean
     // thì bấm một câu sẽ làm SÁNG cả loạt nút — đúng lỗi người dùng thấy.
-    render(<Harness />)
+    //
+    // Tab "Hán tự" vì đó là chỗ bất biến này CĂNG NHẤT: 狐狸 có hai Hán tự, và
+    // `useSpeech` khoá theo VỊ TRÍ chứ không theo chữ. Một từ láy như 谢谢 có hai
+    // chữ giống hệt nhau, nên khoá theo chữ sẽ làm cả hai nút cùng sáng.
+    //
+    // Nút của hero nằm NGOÀI tab nên nó vẫn có mặt cùng lúc — ba nút, hai nguồn
+    // khoá khác nhau, đúng phạm vi mà bất biến này cần phủ.
+    render(<Harness tab="hantu" />)
 
     const buttons = await screen.findAllByRole('button', { name: 'Phát âm' })
     expect(buttons.length).toBeGreaterThan(1)
@@ -126,7 +143,7 @@ describe('nút phát âm ở trang chi tiết từ', () => {
   })
 
   it('đổi giọng ở cài đặt có hiệu lực ngay, không cần tải lại trang', async () => {
-    render(<Harness />)
+    render(<Harness tab="hantu" />)
 
     const buttons = await screen.findAllByRole('button', { name: 'Phát âm' })
     const first = buttons[0]

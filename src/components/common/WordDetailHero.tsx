@@ -22,26 +22,32 @@ export function WordDetailHero({
   onPlayAudio,
   actions,
   illustration,
-  suppressVietnameseDefinitions = false,
+  showDefinitions = true,
 }: {
   word: WordSummary
   audioState?: AudioState
   onPlayAudio?: () => void
   actions?: React.ReactNode
   /**
-   * Ẩn danh sách nghĩa tiếng Việt của hero.
+   * Hero có mang HAI danh sách nghĩa (Việt và Anh) hay không.
    *
-   * Tồn tại cho đúng một ca: màn chi tiết đã có `senses` — cùng nghĩa đó nhưng
-   * đã nhóm theo từ loại — và hai danh sách nghĩa Việt cạnh nhau nói gần như
-   * cùng một việc. Ẩn ở đây thay vì bỏ hẳn khối `senses` xuống dưới, vì `senses`
-   * là bản ĐỌC ĐƯỢC HƠN của cùng thông tin.
+   * Thay cho `suppressVietnameseDefinitions` cũ, vốn chỉ ẩn danh sách tiếng
+   * Việt khi màn chi tiết đã có `senses`. Cách đó có một tật: hero ĐỔI HÌNH
+   * giữa chừng — `senses` tải lười, nên phần lớn lần mở sẽ hiện nghĩa Việt
+   * trước rồi rút nó đi khi bản làm giàu về.
    *
-   * Mặc định `false`, nên `GalleryPage` và mọi chỗ dùng khác không đổi.
+   * Màn chi tiết giờ truyền `false` và mang CẢ HAI danh sách xuống tab "Nghĩa".
+   * Hero còn đúng phần NHẬN DIỆN (chữ Hán, pinyin, âm Hán-Việt, HSK, lượng từ,
+   * ảnh, nút lưu), nên nó không còn đổi hình theo dữ liệu về muộn, và nó đủ
+   * thấp để dính (`sticky`) ở cột trái trên desktop.
    *
-   * KHÔNG ảnh hưởng `definitions_en`: nó luôn ở lại (luật R1), và càng phải ở
-   * lại khi thứ thay chỗ nghĩa Việt là nội dung do AI sinh chưa ai rà.
+   * Mặc định `true`, nên `GalleryPage` và mọi chỗ dùng khác không đổi.
+   *
+   * KHÔNG phải là cách để giấu `definitions_en`: luật R1 đòi nghĩa Anh luôn
+   * hiển thị CẠNH nghĩa Việt, và chỗ gọi duy nhất truyền `false` chuyển cả hai
+   * đi cùng nhau sang một chỗ khác — không bỏ cái nào.
    */
-  suppressVietnameseDefinitions?: boolean
+  showDefinitions?: boolean
   /**
    * Ghi đè khối ảnh minh hoạ.
    *
@@ -114,7 +120,7 @@ export function WordDetailHero({
         không dòng "chưa có nghĩa": từ đó vẫn dùng được bình thường bằng tiếng
         Anh, đúng như trước phase này.
       */}
-      {!suppressVietnameseDefinitions && word.definitions_vi && word.definitions_vi.length > 0 && (
+      {showDefinitions && word.definitions_vi && word.definitions_vi.length > 0 && (
         <ul className="text-meaning text-text-primary mt-1 w-full space-y-1 text-left">
           {word.definitions_vi.map((meaning) => (
             <li key={meaning}>{meaning}</li>
@@ -147,11 +153,13 @@ export function WordDetailHero({
         items-center`, nên `<ul>` co về đúng bề rộng nội dung và một mình
         `text-left` sẽ không đổi gì thấy được.
       */}
-      <ul className="text-body text-text-secondary w-full space-y-1 text-left">
-        {word.definitions_en.map((definition) => (
-          <li key={definition}>{definition}</li>
-        ))}
-      </ul>
+      {showDefinitions && (
+        <ul className="text-body text-text-secondary w-full space-y-1 text-left">
+          {word.definitions_en.map((definition) => (
+            <li key={definition}>{definition}</li>
+          ))}
+        </ul>
+      )}
 
       {actions && <div className="mt-3 flex gap-2">{actions}</div>}
     </section>

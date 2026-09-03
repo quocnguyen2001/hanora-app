@@ -74,12 +74,22 @@ function route(handlers: { detail?: WordDetail; translations?: () => Response })
   })
 }
 
-function Harness() {
+/**
+ * `tab` đi qua URL chứ không qua một cú click.
+ *
+ * Ngắn hơn thì đúng, nhưng lý do chính là nó kiểm luôn hợp đồng deep-link: mỗi
+ * tab của màn chi tiết phải mở thẳng được bằng `?tab=`, vì đó là thứ giữ đúng
+ * chỗ người dùng đang đứng khi họ bấm Back từ một từ ghép.
+ *
+ * Tương tác tab (bấm, mũi tên, roving tabindex) test ở `TabView` — không lặp
+ * lại ở đây.
+ */
+function Harness({ tab }: { tab?: string } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return (
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[`/words/${word.id}`]}>
+      <MemoryRouter initialEntries={[`/words/${word.id}${tab ? `?tab=${tab}` : ''}`]}>
         <Routes>
           <Route path="/words/:id" element={<WordDetailPage />} />
         </Routes>
@@ -113,7 +123,7 @@ describe('nghĩa tiếng Việt của câu ví dụ', () => {
         }),
     })
 
-    render(<Harness />)
+    render(<Harness tab="vidu" />)
 
     expect(await screen.findByText('Trường học bắt đầu lớp lúc 8 rưỡi.')).toBeInTheDocument()
     expect(screen.getByText('School begins at eight-thirty.')).toBeInTheDocument()
@@ -132,7 +142,7 @@ describe('nghĩa tiếng Việt của câu ví dụ', () => {
         }),
     })
 
-    render(<Harness />)
+    render(<Harness tab="vidu" />)
 
     await screen.findByText('Trường học bắt đầu lớp lúc 8 rưỡi.')
     expect(screen.getAllByText(/do AI dịch/i)).toHaveLength(1)
@@ -151,7 +161,7 @@ describe('nghĩa tiếng Việt của câu ví dụ', () => {
         }),
     })
 
-    render(<Harness />)
+    render(<Harness tab="vidu" />)
 
     const first = await screen.findByText('学校8点半开始上课。')
     const row = first.closest('li')
@@ -164,7 +174,7 @@ describe('nghĩa tiếng Việt của câu ví dụ', () => {
   it('hiện khung chờ trong lúc API còn đang dịch', async () => {
     route({ translations: () => json({ data: [], meta: { status: 'pending' } }, 202) })
 
-    render(<Harness />)
+    render(<Harness tab="vidu" />)
 
     const sentence = await screen.findByText('学校8点半开始上课。')
     const list = sentence.closest('ul')
@@ -181,7 +191,7 @@ describe('nghĩa tiếng Việt của câu ví dụ', () => {
     // `unavailable` KHÔNG phải lỗi: khối trông đúng như trước khi có tính năng.
     route({ translations: () => json({ data: [], meta: { status: 'unavailable' } }) })
 
-    render(<Harness />)
+    render(<Harness tab="vidu" />)
 
     expect(await screen.findByText('School begins at eight-thirty.')).toBeInTheDocument()
     expect(screen.queryByText(/do AI dịch/i)).not.toBeInTheDocument()
@@ -196,7 +206,7 @@ describe('nghĩa tiếng Việt của câu ví dụ', () => {
         }),
     })
 
-    render(<Harness />)
+    render(<Harness tab="vidu" />)
 
     expect(await screen.findByText('Trường học bắt đầu lớp lúc 8 rưỡi.')).toBeInTheDocument()
     expect(screen.getByText('My sister takes piano lessons twice a week.')).toBeInTheDocument()
@@ -207,7 +217,7 @@ describe('nghĩa tiếng Việt của câu ví dụ', () => {
     // chắc chắn trả về mảng rỗng.
     route({ detail: { ...word, examples: [] } })
 
-    render(<Harness />)
+    render(<Harness tab="vidu" />)
 
     await screen.findByText('学习')
     await waitFor(() => {

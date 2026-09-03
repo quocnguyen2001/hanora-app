@@ -161,6 +161,29 @@ const CHECKS = [
     bg: '--color-primary',
     min: 4.5,
   },
+  /*
+   * Tab CHƯA chọn của `TabView`: chữ quiet trên nền tint nhạt.
+   *
+   * Vào bảng vì nó là cặp DUY NHẤT trong app đặt `text-text-secondary` lên một
+   * nền không phải `background`/`surface`, và nền đó đổi theo trục màu chủ đạo.
+   * Nó đạt ở cả sáu preset hiện tại, nhưng không có gì gác: thêm một màu có
+   * `--color-primary-pale` đậm hơn là nhãn tab tụt xuống dưới AA mà không ai
+   * biết. Đo mới là thứ ngăn được điều đó, không phải may mắn.
+   */
+  {
+    scope: 'brand',
+    label: 'text-secondary / primary-pale (tab chưa chọn)',
+    fg: '--color-text-secondary',
+    bg: '--color-primary-pale',
+    min: 4.5,
+  },
+  {
+    scope: 'brand',
+    label: 'text-primary / primary-soft (tab hover)',
+    fg: '--color-text-primary',
+    bg: '--color-primary-soft',
+    min: 4.5,
+  },
   {
     scope: 'semantic',
     label: 'error / surface',

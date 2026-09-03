@@ -255,6 +255,91 @@ dùng khác: API đọc lại dòng diễn giải đã có cho cả đường tr
 sau đã trả `source: 'ai'` và luật 1 tự ẩn nút. Không có gì phải làm ở FE cho
 chuyện đó — nó đã đúng sẵn.
 
+## Màn chi tiết từ: ba tab
+
+Trang từng là hero cộng TỐI ĐA TÁM `Card` anh em xếp dọc, mọi thẻ cùng một trọng
+số thị giác. Hai tật, và tật thứ hai nặng hơn:
+
+1. Không có thứ bậc — tám hộp giống hệt nhau đọc ra là tám thứ rời rạc.
+2. **Cấu trúc đổi theo từng từ.** Câu ví dụ phủ ~75% mục từ, `definitions_vi`
+   ~93%, lượng từ 1.554/123.646, còn lớp làm giàu tải lười và có thể
+   `unavailable`. Mỗi từ cho ra một hình dạng trang khác nhau, nên người dùng
+   không bao giờ dựng được mô hình "cái gì nằm ở đâu".
+
+Ba tab **CỐ ĐỊNH** chữa tật thứ hai: `Nghĩa` · `Hán tự` · `Ví dụ`, giống hệt
+nhau ở mọi từ. Tab không có dữ liệu vẫn ở nguyên chỗ và hiện `EmptyState` nói ra
+vì sao trống.
+
+**Đừng ẩn tab rỗng.** Nghe hợp lý nhưng nó tái tạo đúng cái bug đang sửa, ở dạng
+tệ hơn: nội dung AI về muộn sẽ làm tab MỌC THÊM sau khi trang đã tải, và thanh
+tab dãn ra ngay dưới ngón tay người dùng.
+
+### Vì sao hero nằm ngoài tab
+
+Hai thứ trong đó không được phép giấu: chữ Hán — thứ định danh cả trang — và nút
+"Lưu vào kho", hành động chính của màn.
+
+Hai danh sách nghĩa thì ngược lại, phải nằm TRONG tab. Để chúng ở hero thì tab
+"Nghĩa" chỉ còn `senses` và `usage_note`, cả hai đều là nội dung AI có thể vắng
+— tức tab MẶC ĐỊNH sẽ trống ở phần lớn từ. Chuyển xuống thì tab đầu luôn có
+nội dung, vì `definitions_en` không bao giờ rỗng.
+
+`WordReviewHistory` cũng ở ngoài tab, và đó là phân loại chứ không phải chỗ
+thừa: ba tab nói về TỪ, khối này nói về quan hệ giữa NGƯỜI DÙNG và từ đó. Nó chỉ
+hiện với từ đã lưu, nên nhét vào một tab cố định là tạo ra đúng loại tab lúc có
+lúc không mà thiết kế này tránh.
+
+### `TabView`, không phải `Tabs`
+
+`Tabs` mang `role="tablist"` nhưng bốn chỗ dùng nó (lọc kho từ, chế độ tìm kiếm,
+khoảng thời gian thống kê, mục gallery) đều là BỘ LỌC, và nó thiếu hẳn nửa còn
+lại của mẫu tab: không `aria-controls`, không `role="tabpanel"`, mọi nút đều
+nhận Tab. `TabView` gói CẢ tablist lẫn panel vào một chỗ nên không dùng đúng một
+nửa rồi quên nửa kia được, và nó có roving tabindex thật (một điểm dừng Tab,
+mũi tên/Home/End di chuyển).
+
+Nợ có sẵn, ngoài phạm vi: bốn chỗ kia đúng vai là `radiogroup`, như `Segmented`
+đã ghi.
+
+### Ràng buộc khi sửa
+
+- **Panel không hoạt động bị UNMOUNT**, không ẩn bằng CSS. Ẩn bằng CSS để lại
+  nội dung trong cây a11y và trong truy vấn của test. Unmount an toàn vì cả
+  `useExampleTranslations` lẫn `useWordEnrichment` gọi ở cấp TRANG — đổi tab
+  không sinh request nào.
+- **Tab nằm trong URL** (`?tab=`), đặt bằng `replace: true`. Tab "Ví dụ" chứa từ
+  ghép bấm được dẫn sang trang khác; không có tab trong URL thì Back trả người
+  dùng về tab đầu. `replace` để Back không biến thành nút "tab trước".
+- Giá trị `?tab=` lạ rơi về tab đầu, không để `TabView` không có tab nào chọn.
+- **Desktop hai cột, hero `lg:sticky`.** Cần `lg:items-start` ở lưới cha: mặc
+  định `stretch` kéo ô lưới cao bằng cột bên cạnh, và phần tử dính cao bằng cả
+  cột thì không còn chỗ để dính. Đánh đổi đã biết: hero cao hơn khung nhìn (cỡ
+  chữ 130% cộng nhiều nghĩa) sẽ không dính — cách chữa là một vùng cuộn lồng,
+  thứ mà quy tắc cuộn cấm.
+- `CharacterCard` là `flex flex-col` với nút tập viết `mt-auto`: ở lưới hai cột,
+  chữ 8 nét có dòng "Nét bút" dài gấp đôi chữ 3 nét, không đẩy nút xuống đáy thì
+  hai nút nằm hai độ cao khác nhau. Viền ngăn cách chỉ ở `max-md` — ở lưới,
+  viền dưới của ô trái thành một vạch cụt lơ lửng.
+- Lưới Hán tự cần **cả `gap-x` lẫn `gap-y`**. `md:space-y-0` gỡ khoảng cách dọc
+  và `gap-x` chỉ đặt `column-gap`, nên thiếu `gap-y` là `row-gap: 0`. Lỗi chỉ lộ
+  ra ở từ từ BA chữ trở lên — từ hai chữ không bao giờ có hàng thứ hai để bày ra.
+- Hero dính **có điều kiện** (`lg:[@media(min-height:46rem)]:sticky`). Đo trên
+  1100×620 ở cỡ chữ 130%: hero 571px ghim ở `top-20` đẩy nút "Lưu vào kho"
+  xuống 651px, khuất dưới nếp gấp suốt gần cả lượt cuộn. Dưới ngưỡng chiều cao,
+  hero là phần tử thường và luôn cuộn tới được.
+- **Dừng phát âm khi đổi tab.** `useSpeech` ở cấp trang còn `AudioButton` ở
+  trong panel, nên đổi tab gỡ cái nút mà không dừng cái tiếng — người dùng nghe
+  một câu rồi chuyển tab và còn lại tiếng Trung phát ra từ hư không, không nút
+  nào tắt được.
+- Tab chưa chọn **đậm cả chữ lẫn nền khi hover**. `text-text-secondary` trên
+  `primary-soft` chỉ đạt 4,31:1 ở màu tím — dưới AA cho chữ 14px kể cả in đậm.
+  `scripts/check-contrast.mjs` gác cả cặp nghỉ lẫn cặp hover.
+- `WordDetailSkeleton` phải khớp CẢ bố cục hai cột lẫn CHIỀU CAO, không chỉ hình
+  dạng. Vẽ một cột thì lúc dữ liệu về cả trang nhảy sang bố cục khác. Chiều cao
+  hero là số **đo được** (532px ở cỡ chữ 100%, `getBoundingClientRect`), không
+  phải suy từ token — bản đầu ước lượng 256px và sai gần một nửa, tức 276px CLS
+  mỗi lần mở một từ nguội, hai lần trên một lần tải nguội.
+
 ## Thẻ Hán tự
 
 Mỗi chữ trong từ có một thẻ: ô chữ mẫu (`HanziPlate`) bên trái, sáu thuộc tính
@@ -392,15 +477,23 @@ thì màn hình có ba danh sách nghĩa: `senses` (AI, nhóm theo từ loại),
 `definitions_vi` (CVDICT), `definitions_en` (CC-CEDICT) — và hai danh sách nghĩa
 Việt cạnh nhau nói gần như cùng một việc.
 
-`WordDetailHero` nhận `suppressVietnameseDefinitions` (mặc định `false`, nên
-`GalleryPage` không đổi).
+Cả ba giờ sống trong tab **"Nghĩa"** (`WordMeaningPanel`), không còn ở hero:
+`WordDetailHero` nhận `showDefinitions` (mặc định `true`, nên `GalleryPage`
+không đổi) và màn chi tiết truyền `false`. Xem "Màn chi tiết từ: ba tab" để biết
+vì sao chúng phải nằm trong tab.
 
 `definitions_en` **luôn ở lại** — luật R1, và càng đúng ở đây: thứ vừa thay chỗ
 nghĩa Việt là nội dung AI chưa ai rà, nên dòng tiếng Anh là cơ chế đối chiếu duy
-nhất người học có.
+nhất người học có. Nó có vạch ngăn phía trên: nối liền vào danh sách nghĩa Việt
+thì nó đọc ra như mục tiếp theo của cùng danh sách, và luật R1 mất tác dụng vì
+người học không nhận ra đó là nguồn khác.
 
-Hệ quả đã biết: lớp làm giàu tải lười, nên phần lớn lần mở hiện
-`definitions_vi` trước rồi ĐỔI sang `senses`. Một lần đổi, chấp nhận được.
+Cú đổi `definitions_vi` → `senses` **không mất, nó chuyển chỗ** vào panel
+"Nghĩa". Thứ được khử là reflow ở HERO: trước đây khối nhận diện tự đổi hình một
+nhịp sau khi người dùng đã bắt đầu đọc, giờ hero chỉ mang dữ liệu có sẵn từ
+request đầu nên nó đứng yên. Người dùng vẫn thấy danh sách nghĩa Việt bị thay
+sau 1–3 giây, và giờ ở ngay vị trí đọc chính. Chấp nhận, vì cách chữa duy nhất
+là để hai danh sách nghĩa Việt cạnh nhau — thứ mà `senses` sinh ra để thay.
 
 **Nhóm `senses` ở FE, không ở API.** Model trả danh sách PHẲNG và lặp lại cùng
 một `pos` ở hai mục rời nhau. Gom lại là việc trình bày, và làm ở FE thì response

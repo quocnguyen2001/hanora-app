@@ -1,27 +1,101 @@
-import { useNavigate, useParams } from 'react-router'
-import { AudioButton } from '@/components/common/AudioButton'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { WordDetailHero } from '@/components/common/WordDetailHero'
 import { ChevronLeftIcon } from '@/components/icons'
 import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { IconButton } from '@/components/ui/IconButton'
 import { WordDetailSkeleton } from '@/components/ui/PageSkeleton'
-import { Skeleton } from '@/components/ui/Skeleton'
+import { TabView, type TabViewItem } from '@/components/ui/TabView'
 import { WordReviewHistory } from '@/features/review/components/WordReviewHistory'
 import { useSavedWordIds, useToggleSaveWord } from '@/features/vocabulary/hooks'
 import { useSpeech } from '@/hooks/use-speech'
 import { ApiError } from '@/lib/api'
-import { cn } from '@/lib/cn'
-import type { ExampleSentence } from '@/types/dictionary'
-import { CharacterCard } from '../components/CharacterCard'
-import { RelatedWordList } from '../components/RelatedWordList'
-import { WordSenses } from '../components/WordSenses'
+import { stop as stopSpeech } from '@/lib/audio'
+import { WordCharacterPanel } from '../components/WordCharacterPanel'
+import { WordExamplePanel } from '../components/WordExamplePanel'
+import { WordMeaningPanel } from '../components/WordMeaningPanel'
 import { useExampleTranslations, useWord, useWordEnrichment } from '../hooks'
 
+/**
+ * Giá trị của tham số `?tab=`.
+ *
+ * Nằm trong URL chứ không phải `useState`, và đó là ràng buộc thật chứ không
+ * phải chi tiết đẹp: tab "Ví dụ" chứa danh sách từ ghép bấm được, mỗi mục dẫn
+ * sang một trang chi tiết khác. Giữ tab trong state thì bấm Back sẽ trả người
+ * dùng về tab đầu tiên của trang cũ — họ mất đúng chỗ vừa đứng.
+ */
+const TABS = ['nghia', 'hantu', 'vidu'] as const
+type TabValue = (typeof TABS)[number]
+
+const DEFAULT_TAB: TabValue = 'nghia'
+
+function parseTab(raw: string | null): TabValue {
+  return TABS.includes(raw as TabValue) ? (raw as TabValue) : DEFAULT_TAB
+}
+
+/**
+ * Màn chi tiết từ.
+ *
+ * ## Bố cục: hero NGOÀI tab, nội dung TRONG tab
+ *
+ * Trước đây trang là một cột phẳng gồm hero cộng TỐI ĐA TÁM `Card` anh em, mọi
+ * thẻ cùng một trọng số thị giác. Nó có hai tật, và tật thứ hai nặng hơn:
+ *
+ *   1. Không có thứ bậc — tám hộp giống hệt nhau đọc ra là tám thứ rời rạc.
+ *   2. Cấu trúc ĐỔI THEO TỪNG TỪ. Câu ví dụ phủ ~75% mục từ, `definitions_vi`
+ *      ~93%, lượng từ 1.554/123.646, còn lớp làm giàu thì tải lười và có thể
+ *      `unavailable`. Nên mỗi từ cho ra một hình dạng trang khác nhau, và người
+ *      dùng không bao giờ dựng được mô hình "cái gì nằm ở đâu".
+ *
+ * Ba tab CỐ ĐỊNH chữa tật thứ hai: bộ tab giống hệt nhau ở mọi từ, kể cả từ
+ * không có ví dụ (tab đó hiện `EmptyState` nói ra vì sao trống). Học một lần,
+ * dùng cho mọi từ.
+ *
+ * Hero ở NGOÀI tab vì hai thứ trong đó không được phép giấu: chữ Hán — thứ định
+ * danh cả trang — và nút "Lưu vào kho", hành động chính của màn.
+ *
+ * ## Vì sao hai danh sách nghĩa chuyển xuống tab
+ *
+ * Nếu để nghĩa ở hero thì tab "Nghĩa" chỉ còn `senses` và `usage_note`, cả hai
+ * đều là nội dung AI có thể vắng — tức tab MẶC ĐỊNH sẽ trống ở phần lớn từ.
+ * Chuyển cả hai xuống giúp tab đầu luôn có nội dung, vì `definitions_en` không
+ * bao giờ rỗng.
+ *
+ * Nó khử reflow ở HERO: hero cũ ẩn nghĩa Việt KHI `senses` về, mà `senses` tải
+ * lười — nên phần lớn lần mở, khối nhận diện tự đổi hình một nhịp sau khi người
+ * dùng đã bắt đầu đọc. Giờ hero chỉ mang dữ liệu có sẵn từ request đầu, nên nó
+ * đứng yên.
+ *
+ * Cú đổi `definitions_vi` → `senses` thì KHÔNG mất, nó CHUYỂN CHỖ vào panel
+ * "Nghĩa". Nói cho đúng: người dùng vẫn thấy danh sách nghĩa Việt bị thay bằng
+ * bản nhóm theo từ loại sau 1–3 giây, và giờ nó xảy ra ngay ở vị trí đọc chính.
+ *
+ * Chấp nhận, vì cách chữa duy nhất là để HAI danh sách nghĩa Việt cạnh nhau —
+ * thứ mà `senses` sinh ra để thay, và đã bị từ chối từ khi lớp làm giàu lên.
+ * Đừng "sửa" bằng cách đó.
+ *
+ * ## Desktop: hai cột, hero dính
+ *
+ * Chữ Hán ở lại trong tầm mắt trong lúc đọc ví dụ ở cột phải.
+ *
+ * Dính CÓ ĐIỀU KIỆN theo chiều cao khung nhìn, không dính vô điều kiện. Đã đo
+ * trên cửa sổ 1100×620 ở cỡ chữ 130%: hero cao 571px, ghim ở `top: 5rem`, nên
+ * đáy nó nằm ở 651px — dưới nếp gấp 620px, và nút "Lưu vào kho" ở đúng đáy đó.
+ * Nó KHÔNG mất hẳn (sticky nhả ra ở cuối hàng lưới, đo được: cuộn tới đáy trang
+ * thì nút hiện lại), nhưng nó khuất suốt gần cả lượt cuộn — với hành động chính
+ * của màn thì thế là hỏng.
+ *
+ * `min-height: 46rem` (736px) là ngưỡng: hero cao nhất đo được 571px cộng
+ * `top-20` 80px là 651px, còn dư chỗ. Dưới ngưỡng, hero là phần tử thường và
+ * luôn cuộn tới được.
+ *
+ * KHÔNG chữa bằng `max-height` + `overflow-y`: một vùng cuộn lồng cướp lăn
+ * chuột khi con trỏ ở trên nó, và quy tắc cuộn của `responsive.md` cấm.
+ */
 export function WordDetailPage() {
   const params = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const wordId = Number(params.id)
 
   const { data: word, isPending, isError, error, refetch } = useWord(wordId)
@@ -37,10 +111,41 @@ export function WordDetailPage() {
    * Lớp làm giàu. Gọi vô điều kiện, khác `useExampleTranslations`: ở đó
    * `enabled` phụ thuộc số câu ví dụ vì ~15% từ chắc chắn không có câu nào, còn
    * ở đây không có tín hiệu nào biết trước từ này có bản làm giàu hay không.
+   *
+   * CẢ HAI hook gọi ở cấp trang chứ không trong panel, và đó là điều kiện để
+   * `TabView` được phép unmount panel không hoạt động: dữ liệu không phụ thuộc
+   * tab nào đang mở, nên đổi tab không sinh request nào.
    */
   const enrichmentQuery = useWordEnrichment(wordId)
   const toggleSave = useToggleSaveWord()
   const speech = useSpeech()
+
+  const tab = parseTab(searchParams.get('tab'))
+
+  function selectTab(next: string) {
+    /*
+     * Dừng phát âm trước khi đổi tab.
+     *
+     * `useSpeech` sống ở cấp TRANG còn `AudioButton` sống trong panel, nên đổi
+     * tab gỡ cái nút mà không dừng cái tiếng: người dùng bấm nghe một câu ví dụ,
+     * chuyển sang "Nghĩa", và một câu tiếng Trung vẫn đang được đọc mà trên màn
+     * không còn gì phát ra nó — cũng không còn nút nào để tắt.
+     *
+     * Gọi thẳng `stop()` của tầng audio là đủ: nó huỷ lượt đọc, `onEnd` bắn ra,
+     * và bộ đếm lượt trong `useSpeech` tự xoá `playingKey`.
+     */
+    stopSpeech()
+
+    const params = new URLSearchParams(searchParams)
+
+    params.set('tab', next)
+    /*
+     * `replace: true` — đổi tab KHÔNG đẩy thêm bản ghi vào lịch sử. Nếu đẩy,
+     * người dùng xem cả ba tab rồi bấm Back sẽ phải bấm ba lần mới rời được
+     * trang, và nút Back của trình duyệt thành nút "tab trước".
+     */
+    setSearchParams(params, { replace: true })
+  }
 
   if (isPending) {
     return (
@@ -77,8 +182,6 @@ export function WordDetailPage() {
    */
   const translating = translations.isPending || translations.data?.status === 'pending'
 
-  const hasAnyTranslation = translationById.size > 0
-
   const enrichment = enrichmentQuery.data?.enrichment ?? null
   /*
    * Còn đang sinh nội dung. Cùng hình dạng điều kiện mà `translating` dùng, và
@@ -86,7 +189,40 @@ export function WordDetailPage() {
    * "chờ tí nữa có".
    */
   const enriching = enrichmentQuery.isPending || enrichmentQuery.data?.status === 'pending'
-  const senses = enrichment?.senses ?? []
+
+  const items: TabViewItem[] = [
+    {
+      value: 'nghia',
+      label: 'Nghĩa',
+      panel: (
+        <WordMeaningPanel
+          word={word}
+          senses={enrichment?.senses ?? []}
+          usageNote={enrichment?.usage_note ?? null}
+          enriching={enriching}
+        />
+      ),
+    },
+    {
+      value: 'hantu',
+      label: 'Hán tự',
+      panel: <WordCharacterPanel characters={word.characters} speech={speech} />,
+    },
+    {
+      value: 'vidu',
+      label: 'Ví dụ',
+      panel: (
+        <WordExamplePanel
+          examples={word.examples}
+          translationById={translationById}
+          translating={translating}
+          relatedWords={enrichment?.related_words ?? []}
+          idioms={enrichment?.idioms ?? []}
+          speech={speech}
+        />
+      ),
+    },
+  ]
 
   return (
     // `animate-rise`: nhánh này mount mới khi `isPending` lật, nên nội dung tan
@@ -103,7 +239,7 @@ export function WordDetailPage() {
       {/*
         `<h1>` của màn này. `sr-only` vì thứ bậc THỊ GIÁC đã đúng sẵn — chữ Hán
         trong hero là thứ to nhất trang — nhưng thứ bậc NGỮ NGHĨA thì hụt: trang
-        nhảy thẳng từ không có `<h1>` sang `<h2>Hán tự`, nên người dùng screen
+        nhảy thẳng từ không có `<h1>` sang `<h2>Nghĩa`, nên người dùng screen
         reader mất mốc "đang ở trang nào".
 
         Không đưa `<h1>` vào `WordDetailHero`: hero còn được `GalleryPage` dùng,
@@ -113,224 +249,54 @@ export function WordDetailPage() {
         {word.simplified} — {word.pinyin}
       </h1>
 
-      <WordDetailHero
-        word={word}
-        audioState={speech.stateFor('word')}
-        onPlayAudio={() => speech.play(word.simplified, 'word')}
-        /* Có `senses` thì nghĩa Việt của hero nhường chỗ cho bản đã nhóm theo
-           từ loại ngay bên dưới. Lớp làm giàu tải lười, nên phần lớn lần mở sẽ
-           hiện `definitions_vi` trước rồi đổi — MỘT lần đổi, và tốt hơn hẳn hai
-           danh sách nghĩa Việt nằm cạnh nhau vĩnh viễn. */
-        suppressVietnameseDefinitions={senses.length > 0}
-        actions={
-          <Button
-            variant={saved ? 'secondary' : 'primary'}
-            loading={toggleSave.isPending}
-            onClick={() =>
-              toggleSave.mutate({
-                wordId: word.id,
-                // `null` = chưa lưu → lưu. Khác `null` = đã lưu → bỏ lưu.
-                // Id bản ghi kho lấy ở màn Kho từ; ở đây chỉ cần biết đã lưu chưa.
-                userWordId: saved ? word.id : null,
-              })
+      <div className="lg:grid lg:grid-cols-[22rem_1fr] lg:items-start lg:gap-6">
+        {/*
+          `lg:sticky` cần `lg:items-start` ở lưới cha: mặc định `stretch` kéo ô
+          lưới cao bằng cột bên cạnh, và một phần tử dính cao bằng cả cột thì
+          không còn chỗ nào để dính.
+
+          `top-20` = chiều cao header desktop (4rem) cộng một nhịp thở.
+
+          Điều kiện `min-height` — xem khối H4 trong docstring của trang.
+        */}
+        <div className="lg:top-20 lg:[@media(min-height:46rem)]:sticky">
+          <WordDetailHero
+            word={word}
+            audioState={speech.stateFor('word')}
+            onPlayAudio={() => speech.play(word.simplified, 'word')}
+            /* Hai danh sách nghĩa chuyển xuống tab "Nghĩa" — xem docstring. */
+            showDefinitions={false}
+            actions={
+              <Button
+                variant={saved ? 'secondary' : 'primary'}
+                loading={toggleSave.isPending}
+                onClick={() =>
+                  toggleSave.mutate({
+                    wordId: word.id,
+                    // `null` = chưa lưu → lưu. Khác `null` = đã lưu → bỏ lưu.
+                    // Id bản ghi kho lấy ở màn Kho từ; ở đây chỉ cần biết đã lưu chưa.
+                    userWordId: saved ? word.id : null,
+                  })
+                }
+              >
+                {saved ? 'Đã lưu vào kho' : 'Lưu vào kho'}
+              </Button>
             }
-          >
-            {saved ? 'Đã lưu vào kho' : 'Lưu vào kho'}
-          </Button>
-        }
-      />
+          />
+        </div>
 
-      {/*
-        Nghĩa theo từ loại — đứng NGAY sau hero vì nó thay chỗ danh sách nghĩa
-        Việt vừa bị ẩn ở đó. Đặt nó xuống dưới khối Hán tự sẽ để lại một khoảng
-        trống đúng chỗ mắt vừa đọc xong.
-      */}
-      {senses.length > 0 && (
-        <Card>
-          <h2 className="text-section">Nghĩa theo từ loại</h2>
-          <AiSourceNote />
-          <WordSenses senses={senses} />
-        </Card>
-      )}
-
-      {/*
-        Khung xương cho lớp làm giàu: MỘT khối duy nhất, không phải bốn.
-        Bốn khung trống xếp chồng cho một từ hoá ra không có bản làm giàu là
-        hứa hẹn bốn thứ rồi rút lại cả bốn.
-      */}
-      {senses.length === 0 && enriching && (
-        <Card>
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="mt-3 h-6 w-full" />
-          <Skeleton className="mt-2 h-6 w-4/5" />
-        </Card>
-      )}
-
-      {enrichment?.usage_note != null && (
-        <Card>
-          <h2 className="text-section">Ghi chú dùng từ</h2>
-          <AiSourceNote />
-          <p className="text-meaning text-text-primary mt-3">{enrichment.usage_note}</p>
-        </Card>
-      )}
-
-      {word.characters.length > 0 && (
-        <Card>
-          <h2 className="text-section">Hán tự</h2>
-          <ul className="mt-3 space-y-4">
-            {word.characters.map((character, index) => (
-              <CharacterCard
-                key={`${character.char}-${index}`}
-                character={character}
-                /* Khoá theo VỊ TRÍ: từ láy (谢谢) có hai Hán tự giống hệt nhau,
-                   khoá theo chữ sẽ làm cả hai nút cùng sáng. */
-                audioState={speech.stateFor(`char:${index}`)}
-                onPlay={() => speech.play(character.char, `char:${index}`)}
-              />
-            ))}
-          </ul>
-        </Card>
-      )}
-
-      {/*
-        Từ ghép và thành ngữ đứng SAU khối Hán tự: chúng là bước mở rộng ra
-        NGOÀI từ đang tra, còn Hán tự là mổ vào bên trong nó.
-      */}
-      {enrichment !== null && enrichment.related_words.length > 0 && (
-        <Card>
-          <RelatedWordList title="Từ ghép" items={enrichment.related_words} />
-          <AiSourceNote className="mt-3" />
-        </Card>
-      )}
-
-      {enrichment !== null && enrichment.idioms.length > 0 && (
-        <Card>
-          <RelatedWordList title="Thành ngữ" items={enrichment.idioms} />
-          <AiSourceNote className="mt-3" />
-        </Card>
-      )}
-
-      {/* Section "Ví dụ" ẩn HẲN khi rỗng (D6) — chỉ ~75% từ có câu. */}
-      {word.examples.length > 0 && (
-        <Card>
-          <h2 className="text-section">Ví dụ</h2>
+        <div className="mt-4 space-y-4 lg:mt-0">
+          <TabView items={items} value={tab} onChange={selectTab} label="Nội dung từ" />
 
           {/*
-            Nhãn nguồn — nghĩa vụ gắn nhãn nội dung AI của dự án, cùng quy ước mà
-            thẻ dịch ở màn Tìm kiếm đang giữ.
-
-            MỘT lần cho cả khối, không phải mỗi câu: ba nhãn giống hệt nhau trong
-            một thẻ là nhiễu, và người đọc bỏ qua cả ba.
+            Lịch sử ôn nằm NGOÀI tab, và đó là phân loại chứ không phải chỗ thừa:
+            ba tab nói về TỪ, còn khối này nói về quan hệ giữa BẠN và từ đó. Nó
+            cũng chỉ hiện với từ đã lưu, nên nhét vào một tab cố định là tạo ra
+            đúng loại tab lúc có lúc không mà thiết kế này tránh.
           */}
-          {hasAnyTranslation && (
-            <p className="text-caption text-text-secondary mt-1">
-              Nghĩa tiếng Việt do AI dịch từ bản tiếng Anh.
-            </p>
-          )}
-
-          <ul className="mt-3 space-y-4" aria-busy={translating}>
-            {word.examples.map((example) => (
-              <ExampleRow
-                key={example.id}
-                example={example}
-                // Ghép theo id, KHÔNG theo thứ tự mảng: hai truy vấn khác nhau
-                // không có gì bảo đảm trả về cùng một thứ tự.
-                translation={translationById.get(example.id) ?? null}
-                translating={translating}
-                audioState={speech.stateFor(`example:${example.id}`)}
-                onPlay={() => speech.play(example.sentence_zh, `example:${example.id}`)}
-              />
-            ))}
-          </ul>
-        </Card>
-      )}
-
-      {/* Chỉ hiện với từ ĐÃ LƯU: từ chưa lưu không có lịch sử ôn để nói, và
-          component tự bỏ qua lời gọi API trong trường hợp đó. */}
-      <WordReviewHistory wordId={word.id} saved={saved} />
-    </div>
-  )
-}
-
-/**
- * Nhãn nguồn cho nội dung do AI sinh.
- *
- * MỘT lần cho mỗi khối, không phải mỗi mục — cùng quy ước mà khối "Ví dụ" đang
- * giữ, và vì cùng lý do: ba nhãn giống hệt nhau trong một thẻ là nhiễu, và
- * người đọc bỏ qua cả ba.
- *
- * Nhưng nó phải có mặt ở TỪNG khối chứ không một lần cho cả trang: bốn khối này
- * nằm xen giữa nội dung có nguồn thật (Tatoeba, CC-CEDICT), nên một nhãn duy
- * nhất ở đầu trang sẽ đọc ra như thể cả trang do AI sinh.
- */
-function AiSourceNote({ className }: { className?: string }) {
-  return (
-    <p className={cn('text-caption text-text-secondary mt-1', className)}>
-      Nội dung do AI sinh, chưa có người rà.
-    </p>
-  )
-}
-
-function ExampleRow({
-  example,
-  translation,
-  translating,
-  audioState,
-  onPlay,
-}: {
-  example: ExampleSentence
-  translation: string | null
-  translating: boolean
-  audioState: ReturnType<typeof useSpeech>['state']
-  onPlay: () => void
-}) {
-  return (
-    <li className="space-y-1">
-      <div className="flex items-start gap-2">
-        <p lang="zh-Hans" className="font-hanzi text-meaning text-text-primary flex-1">
-          {example.sentence_zh}
-        </p>
-        <AudioButton state={audioState} onPlay={onPlay} size="sm" />
+          <WordReviewHistory wordId={word.id} saved={saved} />
+        </div>
       </div>
-
-      {/*
-        Nghĩa tiếng Việt đứng TRÊN dòng tiếng Anh và ở bậc chữ cao hơn: đây là
-        dòng người học đọc trước.
-
-        Không có bản dịch thì ẩn HẲN, không hiện khung trống — cùng quy ước mà
-        `han_viet: null` và `examples: []` đang giữ.
-      */}
-      {translation !== null && <p className="text-meaning text-text-primary">{translation}</p>}
-
-      {/*
-        `h-6` khớp hộp dòng của `text-meaning` (24px), nên bản dịch tới nơi thay
-        vào đúng chỗ khung xương đang đứng thay vì đẩy phần còn lại của thẻ xuống.
-
-        Skeleton chứ không phải spinner hay chữ "đang dịch", theo `ux-rules.md`:
-        spinner nói "đang chờ", skeleton nói "sắp có gì ở đây".
-      */}
-      {translation === null && translating && <Skeleton className="h-6 w-4/5" />}
-
-      {/*
-        Dòng tiếng Anh Ở LẠI, nhỏ và nhạt hơn dòng Việt.
-
-        Bản Việt do máy dịch và không có người rà, nên đây là cơ chế đối chiếu duy
-        nhất người học có — cùng lý do `definitions_vi` không bao giờ thay thế
-        `definitions_en`.
-
-        KHÔNG có dòng pinyin cho câu (D6).
-      */}
-      <p className="text-body text-text-secondary">{example.translation_en}</p>
-
-      {/*
-        Ghi công tác giả — nghĩa vụ CC BY của Tatoeba, không phải chi tiết trang
-        trí. Nhỏ và quiet, nhưng phải có mặt.
-      */}
-      {example.contributor && (
-        <p className="text-caption text-text-secondary">
-          Tatoeba · {example.contributor} · {example.license}
-        </p>
-      )}
-    </li>
+    </div>
   )
 }

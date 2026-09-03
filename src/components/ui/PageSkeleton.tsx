@@ -96,13 +96,46 @@ function BackLinkSkeleton() {
   return <Skeleton className="h-10 w-24" />
 }
 
+/**
+ * Khung xương màn chi tiết từ.
+ *
+ * Phải khớp CẢ hình dạng lẫn bố cục hai cột của trang thật, không chỉ hình
+ * dạng. Trang thật là hero cột trái + thanh tab và panel cột phải; vẽ một cột
+ * duy nhất ở đây thì lúc dữ liệu về, cả trang nhảy sang bố cục khác — đúng cái
+ * bậc thừa mà khung xương sinh ra để khử.
+ *
+ * `h-[33rem]` (528px) là số ĐO ĐƯỢC, không phải ước lượng: hero thật cao 532px
+ * ở cỡ chữ 100%, đo bằng `getBoundingClientRect()` trên cả 390px lẫn 1280px
+ * (nó không đổi theo bề ngang vì mọi thành phần bên trong đều là hàng đơn).
+ *
+ * Con số cũ `h-64` (256px) là ước lượng, và nó sai gần một nửa — mỗi lần mở một
+ * từ nguội, nội dung tụt xuống 276px so với chỗ khung xương vừa đứng. Đúng cái
+ * CLS mà cả file này sinh ra để khử, và nó xảy ra HAI lần trên một lần tải
+ * nguội: một ở fallback cấp route, một ở nhánh `isPending` của trang.
+ *
+ * Sửa chiều cao ở đây thì phải đo lại, đừng suy từ token.
+ */
 export function WordDetailSkeleton() {
   return (
     <div className="space-y-4">
       <BackLinkSkeleton />
-      {/* `rounded-hero` khớp `WordDetailHero`. */}
-      <Skeleton className="rounded-hero h-48 w-full" />
-      <Skeleton className="h-24 w-full" />
+
+      <div className="lg:grid lg:grid-cols-[22rem_1fr] lg:items-start lg:gap-6">
+        {/* `rounded-hero` khớp `WordDetailHero`. */}
+        <Skeleton className="rounded-hero h-[33rem] w-full" />
+
+        <div className="mt-4 lg:mt-0">
+          {/* Ba viên tab. `min-h-11` và `pb-1` khớp tablist thật — thiếu `pb-1`
+              là lệch 4px đúng lúc khung xương nhường chỗ cho nội dung. */}
+          <div className="flex gap-2 pb-1">
+            <Skeleton className="h-11 w-20 rounded-full" />
+            <Skeleton className="h-11 w-24 rounded-full" />
+            <Skeleton className="h-11 w-20 rounded-full" />
+          </div>
+
+          <Skeleton className="rounded-card mt-3 h-40 w-full" />
+        </div>
+      </div>
     </div>
   )
 }

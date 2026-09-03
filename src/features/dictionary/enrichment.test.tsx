@@ -59,7 +59,7 @@ function json(body: unknown, status = 200): Response {
  * Trang chi tiết gọi song song nhiều endpoint, nên phải định tuyến theo URL —
  * một `mockResolvedValue` duy nhất sẽ trả cùng payload cho tất cả.
  */
-function route(enrichment: () => Response): void {
+function route(enrichment: () => Response, detail: WordDetail = word): void {
   fetchMock.mockImplementation((input) => {
     const url = urlOf(input)
 
@@ -70,16 +70,26 @@ function route(enrichment: () => Response): void {
       return Promise.resolve(json({ data: null, meta: { status: 'unavailable' } }))
     }
 
-    return Promise.resolve(json({ data: word }))
+    return Promise.resolve(json({ data: detail }))
   })
 }
 
-function Harness() {
+/**
+ * `tab` đi qua URL chứ không qua một cú click.
+ *
+ * Ngắn hơn thì đúng, nhưng lý do chính là nó kiểm luôn hợp đồng deep-link: mỗi
+ * tab của màn chi tiết phải mở thẳng được bằng `?tab=`, vì đó là thứ giữ đúng
+ * chỗ người dùng đang đứng khi họ bấm Back từ một từ ghép.
+ *
+ * Tương tác tab (bấm, mũi tên, roving tabindex) test ở `TabView` — không lặp
+ * lại ở đây.
+ */
+function Harness({ tab }: { tab?: string } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return (
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[`/words/${word.id}`]}>
+      <MemoryRouter initialEntries={[`/words/${word.id}${tab ? `?tab=${tab}` : ''}`]}>
         <Routes>
           <Route path="/words/:id" element={<WordDetailPage />} />
         </Routes>
@@ -113,7 +123,7 @@ describe('lớp làm giàu trên màn chi tiết từ', () => {
     expect(screen.getByText('thường dùng với người')).toBeInTheDocument()
   })
 
-  it('nghĩa Việt của hero nhường chỗ cho senses, nhưng nghĩa Anh Ở LẠI', async () => {
+  it('nghĩa Việt nhường chỗ cho senses trong tab, nhưng nghĩa Anh Ở LẠI', async () => {
     // Luật R1: `definitions_en` không bao giờ bị thay thế — và càng phải ở lại
     // khi thứ thay chỗ nghĩa Việt là nội dung AI chưa ai rà.
     route(() => json(readyPayload))
@@ -125,7 +135,7 @@ describe('lớp làm giàu trên màn chi tiết từ', () => {
     expect(screen.getByText('to learn')).toBeInTheDocument()
   })
 
-  it('giữ nghĩa Việt của hero khi chưa có senses', async () => {
+  it('giữ nghĩa Việt khi chưa có senses', async () => {
     route(() => json({ data: null, meta: { status: 'unavailable' } }))
 
     render(<Harness />)
@@ -138,7 +148,7 @@ describe('lớp làm giàu trên màn chi tiết từ', () => {
     // luật mà `SentenceToken.word_id: null` đang giữ.
     route(() => json(readyPayload))
 
-    render(<Harness />)
+    render(<Harness tab="vidu" />)
 
     const link = await screen.findByRole('link', { name: /学生/ })
     expect(link).toHaveAttribute('href', '/words/42')
@@ -147,13 +157,27 @@ describe('lớp làm giàu trên màn chi tiết từ', () => {
   })
 
   it('gắn nhãn nguồn AI đúng một lần cho MỖI khối', async () => {
+    /*
+     * Bốn khối AI vẫn còn nguyên, nhưng chia sang HAI tab: nghĩa theo từ loại +
+     * ghi chú dùng từ ở "Nghĩa", từ ghép + thành ngữ ở "Ví dụ".
+     *
+     * Đếm theo TAB chứ không đếm cả trang, và đó là điểm của test: luật là một
+     * nhãn cho mỗi KHỐI, không phải một nhãn cho mỗi trang. Gộp thành một nhãn
+     * duy nhất ở đầu trang sẽ đọc ra như thể cả trang do AI sinh — trong khi
+     * chữ Hán, số nét và câu ví dụ đều có nguồn thật.
+     */
     route(() => json(readyPayload))
 
-    render(<Harness />)
+    const { unmount } = render(<Harness />)
 
     await screen.findByText('học, học tập')
-    // Bốn khối: nghĩa theo từ loại, ghi chú dùng từ, từ ghép, thành ngữ.
-    expect(screen.getAllByText(/do AI sinh/i)).toHaveLength(4)
+    expect(screen.getAllByText(/do AI sinh/i)).toHaveLength(2)
+
+    unmount()
+    render(<Harness tab="vidu" />)
+
+    await screen.findByText('học sinh')
+    expect(screen.getAllByText(/do AI sinh/i)).toHaveLength(2)
   })
 
   it('ẩn HẲN mọi khối khi unavailable', async () => {
@@ -161,13 +185,21 @@ describe('lớp làm giàu trên màn chi tiết từ', () => {
     // tính năng này, không khung trống, không dòng "chưa có".
     route(() => json({ data: null, meta: { status: 'unavailable' } }))
 
-    render(<Harness />)
+    const { unmount } = render(<Harness />)
 
     await screen.findByText('to learn')
     expect(screen.queryByText('Nghĩa theo từ loại')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ghi chú dùng từ')).not.toBeInTheDocument()
+    expect(screen.queryByText(/do AI sinh/i)).not.toBeInTheDocument()
+
+    unmount()
+    render(<Harness tab="vidu" />)
+
+    // Từ này không có câu ví dụ VÀ không có bản làm giàu → tab rỗng thật, và nó
+    // phải NÓI RA vì sao thay vì biến mất khỏi thanh tab.
+    await screen.findByText('Chưa có ví dụ cho từ này')
     expect(screen.queryByText('Từ ghép')).not.toBeInTheDocument()
     expect(screen.queryByText('Thành ngữ')).not.toBeInTheDocument()
-    expect(screen.queryByText('Ghi chú dùng từ')).not.toBeInTheDocument()
     expect(screen.queryByText(/do AI sinh/i)).not.toBeInTheDocument()
   })
 
@@ -186,28 +218,58 @@ describe('lớp làm giàu trên màn chi tiết từ', () => {
       }),
     )
 
-    render(<Harness />)
+    const { unmount } = render(<Harness />)
 
     expect(await screen.findByText('học')).toBeInTheDocument()
     expect(screen.queryByText('danh từ')).not.toBeInTheDocument()
+
+    unmount()
+    render(<Harness tab="vidu" />)
+
     // `related_words` mất mục duy nhất vì thiếu `simplified` → cả khối biến mất.
+    await screen.findByRole('tab', { name: 'Ví dụ', selected: true })
     expect(screen.queryByText('Từ ghép')).not.toBeInTheDocument()
   })
 
-  it('hiện MỘT khối khung xương trong lúc sinh, không phải bốn', async () => {
-    // Bốn khung trống xếp chồng cho một từ hoá ra không có bản làm giàu là hứa
-    // hẹn bốn thứ rồi rút lại cả bốn.
-    //
-    // Đếm qua `.animate-skeleton` chứ không `data-testid`: `Skeleton` không có
-    // testid, nên một selector không khớp gì sẽ làm assert này luôn đúng —
-    // đúng lỗi mà bản đầu của test này mắc.
+  it('KHÔNG hứa khung xương khi đã có nghĩa Việt để đọc', async () => {
+    /*
+     * Bất biến SIẾT LẠI khi hai danh sách nghĩa chuyển từ hero xuống tab.
+     *
+     * Trước đây khối làm giàu là một thẻ RIÊNG nằm dưới hero, nên lúc đang sinh
+     * nó treo một khung xương — chấp nhận được, vì nghĩa Việt vẫn hiện ở hero
+     * ngay bên trên.
+     *
+     * Giờ cả hai ở CHUNG một panel. Treo khung xương bên dưới một danh sách
+     * nghĩa đã đọc được là hứa thêm một thứ mà `unavailable` — kết cục thường
+     * gặp — sẽ lặng lẽ rút lại. Từ đã có nghĩa Việt thì không hứa gì cả.
+     *
+     * Đếm qua `.animate-skeleton` chứ không `data-testid`: `Skeleton` không có
+     * testid, nên một selector không khớp gì sẽ làm assert này luôn đúng —
+     * đúng lỗi mà bản đầu của test này mắc.
+     */
     route(() => json({ data: null, meta: { status: 'pending' } }, 202))
 
     const { container } = render(<Harness />)
 
-    await screen.findByText('to learn')
-    expect(container.querySelectorAll('.animate-skeleton')).toHaveLength(3)
+    await screen.findByText('học tập, nghiên cứu')
+    expect(container.querySelectorAll('.animate-skeleton')).toHaveLength(0)
     expect(screen.queryByText('Nghĩa theo từ loại')).not.toBeInTheDocument()
+  })
+
+  it('hiện MỘT khối khung xương khi từ CHƯA có nghĩa Việt nào', async () => {
+    // ~7% từ không có trong CVDICT. Với chúng, lớp làm giàu là hy vọng DUY NHẤT
+    // có nghĩa tiếng Việt, nên chờ nó là chờ một thứ đáng chờ — và khung xương
+    // là cách nói "sắp có gì ở đây" mà `ux-rules.md` yêu cầu.
+    route(() => json({ data: null, meta: { status: 'pending' } }, 202), {
+      ...word,
+      definitions_vi: null,
+    })
+
+    const { container } = render(<Harness />)
+
+    await screen.findByText('to learn')
+    // MỘT khối, hai vạch — không phải bốn khung trống xếp chồng.
+    expect(container.querySelectorAll('.animate-skeleton')).toHaveLength(2)
   })
 
   it('KHÔNG hiện khung xương khi unavailable', async () => {
